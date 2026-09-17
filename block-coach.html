@@ -1,0 +1,1719 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ブロックコーチ － スクラッチ＆マイクロビット</title>
+<meta name="description" content="中学校技術科 計測・制御の学習支援アプリ。やりたいことの文章からScratch／MakeCodeのコードを提案し、つまずきを図で診断します。">
+<style>
+:root{
+  --motion:#4C97FF; --looks:#9966FF; --sound:#CF63CF; --events:#FFBF00;
+  --control:#FFAB19; --sensing:#5CB1D6; --operators:#59C059; --variables:#FF8C1A;
+  --myblocks:#FF6680; --microbit:#0FBD8C;
+  --mc-basic:#1E90FF; --mc-input:#B4009E; --mc-music:#D83B01; --mc-led:#5C2D91;
+  --mc-radio:#E3008C; --mc-loops:#00A4A6; --mc-logic:#00A4A6; --mc-var:#FF8F00;
+  --mc-math:#8DAF20; --mc-pins:#A80000; --mc-serial:#002050;
+  --ink:#1c2430; --ink2:#55637a; --line:#d7dee9; --bg:#f4f7fb; --panel:#ffffff;
+  --accent:#2f6fd0; --warn:#d9480f; --ok:#0f7b46; --shadow:0 2px 6px rgba(28,36,48,.10);
+  --fs:16px;
+}
+*{box-sizing:border-box}
+html{font-size:var(--fs)}
+body{
+  margin:0; background:var(--bg); color:var(--ink);
+  font-family:"BIZ UDPGothic","Hiragino Kaku Gothic ProN","Yu Gothic UI","Meiryo",system-ui,sans-serif;
+  line-height:1.7; -webkit-text-size-adjust:100%;
+}
+header.app{background:linear-gradient(100deg,#2f6fd0,#4C97FF 55%,#0FBD8C);color:#fff;padding:.7rem 1rem .1rem}
+.hrow{display:flex;align-items:center;gap:.8rem;flex-wrap:wrap;max-width:1180px;margin:0 auto}
+.logo{font-size:1.3rem;font-weight:800;letter-spacing:.02em}
+.logo small{display:block;font-size:.72rem;font-weight:400;opacity:.92;letter-spacing:0}
+.hspacer{flex:1}
+.hbtn{background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.45);color:#fff;
+  border-radius:8px;padding:.3rem .7rem;font-size:.82rem;cursor:pointer;font-family:inherit}
+.hbtn:hover{background:rgba(255,255,255,.3)}
+nav.tabs{display:flex;gap:.25rem;max-width:1180px;margin:.5rem auto 0;flex-wrap:wrap}
+nav.tabs button{
+  background:rgba(255,255,255,.82);border:none;border-radius:10px 10px 0 0;padding:.5rem .95rem;
+  font-size:.92rem;font-weight:700;color:#2b3a52;cursor:pointer;font-family:inherit;opacity:.75}
+nav.tabs button[aria-selected="true"]{background:var(--bg);opacity:1;color:var(--accent);box-shadow:0 -2px 0 #fff inset}
+main{max-width:1180px;margin:0 auto;padding:1rem 1rem 4rem}
+section[role=tabpanel][hidden]{display:none}
+h2{font-size:1.18rem;margin:.2rem 0 .6rem;display:flex;align-items:center;gap:.4rem}
+h3{font-size:1.02rem;margin:1.1rem 0 .4rem}
+p.lead{color:var(--ink2);margin:.2rem 0 .9rem;font-size:.92rem}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:1rem;box-shadow:var(--shadow);margin-bottom:1rem}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+@media(max-width:860px){.grid2{grid-template-columns:1fr}}
+textarea,input[type=text],select{
+  width:100%;font-family:inherit;font-size:1rem;padding:.6rem .7rem;border:2px solid var(--line);
+  border-radius:10px;background:#fff;color:var(--ink)}
+textarea{min-height:5.2rem;resize:vertical;line-height:1.6}
+textarea:focus,input:focus,select:focus{outline:3px solid #bcd5f7;border-color:var(--accent)}
+.btn{background:var(--accent);color:#fff;border:none;border-radius:10px;padding:.55rem 1.1rem;
+  font-size:.95rem;font-weight:700;cursor:pointer;font-family:inherit;box-shadow:var(--shadow)}
+.btn:hover{filter:brightness(1.08)} .btn:active{transform:translateY(1px)}
+.btn.sub{background:#fff;color:var(--accent);border:2px solid var(--accent);box-shadow:none;padding:.45rem .9rem}
+.btn.mini{padding:.25rem .6rem;font-size:.78rem;border-radius:8px}
+.btn.green{background:var(--ok)} .btn.orange{background:var(--warn)}
+.btnrow{display:flex;gap:.5rem;flex-wrap:wrap;align-items:center;margin-top:.6rem}
+.chips{display:flex;flex-wrap:wrap;gap:.35rem;margin:.5rem 0}
+.chip{background:#eaf1fb;border:1px solid #c6dafa;color:#24456f;border-radius:999px;
+  padding:.22rem .7rem;font-size:.82rem;cursor:pointer;font-family:inherit}
+.chip:hover{background:#d8e7fb}
+.chip.on{background:var(--accent);color:#fff;border-color:var(--accent)}
+.muted{color:var(--ink2);font-size:.86rem}
+.tag{display:inline-block;font-size:.72rem;padding:.1rem .5rem;border-radius:999px;background:#eef2f8;color:#48566c;border:1px solid var(--line);margin-right:.3rem}
+.tag.sc{background:#eaf2ff;color:#1b4b91;border-color:#c3daff}
+.tag.mb{background:#e6faf3;color:#0a6b4e;border-color:#b6ecd9}
+.tag.lv{background:#fff3e2;color:#8a4b06;border-color:#ffd9a8}
+
+/* ---- Scratch風ブロック ---- */
+.blocks{background:#f8fafd;border:1px dashed #c8d4e4;border-radius:10px;padding:.8rem;overflow-x:auto}
+.blk{position:relative;color:#fff;border-radius:6px;padding:.32rem .7rem;margin:0 0 3px;
+  font-size:.9rem;font-weight:700;display:inline-flex;align-items:center;gap:.3rem;
+  box-shadow:0 1px 0 rgba(0,0,0,.18);min-height:2rem;text-shadow:0 1px 1px rgba(0,0,0,.14)}
+.blk .slot{background:rgba(255,255,255,.92);color:#1c2430;border-radius:999px;padding:0 .55rem;
+  font-weight:700;text-shadow:none;font-size:.86rem;display:inline-block;min-width:1.6rem;text-align:center}
+.blk .slot.bool{border-radius:4px;transform:skewX(-12deg);padding:0 .5rem}
+.blk .slot.bool>span{display:inline-block;transform:skewX(12deg)}
+.blk .drop{background:rgba(0,0,0,.18);border-radius:999px;padding:0 .5rem;font-size:.84rem}
+.stack{display:flex;flex-direction:column;align-items:flex-start}
+.hat{border-radius:16px 16px 6px 6px !important}
+.cwrap{border-left:12px solid;border-radius:0 0 0 8px;margin:0 0 3px;padding:0 0 .35rem 0}
+.cwrap>.cin{margin-left:.9rem;padding-top:.25rem}
+.cfoot{height:.85rem;min-width:4.6rem;border-radius:0 0 6px 6px;margin-bottom:3px;box-shadow:0 1px 0 rgba(0,0,0,.18)}
+.bool-inline{display:inline-flex}
+.c-motion{background:var(--motion)} .c-looks{background:var(--looks)} .c-sound{background:var(--sound)}
+.c-events{background:var(--events)} .c-control{background:var(--control)} .c-sensing{background:var(--sensing)}
+.c-operators{background:var(--operators)} .c-variables{background:var(--variables)} .c-microbit{background:var(--microbit)}
+.b-motion{border-color:var(--motion)} .b-looks{border-color:var(--looks)} .b-sound{border-color:var(--sound)}
+.b-events{border-color:var(--events)} .b-control{border-color:var(--control)} .b-sensing{border-color:var(--sensing)}
+.b-operators{border-color:var(--operators)} .b-variables{border-color:var(--variables)} .b-microbit{border-color:var(--microbit)}
+.f-motion{background:var(--motion)} .f-control{background:var(--control)} .f-events{background:var(--events)}
+.f-microbit{background:var(--microbit)} .f-sensing{background:var(--sensing)} .f-looks{background:var(--looks)}
+.f-operators{background:var(--operators)} .f-variables{background:var(--variables)} .f-sound{background:var(--sound)}
+.mark{outline:3px dashed #d9480f;outline-offset:3px;animation:pulse 1.4s infinite}
+@keyframes pulse{50%{outline-color:#ffb08a}}
+
+/* ---- 結果カード ---- */
+.card{border:1px solid var(--line);border-radius:12px;padding:.9rem;margin-bottom:.9rem;background:#fff;box-shadow:var(--shadow)}
+.card h4{margin:0 0 .3rem;font-size:1.04rem;display:flex;align-items:center;gap:.4rem;flex-wrap:wrap}
+.score{height:8px;background:#e9eef6;border-radius:99px;overflow:hidden;width:120px;display:inline-block;vertical-align:middle}
+.score>i{display:block;height:100%;background:linear-gradient(90deg,#4C97FF,#0FBD8C)}
+.note{background:#fff8e8;border-left:5px solid #ffbf00;border-radius:6px;padding:.55rem .8rem;margin:.6rem 0;font-size:.9rem}
+.note.warn{background:#fff1ea;border-color:#d9480f}
+.note.ok{background:#ecfaf2;border-color:#0f7b46}
+.note.info{background:#eef4ff;border-color:#4C97FF}
+ul.tight{margin:.35rem 0 .35rem 1.1rem;padding:0} ul.tight li{margin:.18rem 0}
+pre.code{background:#1d2735;color:#e8f0fb;border-radius:10px;padding:.8rem;overflow-x:auto;
+  font-family:"Consolas","SFMono-Regular",monospace;font-size:.85rem;line-height:1.55;margin:.4rem 0}
+pre.code .k{color:#7ec8ff} pre.code .s{color:#ffd479} pre.code .n{color:#b9f18d} pre.code .c{color:#8fa3bd}
+details{border:1px solid var(--line);border-radius:10px;padding:.4rem .7rem;margin:.5rem 0;background:#fbfcfe}
+summary{cursor:pointer;font-weight:700;font-size:.92rem}
+table{border-collapse:collapse;width:100%;font-size:.88rem;background:#fff}
+th,td{border:1px solid var(--line);padding:.4rem .55rem;text-align:left;vertical-align:top}
+th{background:#eef3fa}
+.dropzone{border:3px dashed #9dbbe6;border-radius:14px;background:#f7fbff;padding:1.6rem 1rem;text-align:center;cursor:pointer}
+.dropzone.hot{background:#e6f1ff;border-color:var(--accent)}
+.canvwrap{position:relative;overflow:auto;background:#eef2f7;border-radius:10px;border:1px solid var(--line)}
+canvas{max-width:100%;display:block;margin:0 auto;background:#fff}
+.legend{display:flex;gap:.6rem;flex-wrap:wrap;font-size:.8rem;margin:.5rem 0}
+.legend span{display:inline-flex;align-items:center;gap:.25rem}
+.sw{width:.9rem;height:.9rem;border-radius:3px;display:inline-block;border:1px solid rgba(0,0,0,.2)}
+.bar{height:14px;background:#e9eef6;border-radius:4px;overflow:hidden;min-width:60px}
+.bar>i{display:block;height:100%}
+.steps{counter-reset:s;margin:0;padding:0;list-style:none}
+.steps li{counter-increment:s;position:relative;padding-left:2rem;margin:.45rem 0}
+.steps li::before{content:counter(s);position:absolute;left:0;top:.15rem;width:1.45rem;height:1.45rem;
+  background:var(--accent);color:#fff;border-radius:50%;display:grid;place-items:center;font-size:.8rem;font-weight:700}
+kbd{background:#eef2f8;border:1px solid var(--line);border-bottom-width:2px;border-radius:5px;padding:0 .35rem;font-size:.82rem}
+.hidden{display:none !important}
+footer{max-width:1180px;margin:0 auto;padding:1rem;color:var(--ink2);font-size:.8rem;border-top:1px solid var(--line)}
+@media print{
+  header.app,nav.tabs,.btnrow,.dropzone,footer,.noprint{display:none !important}
+  body{background:#fff} .panel,.card{box-shadow:none;break-inside:avoid}
+  section[role=tabpanel][hidden]{display:block !important}
+}
+</style>
+</head>
+<body>
+<header class="app">
+  <div class="hrow">
+    <div class="logo">🧩 ブロックコーチ
+      <small>やりたいことを文章で書くと、スクラッチ／マイクロビットのコードを提案します</small></div>
+    <div class="hspacer"></div>
+    <button class="hbtn" id="fontBtn" title="文字の大きさを変える">文字を大きく</button>
+    <button class="hbtn" id="printBtn" title="今の画面を印刷 / PDF保存">印刷</button>
+  </div>
+  <nav class="tabs" role="tablist">
+    <button role="tab" id="tab-make"  aria-controls="p-make"  aria-selected="true">🎯 つくる</button>
+    <button role="tab" id="tab-build" aria-controls="p-build" aria-selected="false">🧱 くみたて</button>
+    <button role="tab" id="tab-fix"   aria-controls="p-fix"   aria-selected="false">🔍 なおす</button>
+    <button role="tab" id="tab-mb"    aria-controls="p-mb"    aria-selected="false">📡 計測・制御</button>
+    <button role="tab" id="tab-dict"  aria-controls="p-dict"  aria-selected="false">📖 対応表</button>
+    <button role="tab" id="tab-teach" aria-controls="p-teach" aria-selected="false">🧑‍🏫 先生用</button>
+  </nav>
+</header>
+
+<main>
+<!-- ============ つくる ============ -->
+<section role="tabpanel" id="p-make" aria-labelledby="tab-make">
+  <div class="panel">
+    <h2>🎯 やりたいことを、ふつうの文で書いてみよう</h2>
+    <p class="lead">「〜したい」「〜にならない」「〜がうまくいかない」など、話しことばのままでOK。キーワードを読み取って、近いコードを提案します。</p>
+    <label for="q" class="muted">やりたいこと / こまっていること</label>
+    <textarea id="q" placeholder="例）ねこを矢印キーで動かしたい&#10;例）ボタンAを押したら前に進むようにしたい&#10;例）くりかえしにしても1回しか動かない"></textarea>
+    <div class="btnrow">
+      <button class="btn" id="goBtn">💡 コードを提案してもらう</button>
+      <button class="btn sub" id="clearBtn">消す</button>
+      <span class="muted">　<kbd>Ctrl</kbd>+<kbd>Enter</kbd> でも実行</span>
+    </div>
+    <div class="chips" id="exChips"></div>
+  </div>
+  <div id="makeResult"></div>
+</section>
+
+<!-- ============ くみたて ============ -->
+<section role="tabpanel" id="p-build" aria-labelledby="tab-build" hidden>
+  <div class="panel">
+    <h2>🧱 3つえらんで、コードを組み立てる</h2>
+    <p class="lead">文章がうまく書けないときはこちら。「いつ」「どうやって」「なにを」を選ぶだけで、動くコードの形になります。</p>
+    <div class="grid2">
+      <div>
+        <h3>① いつ（きっかけ）</h3><div class="chips" id="bTrig"></div>
+        <h3>② どうやって（くりかえし・じょうけん）</h3><div class="chips" id="bLoop"></div>
+      </div>
+      <div>
+        <h3>③ なにを する（いくつ選んでもOK）</h3><div class="chips" id="bAct"></div>
+        <h3>おまけ：条件に使うもの</h3><div class="chips" id="bCond"></div>
+      </div>
+    </div>
+    <div class="btnrow"><button class="btn" id="bMake">🧩 組み立てる</button>
+      <button class="btn sub" id="bReset">選び直す</button></div>
+  </div>
+  <div id="buildResult"></div>
+</section>
+
+<!-- ============ なおす ============ -->
+<section role="tabpanel" id="p-fix" aria-labelledby="tab-fix" hidden>
+  <div class="panel">
+    <h2>🔍 うまく動かないときの診断</h2>
+    <p class="lead">A：症状から調べる　／　B：コードのスクリーンショットを貼りつけて、あやしい場所を図にする。</p>
+    <h3>A. どんな様子ですか？</h3>
+    <div class="chips" id="symChips"></div>
+    <div id="symResult"></div>
+  </div>
+
+  <div class="panel">
+    <h3>B. スクリーンショットを貼りつけて診断</h3>
+    <p class="lead">スクラッチの画面を <kbd>Windows</kbd>+<kbd>Shift</kbd>+<kbd>S</kbd> で切り取り、この画面で <kbd>Ctrl</kbd>+<kbd>V</kbd> を押す（ドラッグ＆ドロップ、ファイル選択でもOK）。ブロックの色を読み取り、足りないブロックの候補に印をつけた図を作ります。</p>
+    <div class="dropzone" id="drop">
+      <strong>ここに画像を貼りつけ / ドロップ</strong><br>
+      <span class="muted">または</span> <button class="btn sub mini" id="pickBtn">ファイルを選ぶ</button>
+      <input type="file" id="file" accept="image/*" class="hidden">
+    </div>
+    <div id="shotArea" class="hidden">
+      <div class="btnrow">
+        <label class="muted">気になる症状：</label>
+        <select id="shotSym" style="max-width:26rem"></select>
+        <button class="btn" id="shotGo">🖍 図をつくる</button>
+        <button class="btn sub" id="shotSave">画像を保存</button>
+        <button class="btn sub" id="shotClear">消す</button>
+      </div>
+      <div class="legend" id="shotLegend"></div>
+      <div class="canvwrap"><canvas id="cv"></canvas></div>
+      <div id="shotFindings"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 計測・制御 ============ -->
+<section role="tabpanel" id="p-mb" aria-labelledby="tab-mb" hidden>
+  <div class="panel">
+    <h2>📡 マイクロビットで計測・制御</h2>
+    <p class="lead">センサ（計測）→ 判断（条件） → アクチュエータ（制御）の型でコードを覚えよう。MakeCodeのコードは、コピーして <b>JavaScript画面に貼りつける</b> とブロックに戻ります。</p>
+    <div class="chips" id="mbFilter"></div>
+  </div>
+  <div id="mbList"></div>
+</section>
+
+<!-- ============ 対応表 ============ -->
+<section role="tabpanel" id="p-dict" aria-labelledby="tab-dict" hidden>
+  <div class="panel"><h2>📖 スクラッチ ⇄ MakeCode 対応表</h2>
+    <p class="lead">同じ意味のブロックを並べました。スクラッチで考えた流れを、そのままマイクロビットに移せます。</p>
+    <div id="dictTable"></div>
+  </div>
+  <div class="panel"><h2>⚠️ スクラッチの micro:bit 拡張機能でできること・できないこと</h2>
+    <div id="dictLimit"></div>
+  </div>
+  <div class="panel"><h2>🗂 用語のミニ辞典</h2><div id="dictTerms"></div></div>
+</section>
+
+<!-- ============ 先生用 ============ -->
+<section role="tabpanel" id="p-teach" aria-labelledby="tab-teach" hidden>
+  <div id="teachBody"></div>
+</section>
+</main>
+<footer>
+  ブロックコーチ － 中学校技術・家庭科（技術分野）D 情報の技術／計測・制御 の学習支援用。
+  インターネットに接続せず、この1ファイルだけで動きます。入力した文章が外部に送られることはありません。
+</footer>
+<script>
+"use strict";
+/* =======================================================================
+   1. ブロック定義テーブル（表示ラベル＋sb3書き出し情報）
+   ======================================================================= */
+const OPS = {
+  /* --- イベント --- */
+  event_whenflagclicked:{c:'events',t:'⚑ が押されたとき',hat:1},
+  event_whenkeypressed:{c:'events',t:'{KEY_OPTION} キーが押されたとき',hat:1,fields:['KEY_OPTION']},
+  event_whenthisspriteclicked:{c:'events',t:'このスプライトが押されたとき',hat:1},
+  event_whenbroadcastreceived:{c:'events',t:'{BROADCAST_OPTION} を受け取ったとき',hat:1,fields:['BROADCAST_OPTION'],noexp:1},
+  event_broadcast:{c:'events',t:'{BROADCAST_INPUT} を送る',noexp:1},
+  /* --- 制御 --- */
+  control_wait:{c:'control',t:'{DURATION} 秒待つ'},
+  control_forever:{c:'control',t:'ずっと',sub:1,cap:1},
+  control_repeat:{c:'control',t:'{TIMES} 回繰り返す',sub:1},
+  control_repeat_until:{c:'control',t:'{CONDITION} まで繰り返す',sub:1,bool:['CONDITION']},
+  control_if:{c:'control',t:'もし {CONDITION} なら',sub:1,bool:['CONDITION']},
+  control_if_else:{c:'control',t:'もし {CONDITION} なら',sub:1,sub2:1,else:'でなければ',bool:['CONDITION']},
+  control_stop:{c:'control',t:'{STOP_OPTION} を止める',fields:['STOP_OPTION'],stopmut:1},
+  control_wait_until:{c:'control',t:'{CONDITION} まで待つ',bool:['CONDITION']},
+  /* --- 動き --- */
+  motion_movesteps:{c:'motion',t:'{STEPS} 歩動かす'},
+  motion_turnright:{c:'motion',t:'↻ {DEGREES} 度回す'},
+  motion_turnleft:{c:'motion',t:'↺ {DEGREES} 度回す'},
+  motion_gotoxy:{c:'motion',t:'x座標を {X} 、y座標を {Y} にする'},
+  motion_changexby:{c:'motion',t:'x座標を {DX} ずつ変える'},
+  motion_changeyby:{c:'motion',t:'y座標を {DY} ずつ変える'},
+  motion_pointindirection:{c:'motion',t:'{DIRECTION} 度に向ける'},
+  motion_ifonedgebounce:{c:'motion',t:'もし端に着いたら、跳ね返る'},
+  motion_setrotationstyle:{c:'motion',t:'回転方法を {STYLE} にする',fields:['STYLE']},
+  motion_xposition:{c:'motion',t:'x座標',rep:1},
+  /* --- 見た目 --- */
+  looks_sayforsecs:{c:'looks',t:'{MESSAGE} と {SECS} 秒言う'},
+  looks_say:{c:'looks',t:'{MESSAGE} と言う'},
+  looks_changesizeby:{c:'looks',t:'大きさを {CHANGE} ずつ変える'},
+  looks_setsizeto:{c:'looks',t:'大きさを {SIZE} %にする'},
+  looks_nextcostume:{c:'looks',t:'次のコスチュームにする'},
+  looks_show:{c:'looks',t:'表示する'},
+  looks_hide:{c:'looks',t:'隠す'},
+  /* --- 音（書き出しは対象外：音は自分で選ぶ） --- */
+  sound_play:{c:'sound',t:'{SOUND_MENU} の音を鳴らす',noexp:1},
+  sound_playuntildone:{c:'sound',t:'終わるまで {SOUND_MENU} の音を鳴らす',noexp:1},
+  /* --- 調べる --- */
+  sensing_touchingobject:{c:'sensing',t:'{TOUCHINGOBJECTMENU} に触れた',rep:1,boolrep:1,
+    menu:{TOUCHINGOBJECTMENU:'sensing_touchingobjectmenu'}},
+  sensing_keypressed:{c:'sensing',t:'{KEY_OPTION} キーが押された',rep:1,boolrep:1,
+    menu:{KEY_OPTION:'sensing_keyoptions'}},
+  sensing_mousedown:{c:'sensing',t:'マウスが押された',rep:1,boolrep:1},
+  sensing_askandwait:{c:'sensing',t:'{QUESTION} と聞いて待つ'},
+  sensing_answer:{c:'sensing',t:'答え',rep:1},
+  sensing_timer:{c:'sensing',t:'タイマー',rep:1},
+  sensing_resettimer:{c:'sensing',t:'タイマーをリセット'},
+  /* --- 演算 --- */
+  operator_gt:{c:'operators',t:'{OPERAND1} > {OPERAND2}',rep:1,boolrep:1},
+  operator_lt:{c:'operators',t:'{OPERAND1} < {OPERAND2}',rep:1,boolrep:1},
+  operator_equals:{c:'operators',t:'{OPERAND1} = {OPERAND2}',rep:1,boolrep:1},
+  operator_and:{c:'operators',t:'{OPERAND1} かつ {OPERAND2}',rep:1,boolrep:1,bool:['OPERAND1','OPERAND2']},
+  operator_or:{c:'operators',t:'{OPERAND1} または {OPERAND2}',rep:1,boolrep:1,bool:['OPERAND1','OPERAND2']},
+  operator_not:{c:'operators',t:'{OPERAND} ではない',rep:1,boolrep:1,bool:['OPERAND']},
+  operator_add:{c:'operators',t:'{NUM1} ＋ {NUM2}',rep:1},
+  operator_subtract:{c:'operators',t:'{NUM1} － {NUM2}',rep:1},
+  operator_random:{c:'operators',t:'{FROM} から {TO} までの乱数',rep:1},
+  /* --- 変数 --- */
+  data_setvariableto:{c:'variables',t:'{VARIABLE} を {VALUE} にする',var:'VARIABLE'},
+  data_changevariableby:{c:'variables',t:'{VARIABLE} を {VALUE} ずつ変える',var:'VARIABLE'},
+  data_variable:{c:'variables',t:'{VARIABLE}',rep:1,var:'VARIABLE'},
+  /* --- micro:bit 拡張機能（表示のみ・sb3書き出しは対象外） --- */
+  microbit_whenbuttonpressed:{c:'microbit',t:'ボタン {BTN} が押されたとき',hat:1,noexp:1,fields:['BTN']},
+  microbit_isbuttonpressed:{c:'microbit',t:'ボタン {BTN} が押された',rep:1,boolrep:1,noexp:1,fields:['BTN']},
+  microbit_whengesture:{c:'microbit',t:'{GESTURE} とき',hat:1,noexp:1,fields:['GESTURE']},
+  microbit_displaytext:{c:'microbit',t:'{TEXT} を表示する',noexp:1},
+  microbit_displaysymbol:{c:'microbit',t:'{SYMBOL} を表示する',noexp:1,fields:['SYMBOL']},
+  microbit_displayclear:{c:'microbit',t:'表示を消す',noexp:1},
+  microbit_whentilted:{c:'microbit',t:'{DIRECTION} に傾いたとき',hat:1,noexp:1,fields:['DIRECTION']},
+  microbit_istilted:{c:'microbit',t:'{DIRECTION} に傾いた',rep:1,boolrep:1,noexp:1,fields:['DIRECTION']},
+  microbit_tiltangle:{c:'microbit',t:'{DIRECTION} の傾き',rep:1,noexp:1,fields:['DIRECTION']},
+  microbit_whenpinconnected:{c:'microbit',t:'端子 {PIN} がつながったとき',hat:1,noexp:1,fields:['PIN']},
+  /* --- Microbit More 拡張機能（表示のみ） --- */
+  mbmore_lightlevel:{c:'microbit',t:'明るさ',rep:1,noexp:1},
+  mbmore_temperature:{c:'microbit',t:'温度',rep:1,noexp:1},
+  mbmore_analog:{c:'microbit',t:'端子 {PIN} のアナログ値',rep:1,noexp:1,fields:['PIN']},
+  mbmore_digitalset:{c:'microbit',t:'端子 {PIN} を {LEVEL} にする',noexp:1,fields:['PIN','LEVEL']},
+  mbmore_servo:{c:'microbit',t:'端子 {PIN} のサーボを {ANGLE} 度にする',noexp:1,fields:['PIN']}
+};
+
+/* =======================================================================
+   2. ブロック描画（Scratch風）
+   ======================================================================= */
+const esc = s => String(s).replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]));
+
+function slotHTML(v, isBool){
+  if(v && typeof v==='object' && v.op) return renderReporter(v);
+  if(isBool) return '<span class="slot bool"><span>'+esc(v==null?'':v)+'</span></span>';
+  return '<span class="slot">'+esc(v==null?'':v)+'</span>';
+}
+function labelHTML(b){
+  const d=OPS[b.op]; if(!d) return esc(b.op);
+  const vals=Object.assign({},b.fl||{},b.in||{});
+  const bools=d.bool||[];
+  return esc(d.t).replace(/\{([A-Z_0-9]+)\}/g,(m,key)=>{
+    const raw=vals[key];
+    if(d.rep && d.var===key) return esc(raw==null?'':raw);
+    const isDrop = (d.fields&&d.fields.indexOf(key)>=0) || (d.menu&&d.menu[key]) || (d.var===key);
+    if(isDrop && !(raw&&raw.op)) return '<span class="drop">'+esc(raw==null?'':raw)+' ▾</span>';
+    return slotHTML(raw, bools.indexOf(key)>=0);
+  });
+}
+function renderReporter(b){
+  const d=OPS[b.op]||{c:'operators'};
+  const cls='blk c-'+d.c+(d.boolrep?' bool-inline':'');
+  const st='padding:0 .5rem;min-height:1.45rem;font-size:.82rem;margin:0;'+
+    (d.boolrep?'border-radius:4px;':'border-radius:999px;');
+  return '<span class="'+cls+'" style="'+st+'">'+labelHTML(b)+'</span>';
+}
+function renderBlock(b,path){
+  const d=OPS[b.op]; if(!d) return '';
+  const id=' data-bid="'+esc(path)+'"';
+  const mk=b.mark?' mark':'';
+  let h='<div class="blk c-'+d.c+(d.hat?' hat':'')+mk+'"'+id+'>'+labelHTML(b)+'</div>';
+  if(d.sub){
+    h+='<div class="cwrap b-'+d.c+'"><div class="cin stack">'+renderStack(b.sub||[],path+'-a')+'</div></div>';
+    if(d.sub2){
+      h+='<div class="blk c-'+d.c+'" style="border-radius:0 6px 6px 0">'+esc(d.else)+'</div>';
+      h+='<div class="cwrap b-'+d.c+'"><div class="cin stack">'+renderStack(b.sub2||[],path+'-b')+'</div></div>';
+    }
+    h+='<div class="cfoot f-'+d.c+'"></div>';
+  }
+  return h;
+}
+function renderStack(list,path){
+  path=path||'s';
+  if(!list||!list.length) return '<div class="muted" style="font-size:.8rem;padding:.1rem .3rem">（ここにブロックを入れる）</div>';
+  return '<div class="stack">'+list.map((b,i)=>renderBlock(b,path+i)).join('')+'</div>';
+}
+function renderScript(list){ return '<div class="blocks">'+renderStack(list)+'</div>'; }
+
+/* MakeCode風ブロック：[カテゴリ, 文字, 子] の入れ子配列 */
+function renderMC(list){
+  const one=n=>{
+    const [cat,txt,kids]=n;
+    let h='<div class="blk" style="background:var(--mc-'+cat+')">'+esc(txt)+'</div>';
+    if(kids&&kids.length){
+      h+='<div class="cwrap" style="border-color:var(--mc-'+cat+')"><div class="cin stack">'+
+         kids.map(one).join('')+'</div></div>'+
+         '<div class="cfoot" style="background:var(--mc-'+cat+')"></div>';
+    }
+    return h;
+  };
+  return '<div class="blocks"><div class="stack">'+list.map(one).join('')+'</div></div>';
+}
+function hl(code){
+  return esc(code)
+    .replace(/(\/\/[^\n]*)/g,'<span class="c">$1</span>')
+    .replace(/(&quot;[^&]*?&quot;)/g,'<span class="s">$1</span>')
+    .replace(/\b(function|if|else|let|for|while|true|false|return)\b/g,'<span class="k">$1</span>')
+    .replace(/\b(\d+)\b/g,'<span class="n">$1</span>');
+}
+
+/* =======================================================================
+   3. .sb3（スクラッチ形式）書き出し  ※ZIPを自前で組み立てるので外部ライブラリ不要
+   ======================================================================= */
+const ASSETS = {
+  bg:{id:'cb5367e2884919dacc43db46240bc880',
+      svg:'<svg version="1.1" width="2" height="2" viewBox="0 0 2 2" xmlns="http://www.w3.org/2000/svg"><g/></svg>'},
+  cos:{id:'f9309ecae37901fb1e6b47b074abd4d7',
+      svg:'<svg version="1.1" width="96" height="96" viewBox="0 0 96 96" xmlns="http://www.w3.org/2000/svg">'+
+      '<rect x="6" y="14" width="84" height="68" rx="16" fill="#4C97FF" stroke="#2E6FD9" stroke-width="4"/>'+
+      '<circle cx="34" cy="44" r="7" fill="#ffffff"/><circle cx="62" cy="44" r="7" fill="#ffffff"/>'+
+      '<circle cx="34" cy="45" r="3" fill="#123"/><circle cx="62" cy="45" r="3" fill="#123"/>'+
+      '<path d="M32 62 q16 12 32 0" stroke="#ffffff" stroke-width="5" fill="none" stroke-linecap="round"/>'+
+      '<path d="M18 14 l8 -12 M78 14 l-8 -12" stroke="#2E6FD9" stroke-width="5" stroke-linecap="round"/></svg>'}
+};
+const TEXTIN = ['MESSAGE','QUESTION','TEXT','VALUE','OPERAND1','OPERAND2','STRING1','STRING2'];
+
+function canExport(list){
+  let ok=true;
+  const walk=l=>(l||[]).forEach(b=>{
+    if(!OPS[b.op]||OPS[b.op].noexp) ok=false;
+    if(b.in) for(const k in b.in){const v=b.in[k]; if(v&&v.op) walk([v]);}
+    walk(b.sub); walk(b.sub2);
+  });
+  walk(list); return ok;
+}
+function buildProject(script){
+  const blocks={}, vars={}; let n=0;
+  const nid=()=>'bc'+(++n)+'k';
+  const varId=name=>{ if(!vars[name]) vars[name]={id:'v'+(Object.keys(vars).length+1)+'-bc',name:name}; return vars[name].id; };
+  function addBlock(b,parent){
+    const d=OPS[b.op], id=nid();
+    const o={opcode:b.op,next:null,parent:parent||null,inputs:{},fields:{},shadow:false,topLevel:false};
+    blocks[id]=o;
+    const fl=b.fl||{}, iv=b.in||{};
+    if(d.fields) d.fields.forEach(k=>{ o.fields[k]=[String(fl[k]!==undefined?fl[k]:(iv[k]!==undefined?iv[k]:'')),null]; });
+    if(d.var){ const nm=String(fl[d.var]!==undefined?fl[d.var]:(iv[d.var]!==undefined?iv[d.var]:'変数')); o.fields[d.var]=[nm,varId(nm)]; }
+    if(d.stopmut) o.mutation={tagName:'mutation',children:[],hasnext:'false'};
+    if(d.menu) for(const k in d.menu){
+      const mid=nid(), val=String(fl[k]!==undefined?fl[k]:(iv[k]!==undefined?iv[k]:''));
+      blocks[mid]={opcode:d.menu[k],next:null,parent:id,inputs:{},fields:{},shadow:true,topLevel:false};
+      blocks[mid].fields[k]=[val,null];
+      o.inputs[k]=[1,mid];
+    }
+    for(const k in iv){
+      if((d.menu&&d.menu[k])||d.var===k||(d.fields&&d.fields.indexOf(k)>=0)) continue;
+      const v=iv[k], isBool=(d.bool||[]).indexOf(k)>=0;
+      const shadow = TEXTIN.indexOf(k)>=0 ? [10,''] : [4,''];
+      if(v&&typeof v==='object'&&v.op){
+        const cid=addBlock(v,id);
+        o.inputs[k]= isBool ? [2,cid] : [3,cid,shadow];
+      }else if(v!==undefined&&v!==null&&!isBool){
+        o.inputs[k]=[1,[TEXTIN.indexOf(k)>=0?10:4,String(v)]];
+      }
+    }
+    if(d.sub){ const s=addStack(b.sub||[],id); if(s) o.inputs.SUBSTACK=[2,s]; }
+    if(d.sub2){ const s=addStack(b.sub2||[],id); if(s) o.inputs.SUBSTACK2=[2,s]; }
+    return id;
+  }
+  function addStack(list,parent){
+    let first=null,prev=null;
+    (list||[]).forEach(b=>{ const id=addBlock(b,prev||parent); if(!first)first=id; if(prev)blocks[prev].next=id; prev=id; });
+    return first;
+  }
+  const top=addStack(script,null);
+  if(top){ blocks[top].topLevel=true; blocks[top].parent=null; blocks[top].x=70; blocks[top].y=70; }
+  const stageVars={};
+  Object.keys(vars).forEach(nm=>{ stageVars[vars[nm].id]=[nm,0]; });
+  const cos=(name,a,w)=>({name:name,bitmapResolution:1,dataFormat:'svg',assetId:a.id,md5ext:a.id+'.svg',
+    rotationCenterX:w,rotationCenterY:w});
+  return {targets:[
+    {isStage:true,name:'Stage',variables:stageVars,lists:{},broadcasts:{},blocks:{},comments:{},currentCostume:0,
+     costumes:[cos('背景1',ASSETS.bg,0)],sounds:[],volume:100,layerOrder:0,tempo:60,videoTransparency:50,
+     videoState:'off',textToSpeechLanguage:null},
+    {isStage:false,name:'スプライト1',variables:{},lists:{},broadcasts:{},blocks:blocks,comments:{},currentCostume:0,
+     costumes:[cos('コスチューム1',ASSETS.cos,48)],sounds:[],volume:100,layerOrder:1,visible:true,
+     x:0,y:0,size:100,direction:90,draggable:false,rotationStyle:'all around'}
+  ],monitors:[],extensions:[],meta:{semver:'3.0.0',vm:'0.2.0',agent:'block-coach'}};
+}
+const CRCT=(()=>{const t=new Uint32Array(256);for(let i=0;i<256;i++){let c=i;for(let k=0;k<8;k++)c=(c&1)?(0xEDB88320^(c>>>1)):(c>>>1);t[i]=c>>>0;}return t;})();
+function crc32(u8){let c=0xFFFFFFFF;for(let i=0;i<u8.length;i++)c=CRCT[(c^u8[i])&0xFF]^(c>>>8);return (c^0xFFFFFFFF)>>>0;}
+function zipStore(files){
+  const enc=new TextEncoder(), parts=[], cen=[]; let off=0;
+  files.forEach(f=>{
+    const nm=enc.encode(f.name), crc=crc32(f.data), sz=f.data.length;
+    const lh=new Uint8Array(30+nm.length), lv=new DataView(lh.buffer);
+    lv.setUint32(0,0x04034b50,true); lv.setUint16(4,20,true); lv.setUint16(6,0,true); lv.setUint16(8,0,true);
+    lv.setUint16(10,0,true); lv.setUint16(12,0x21,true); lv.setUint32(14,crc,true);
+    lv.setUint32(18,sz,true); lv.setUint32(22,sz,true); lv.setUint16(26,nm.length,true); lv.setUint16(28,0,true);
+    lh.set(nm,30); parts.push(lh,f.data);
+    const ch=new Uint8Array(46+nm.length), cv=new DataView(ch.buffer);
+    cv.setUint32(0,0x02014b50,true); cv.setUint16(4,20,true); cv.setUint16(6,20,true); cv.setUint16(8,0,true);
+    cv.setUint16(10,0,true); cv.setUint16(12,0,true); cv.setUint16(14,0x21,true); cv.setUint32(16,crc,true);
+    cv.setUint32(20,sz,true); cv.setUint32(24,sz,true); cv.setUint16(28,nm.length,true);
+    cv.setUint16(30,0,true); cv.setUint16(32,0,true); cv.setUint16(34,0,true); cv.setUint16(36,0,true);
+    cv.setUint32(38,0,true); cv.setUint32(42,off,true); ch.set(nm,46); cen.push(ch);
+    off += lh.length + sz;
+  });
+  let cenSize=0; cen.forEach(c=>cenSize+=c.length);
+  const eo=new Uint8Array(22), ev=new DataView(eo.buffer);
+  ev.setUint32(0,0x06054b50,true); ev.setUint16(4,0,true); ev.setUint16(6,0,true);
+  ev.setUint16(8,files.length,true); ev.setUint16(10,files.length,true);
+  ev.setUint32(12,cenSize,true); ev.setUint32(16,off,true); ev.setUint16(20,0,true);
+  return new Blob(parts.concat(cen,[eo]),{type:'application/zip'});
+}
+function downloadBlob(blob,name){
+  const a=document.createElement('a'), u=URL.createObjectURL(blob);
+  a.href=u; a.download=name; document.body.appendChild(a); a.click();
+  setTimeout(()=>{URL.revokeObjectURL(u); a.remove();},400);
+}
+function exportSb3(script,title){
+  const enc=new TextEncoder();
+  const json=JSON.stringify(buildProject(script));
+  downloadBlob(zipStore([
+    {name:'project.json',data:enc.encode(json)},
+    {name:ASSETS.bg.id+'.svg',data:enc.encode(ASSETS.bg.svg)},
+    {name:ASSETS.cos.id+'.svg',data:enc.encode(ASSETS.cos.svg)}
+  ]), (title||'program').replace(/[\\/:*?"<>|\s]/g,'_')+'.sb3');
+}
+
+/* =======================================================================
+   4. パターンライブラリ（やりたいこと → コード）
+   ======================================================================= */
+const PATTERNS = [
+{id:'p-forever-move', title:'旗を押したら、ずっと動き続ける', plat:'scratch', lv:1,
+ goal:'スタートしたら、止まらずに前へ進ませたい',
+ kw2:['ずっと','うごきつづけ','動き続け','とまらない','止まらない','永遠','えんえん'],
+ kw:['うごか','動か','すすむ','進む','ぜんしん','前進','はた','旗','すたーと','スタート','くりかえ','繰り返'],
+ sc:[{op:'event_whenflagclicked'},{op:'control_forever',sub:[{op:'motion_movesteps',in:{STEPS:10}}]}],
+ why:'「ずっと」の中に入れたブロックは、プログラムを止めるまで何度も実行されます。旗をクリックしてから終わりまで動き続ける形です。',
+ miss:['「ずっと」の中ではなく、下にくっつけている（→1回しか動かない）',
+       '「10歩動かす」だけを置いて、きっかけ（旗）をつけ忘れている'],
+ next:'「10」の数字を大きくすると速くなります。変数にすると、途中でスピードを変えられます。'},
+
+{id:'p-bounce', title:'画面の端に着いたら跳ね返る', plat:'scratch', lv:1,
+ goal:'画面の外に出ていかないようにしたい',
+ kw2:['はねかえ','跳ね返','はしにつ','端に着','がめんのそと','画面の外','そとにでる','外に出','そとにいって','外に行って','でていって','出ていって'],
+ kw:['きえ','消え','みえなく','見えなく','いなくなる','もどって','戻って','はし','端'],
+ sc:[{op:'event_whenflagclicked'},{op:'motion_setrotationstyle',fl:{STYLE:'左右のみ'}},
+     {op:'control_forever',sub:[{op:'motion_movesteps',in:{STEPS:10}},{op:'motion_ifonedgebounce'}]}],
+ why:'「もし端に着いたら、跳ね返る」を「ずっと」の中に入れて、毎回チェックさせます。回転方法を「左右のみ」にしておくと、逆さまになりません。',
+ miss:['「跳ね返る」を「ずっと」の外に置いている（1回しかチェックされない）',
+       '回転方法を設定せず、キャラクターが上下逆さまになる'],
+ next:'x座標・y座標を表示して、端が x=±240 / y=±180 であることを確かめてみよう。'},
+
+{id:'p-arrow', title:'矢印キーでキャラクターを動かす', plat:'scratch', lv:1,
+ goal:'キーボードの矢印で上下左右に動かしたい',
+ kw2:['やじるし','矢印','じょうげさゆう','上下左右','きーぼーど','キーボード','そうさ','操作','うごかしたい'],
+ kw:['きー','キー','みぎ','右','ひだり','左','うえ','上','した','下','そうじゅう','操縦','うごか','動か'],
+ sc:[{op:'event_whenflagclicked'},
+     {op:'control_forever',sub:[
+       {op:'control_if',in:{CONDITION:{op:'sensing_keypressed',fl:{KEY_OPTION:'右向き矢印'}}},
+        sub:[{op:'motion_changexby',in:{DX:10}}]},
+       {op:'control_if',in:{CONDITION:{op:'sensing_keypressed',fl:{KEY_OPTION:'左向き矢印'}}},
+        sub:[{op:'motion_changexby',in:{DX:-10}}]},
+       {op:'control_if',in:{CONDITION:{op:'sensing_keypressed',fl:{KEY_OPTION:'上向き矢印'}}},
+        sub:[{op:'motion_changeyby',in:{DY:10}}]},
+       {op:'control_if',in:{CONDITION:{op:'sensing_keypressed',fl:{KEY_OPTION:'下向き矢印'}}},
+        sub:[{op:'motion_changeyby',in:{DY:-10}}]}]}],
+ why:'「ずっと」の中で4つの「もし〜なら」を使い、押されているキーを毎回調べます。「キーが押されたとき」の帽子ブロックより、なめらかに動きます。',
+ miss:['「もし」を「ずっと」の外に置いた（1回しか反応しない）',
+       '左に動かすとき -10 ではなく 10 を入れている'],
+ next:'斜めにも動かせるのが、この書き方のよいところ。速さを変数にしてみよう。'},
+
+{id:'p-key-action', title:'スペースキーを押したら何かをする', plat:'scratch', lv:1,
+ goal:'キーを押したときだけ動作させたい',
+ kw2:['すぺーす','スペース','おしたら','押したら','おすと','押すと','きーをおし'],
+ kw:['きー','キー','じゃんぷ','ジャンプ','はっしゃ','発射','おと','音','こうげき','攻撃'],
+ sc:[{op:'event_whenkeypressed',fl:{KEY_OPTION:'スペース'}},
+     {op:'looks_sayforsecs',in:{MESSAGE:'ジャンプ！',SECS:1}},
+     {op:'motion_changeyby',in:{DY:50}},{op:'control_wait',in:{DURATION:0.3}},
+     {op:'motion_changeyby',in:{DY:-50}}],
+ why:'「〜キーが押されたとき」は、押した瞬間に1回だけ動き出す帽子ブロックです。押しっぱなしで連続させたいときは、矢印キーの例のように「ずっと＋もし」を使います。',
+ miss:['押しっぱなしにしたいのに帽子ブロックを使い、反応がカクカクする',
+       '同じキーの帽子ブロックを2つ作って、両方が同時に動いてしまう'],
+ next:'「ずっと」＋「もし〜なら」に書きかえて、動きの違いを比べてみよう。'},
+
+{id:'p-touch', title:'何かに触れたら止まる／音を鳴らす', plat:'scratch', lv:2,
+ goal:'ぶつかったことを判定したい',
+ kw2:['ふれたら','触れたら','ぶつかっ','当たっ','あたっ','しょうとつ','衝突','せっしょく','接触'],
+ kw:['とまる','止まる','ていし','停止','はんてい','判定','せんさ','センサ','いろ','色'],
+ sc:[{op:'event_whenflagclicked'},
+     {op:'control_forever',sub:[{op:'motion_movesteps',in:{STEPS:5}},
+       {op:'control_if',in:{CONDITION:{op:'sensing_touchingobject',fl:{TOUCHINGOBJECTMENU:'端'}}},
+        sub:[{op:'looks_sayforsecs',in:{MESSAGE:'ぶつかった！',SECS:1}},{op:'control_stop',fl:{STOP_OPTION:'すべて'}}]}]}],
+ why:'センサ（調べるブロック）→ 判断（もし〜なら）→ 動作、という計測・制御と同じ流れです。判定は「ずっと」の中に入れて、くり返し調べるのがポイント。',
+ miss:['触れたかどうかを1回しか調べていない','「すべてを止める」の位置が違い、止めたくないものまで止まる'],
+ next:'「端」を別のスプライトや色に変えると、ゲームの当たり判定になります。'},
+
+{id:'p-repeat-n', title:'決まった回数だけくりかえす', plat:'scratch', lv:1,
+ goal:'〇回だけ同じ動きをさせたい',
+ kw2:['かいくりかえ','回繰り返','かいだけ','回だけ','なんかい','何回','４かい','4回','10かい'],
+ kw:['くりかえ','繰り返','ループ','しかく','四角','しかくけい','四角形','さんかく','三角','ごかっけい','せいほうけい','正方形','ずけい','図形','えをかき','絵を描','かきたい','描きたい'],
+ sc:[{op:'event_whenflagclicked'},
+     {op:'control_repeat',in:{TIMES:4},sub:[{op:'motion_movesteps',in:{STEPS:100}},{op:'motion_turnright',in:{DEGREES:90}}]}],
+ why:'回数が決まっているときは「〇回繰り返す」。終わらせたくないときは「ずっと」。この2つの使い分けが大事です。',
+ miss:['回数と角度が合わず、図形が閉じない（四角形なら 4回×90度）','「ずっと」を使って止まらなくなる'],
+ next:'3回×120度で三角形、5回×72度で五角形。「360 ÷ 回数」が角度になります。'},
+
+{id:'p-wait', title:'〇秒待ってから次に進む', plat:'scratch', lv:1,
+ goal:'動きの間（ま）をつくりたい',
+ kw2:['びょうまつ','秒待','まってから','待ってから','じかんをあけ','時間をあけ','ゆっくり'],
+ kw:['まつ','待つ','はやすぎ','速すぎ','たいみんぐ','タイミング','いっしゅん','一瞬'],
+ sc:[{op:'event_whenflagclicked'},
+     {op:'control_repeat',in:{TIMES:10},sub:[{op:'motion_changexby',in:{DX:20}},{op:'control_wait',in:{DURATION:0.5}}]}],
+ why:'「待つ」を入れないと、コンピュータは一瞬で処理を終えてしまい、人の目には見えません。動きを見せたいときは必ず間を入れます。',
+ miss:['待つブロックがなく、一瞬で終わって何も見えない','待つ秒数が長すぎて反応が悪くなる'],
+ next:'0.1秒ずつなど、数字を変えて「見える速さ」を探してみよう。'},
+
+{id:'p-if-else', title:'もし〜なら…でなければ…（2つに分ける）', plat:'scratch', lv:2,
+ goal:'条件によって動きを変えたい',
+ kw2:['でなければ','ばあいわけ','場合分け','じょうけんぶんき','条件分岐','わける','分ける','ちがうとき','違うとき'],
+ kw:['もし','じょうけん','条件','はんだん','判断','いがい','以外','そうでな'],
+ sc:[{op:'event_whenflagclicked'},
+     {op:'control_forever',sub:[
+       {op:'control_if_else',in:{CONDITION:{op:'sensing_keypressed',fl:{KEY_OPTION:'スペース'}}},
+        sub:[{op:'looks_say',in:{MESSAGE:'押されている'}}],
+        sub2:[{op:'looks_say',in:{MESSAGE:'押されていない'}}]}]}],
+ why:'「もし〜なら・でなければ」は、条件が成り立つときと、そうでないときの2通りに必ず分かれます。ONとOFFを切りかえる制御の基本形です。',
+ miss:['「でなければ」側にブロックを入れ忘れ、状態が戻らない','「もし〜なら」を2つ並べて、両方動いてしまう'],
+ next:'「押されている／いない」をライトのON/OFFに置きかえると、そのまま制御プログラムになります。'},
+
+{id:'p-variable', title:'変数で点数（回数）を数える', plat:'scratch', lv:2,
+ goal:'得点やカウントを記録したい',
+ kw2:['へんすう','変数','てんすう','点数','とくてん','得点','かうんと','カウント','かぞえ','数え','すこあ','スコア'],
+ kw:['ふやす','増やす','きろく','記録','ごうけい','合計','たまる','たす','足す'],
+ sc:[{op:'event_whenflagclicked'},{op:'data_setvariableto',fl:{VARIABLE:'得点'},in:{VALUE:0}},
+     {op:'control_forever',sub:[
+       {op:'control_if',in:{CONDITION:{op:'sensing_touchingobject',fl:{TOUCHINGOBJECTMENU:'端'}}},
+        sub:[{op:'data_changevariableby',fl:{VARIABLE:'得点'},in:{VALUE:1}},{op:'control_wait',in:{DURATION:0.5}}]}]}],
+ why:'変数は「数をしまっておく箱」。始めに 0 にする（初期化）のを忘れると、前回の値が残ったままになります。',
+ miss:['最初に「0にする」を入れていない（初期化忘れ）','「ずつ変える」と「にする」を取りちがえている',
+       '待つブロックがなく、1回触れただけで点数が一気に増える'],
+ next:'点数が10になったら「すべてを止める」を入れると、ゲームクリアになります。'},
+
+{id:'p-until', title:'〜になるまでくりかえす（条件で終わる）', plat:'scratch', lv:2,
+ goal:'目標に届いたら自動で止めたい',
+ kw2:['までくりかえ','まで繰り返','になるまで','とどくまで','届くまで','たっするまで','達するまで'],
+ kw:['おわり','終わり','しゅうりょう','終了','ゴール','ごーる','とまる','止まる','じょうけん','条件'],
+ sc:[{op:'event_whenflagclicked'},
+     {op:'control_repeat_until',in:{CONDITION:{op:'sensing_touchingobject',fl:{TOUCHINGOBJECTMENU:'端'}}},
+      sub:[{op:'motion_movesteps',in:{STEPS:5}}]},
+     {op:'looks_sayforsecs',in:{MESSAGE:'ゴール！',SECS:2}}],
+ why:'「〜まで繰り返す」は、条件が成り立った瞬間にループを抜けます。センサの値が目標に届くまで動かし続ける制御に使えます。',
+ miss:['条件が絶対に成り立たず、永久に終わらない','条件を逆に書いてしまい、すぐ終わる'],
+ next:'条件を「得点 > 10」などの演算ブロックに変えてみよう。'},
+
+{id:'p-sensor-loop', title:'【計測・制御の基本形】ずっと調べて、条件で動かす', plat:'both', lv:2,
+ goal:'センサの値を見て自動で動かしたい',
+ kw2:['くらくなったら','暗くなったら','くらくなると','あかるさが','明るさが','せんさ','センサ','じどう','自動','せいぎょ','制御','けいそく','計測','しきいち','しきい値','いじょうになったら','以上になったら','よるになったら'],
+ kw:['あかるさ','明るさ','くらい','暗い','くらく','暗く','あかるい','明るい','ひかり','光','ひかりせんさ','光センサ','らいと','ライト','でんき','電気','てんとう','点灯','よる','夜','おんど','温度','ねつ','熱','はんだん','判断','ちかづい','近づい'],
+ sc:[{op:'event_whenflagclicked'},
+     {op:'control_forever',sub:[
+       {op:'control_if_else',in:{CONDITION:{op:'operator_lt',in:{OPERAND1:{op:'mbmore_lightlevel'},OPERAND2:50}}},
+        sub:[{op:'mbmore_digitalset',fl:{PIN:'P0',LEVEL:'ON'}}],
+        sub2:[{op:'mbmore_digitalset',fl:{PIN:'P0',LEVEL:'OFF'}}]}]}],
+ why:'計測・制御のプログラムは、ほぼこの形です。①ずっと（くり返す）②センサの値を調べる（計測）③条件で判断する④出力を変える（制御）。「ずっと」がないと、最初の1回しか測りません。',
+ miss:['「ずっと」の外に判断を置き、1回しか測らない','「でなければ」でOFFに戻す処理を書かず、点きっぱなしになる',
+       'しきい値が実際の測定値と合っていない（まず値を表示して確かめる）'],
+ next:'しきい値は必ず「先に測ってから」決めます。MakeCodeなら serial で値を確認しましょう。',
+ mc:{code:'basic.forever(function () {\n    if (input.lightLevel() < 50) {\n        pins.digitalWritePin(DigitalPin.P0, 1)\n    } else {\n        pins.digitalWritePin(DigitalPin.P0, 0)\n    }\n})',
+     blocks:[['basic','ずっと',[['logic','もし 明るさ < 50 なら',[['pins','デジタルで出力 端子 P0 に 1']]],['logic','でなければ',[['pins','デジタルで出力 端子 P0 に 0']]]]]]}},
+
+{id:'p-and-or', title:'2つの条件を組み合わせる（かつ／または）', plat:'scratch', lv:3,
+ goal:'条件を2つ同時に調べたい',
+ kw2:['かつ','または','ふたつのじょうけん','2つの条件','りょうほう','両方','どちらか','あんど','おあ'],
+ kw:['そして','かさなっ','重なっ','くみあわせ','組み合わせ','どうじ','同時'],
+ sc:[{op:'event_whenflagclicked'},
+     {op:'control_forever',sub:[
+       {op:'control_if',in:{CONDITION:{op:'operator_and',
+          in:{OPERAND1:{op:'sensing_keypressed',fl:{KEY_OPTION:'右向き矢印'}},
+              OPERAND2:{op:'sensing_keypressed',fl:{KEY_OPTION:'上向き矢印'}}}}},
+        sub:[{op:'looks_say',in:{MESSAGE:'ななめ移動！'}},{op:'motion_changexby',in:{DX:7}},{op:'motion_changeyby',in:{DY:7}}]}]}],
+ why:'「かつ」は両方とも成り立つときだけ、「または」はどちらか一方でも成り立てば実行されます。制御では「暗くて、かつ、スイッチON」のような条件に使います。',
+ miss:['「かつ」と「または」を取りちがえている','条件ブロックのはめ込み先をまちがえている'],
+ next:'「〜ではない」（not）と組み合わせると、より細かい条件が作れます。'},
+
+{id:'p-timer', title:'タイマーで時間を測る／制限時間をつくる', plat:'scratch', lv:2,
+ goal:'時間を計りたい・制限時間をつけたい',
+ kw2:['たいまー','タイマー','せいげんじかん','制限時間','じかんをはか','時間を測','びょうご','秒後','かうんとだうん'],
+ kw:['じかん','時間','はかる','測る','のこり','残り','タイム'],
+ sc:[{op:'event_whenflagclicked'},{op:'sensing_resettimer'},
+     {op:'control_repeat_until',in:{CONDITION:{op:'operator_gt',in:{OPERAND1:{op:'sensing_timer'},OPERAND2:10}}},
+      sub:[{op:'motion_changexby',in:{DX:5}},{op:'motion_ifonedgebounce'}]},
+     {op:'looks_sayforsecs',in:{MESSAGE:'時間切れ！',SECS:2}}],
+ why:'「タイマーをリセット」で0に戻してから使います。リセットを忘れると、アプリを開いてからの時間がそのまま入っています。',
+ miss:['タイマーのリセットを忘れる','「>」の左右を逆に入れている'],
+ next:'micro:bit では input.runningTime() が同じ働きをします。'},
+
+{id:'p-ask', title:'質問して、答えで動きを変える', plat:'scratch', lv:2,
+ goal:'入力した文字や数で分岐させたい',
+ kw2:['しつもん','質問','きいて','聞いて','こたえ','答え','にゅうりょく','入力'],
+ kw:['なまえ','名前','かいわ','会話','はなす','話す','クイズ','くいず'],
+ sc:[{op:'event_whenflagclicked'},{op:'sensing_askandwait',in:{QUESTION:'何歳ですか？'}},
+     {op:'control_if_else',in:{CONDITION:{op:'operator_gt',in:{OPERAND1:{op:'sensing_answer'},OPERAND2:12}}},
+      sub:[{op:'looks_sayforsecs',in:{MESSAGE:'中学生ですね',SECS:2}}],
+      sub2:[{op:'looks_sayforsecs',in:{MESSAGE:'小学生かな？',SECS:2}}]}],
+ why:'「聞いて待つ」の結果は「答え」ブロックに入ります。答えは使うたびに上書きされるので、あとで使うなら変数に入れておきます。',
+ miss:['「答え」を変数に保存せず、次の質問で消えてしまう','文字と数の比較を混同している'],
+ next:'答えを変数に入れて、複数の質問を続けて聞いてみよう。'}
+];
+
+/* --- micro:bit（スクラッチ拡張機能／MakeCode） --- */
+PATTERNS.push(
+{id:'mb-button-sc', title:'micro:bit のボタンAでスプライトを動かす', plat:'scratch', lv:2,
+ goal:'マイクロビットのボタンでスクラッチを操作したい',
+ kw2:['ぼたんa','ボタンa','ぼたんをおし','ボタンを押し','まいくろびっと','マイクロビット','microbit','micro:bit'],
+ kw:['ぼたん','ボタン','そうさ','操作','こんとろーら','コントローラ','れんけい','連携','かくちょう','拡張'],
+ sc:[{op:'microbit_whenbuttonpressed',fl:{BTN:'A'}},{op:'motion_changexby',in:{DX:20}},
+     {op:'looks_sayforsecs',in:{MESSAGE:'Aが押された',SECS:1}}],
+ why:'スクラッチの拡張機能「micro:bit」を追加すると、ボタン・ゆさぶり・傾き・LED表示が使えます。使う前に Scratch Link と micro:bit のペアリングが必要です。',
+ miss:['拡張機能を追加していない（左下の「拡張機能を追加」から）','micro:bit に専用のHEXを書き込んでいない',
+       'Scratch Link が起動していない／ペアリングが切れている'],
+ next:'ボタンBや「AとB」も選べます。押しっぱなしを判定したいときは「ずっと＋もし〈ボタンAが押された〉なら」にします。'},
+
+{id:'mb-tilt-sc', title:'micro:bit を傾けてスプライトを動かす', plat:'scratch', lv:2,
+ goal:'かたむきで操作したい',
+ kw2:['かたむけ','傾け','かたむき','傾き','けいしゃ','傾斜','ハンドル','はんどる','かたむけて','傾けて','かたむけたら','傾けたら'],
+ kw:['うごか','動か','そうさ','操作','かたむく','じゅうりょく','重力','センサ','せんさ'],
+ sc:[{op:'event_whenflagclicked'},
+     {op:'control_forever',sub:[
+       {op:'control_if',in:{CONDITION:{op:'microbit_istilted',fl:{DIRECTION:'右'}}},sub:[{op:'motion_changexby',in:{DX:10}}]},
+       {op:'control_if',in:{CONDITION:{op:'microbit_istilted',fl:{DIRECTION:'左'}}},sub:[{op:'motion_changexby',in:{DX:-10}}]}]}],
+ why:'傾きセンサ（加速度センサ）の値を「ずっと」の中で調べ続けます。「〜に傾いた」は成り立っている間ずっと true になります。',
+ miss:['「ずっと」を使わず1回しか調べていない','傾きの向きが逆（micro:bit の向きを確かめる）'],
+ next:'「〈右〉の傾き」（角度の数値）を使うと、傾けた分だけ速くする、なめらかな操作ができます。'},
+
+{id:'mb-shake-sc', title:'micro:bit をゆさぶったら反応する', plat:'scratch', lv:1,
+ goal:'ふったら何か起きるようにしたい',
+ kw2:['ゆさぶ','ゆすっ','ふったら','振ったら','しんどう','振動','シェイク'],
+ kw:['うごかしたら','さいころ','サイコロ','らんすう','乱数','はんのう','反応'],
+ sc:[{op:'microbit_whengesture',fl:{GESTURE:'ゆさぶられた'}},
+     {op:'data_setvariableto',fl:{VARIABLE:'出た目'},in:{VALUE:{op:'operator_random',in:{FROM:1,TO:6}}}},
+     {op:'looks_sayforsecs',in:{MESSAGE:'サイコロ！',SECS:1}}],
+ why:'「ゆさぶられた とき」はジェスチャーを使った帽子ブロックです。落とした・ジャンプしたなども選べます。',
+ miss:['小さく振りすぎて反応しない','変数を作らずに「出た目」を使おうとしている'],
+ next:'MakeCode なら input.onGesture(Gesture.Shake, …) が同じ働きです。'},
+
+{id:'mb-display-sc', title:'micro:bit の LED に文字や模様を出す', plat:'scratch', lv:1,
+ goal:'マイクロビットの画面に表示したい',
+ kw2:['えるいーでぃー','LED','led','ひょうじ','表示','もじをだ','文字を出','もよう','模様','はーと','ハート'],
+ kw:['がめん','画面','ひからせ','光らせ','ひかる','光る','でぃすぷれい'],
+ sc:[{op:'event_whenflagclicked'},{op:'microbit_displaysymbol',fl:{SYMBOL:'ハート'}},
+     {op:'control_wait',in:{DURATION:1}},{op:'microbit_displaytext',in:{TEXT:'Hello!'}},
+     {op:'control_wait',in:{DURATION:2}},{op:'microbit_displayclear'}],
+ why:'文字を表示している間、次のブロックはすぐ実行されます。消えないときは「表示を消す」を入れましょう。',
+ miss:['表示を消さず、ずっと出たままになる','日本語を表示しようとして出ない（英数字のみ）'],
+ next:'MakeCode の basic.showString("Hello") / basic.showIcon(IconNames.Heart) と同じです。',
+ mc:{code:'basic.showIcon(IconNames.Heart)\nbasic.pause(1000)\nbasic.showString("Hello!")\nbasic.clearScreen()',
+     blocks:[['basic','アイコンを表示 ♥'],['basic','一時停止 1000 ミリ秒'],['basic','文字列を表示 "Hello!"'],['basic','画面を消す']]}},
+
+{id:'mc-basic', title:'【MakeCode】「最初だけ」と「ずっと」の使い分け', plat:'microbit', lv:1,
+ goal:'MakeCodeの基本の形を知りたい',
+ kw2:['さいしょだけ','最初だけ','めいくこーど','メイクコード','makecode','きほんのかたち','基本の形'],
+ kw:['はじめ','初め','しょきか','初期化','ずっと','くりかえ','繰り返','つかいわけ','使い分け'],
+ sc:null,
+ why:'「最初だけ」は電源を入れたときに1回だけ実行されます（初期化や設定に使う）。「ずっと」はその後、永遠にくり返されます（計測と制御はここに書く）。',
+ miss:['初期化を「ずっと」に入れてしまい、値が毎回リセットされる','計測を「最初だけ」に入れて、1回しか測らない'],
+ next:'変数のリセット・無線グループの設定・端子の初期状態は「最初だけ」へ。',
+ mc:{code:'let count = 0\nbasic.forever(function () {\n    count += 1\n    basic.showNumber(count)\n    basic.pause(500)\n})',
+     blocks:[['basic','最初だけ',[['variables','変数 count を 0 にする']]],
+             ['basic','ずっと',[['variables','count を 1 だけ増やす'],['basic','数を表示 count'],['basic','一時停止 500 ミリ秒']]]]}},
+
+{id:'mc-button-out', title:'【MakeCode】ボタンAで出力ON、ボタンBでOFF', plat:'microbit', lv:1,
+ goal:'ボタンでモーターやライトを動かしたい',
+ kw2:['ぼたんでうごか','ボタンで動か','もーたー','モーター','もーた','ライトをつけ','らいとをつけ','でんきをつけ','電気をつけ'],
+ kw:['ぼたん','ボタン','しゅつりょく','出力','たんし','端子','p0','ON','OFF','てんとう','点灯','せいぎょ','制御'],
+ sc:null,
+ why:'ボタンAが押されたとき端子P0に1（ON）、ボタンBで0（OFF）を出力します。モータードライバやLEDをつなぐときの、いちばん基本の制御です。',
+ miss:['digitalWritePin を「ずっと」の中に入れ、ONにした直後にOFFで上書きしている',
+       '0V（GND）を共通につないでいない','出力のつもりで analogReadPin（入力）を使っている'],
+ next:'モーターの回転数を変えたいときは analogWritePin（0〜1023）を使います。',
+ mc:{code:'input.onButtonPressed(Button.A, function () {\n    pins.digitalWritePin(DigitalPin.P0, 1)\n    basic.showIcon(IconNames.Yes)\n})\ninput.onButtonPressed(Button.B, function () {\n    pins.digitalWritePin(DigitalPin.P0, 0)\n    basic.showIcon(IconNames.No)\n})',
+     blocks:[['input','ボタン A が押されたとき',[['pins','デジタルで出力 端子 P0 に 1'],['basic','アイコンを表示 ✓']]],
+             ['input','ボタン B が押されたとき',[['pins','デジタルで出力 端子 P0 に 0'],['basic','アイコンを表示 ✗']]]]}},
+
+{id:'mc-temp', title:'【MakeCode】温度が高くなったらファンを回す', plat:'microbit', lv:2,
+ goal:'温度センサで自動制御したい',
+ kw2:['おんど','温度','あつく','暑く','ふぁん','ファン','せんぷうき','扇風機','れいきゃく','冷却','おんどけい'],
+ kw:['せんさ','センサ','じどう','自動','しきいち','しきい値','ど','度','はんだん','判断'],
+ sc:null,
+ why:'計測（温度）→判断（28度以上か）→制御（ファンON/OFF）。「ずっと」の中に入れて、くり返し測り続けるのがポイントです。',
+ miss:['しきい値を決める前に測っていない（まず現在の温度を表示する）',
+       '「でなければ」でOFFに戻さず、一度ONになると止まらない',
+       'micro:bit の温度はCPUの温度なので、実際の室温よりやや高めに出ることに注意'],
+ next:'ON/OFFが細かく切りかわるときは、ONは28度以上・OFFは26度未満のように差をつけます（ヒステリシス）。',
+ mc:{code:'basic.forever(function () {\n    basic.showNumber(input.temperature())\n    if (input.temperature() >= 28) {\n        pins.digitalWritePin(DigitalPin.P1, 1)\n    } else {\n        pins.digitalWritePin(DigitalPin.P1, 0)\n    }\n    basic.pause(1000)\n})',
+     blocks:[['basic','ずっと',[['basic','数を表示 温度'],
+        ['logic','もし 温度 ≧ 28 なら',[['pins','デジタルで出力 端子 P1 に 1']]],
+        ['logic','でなければ',[['pins','デジタルで出力 端子 P1 に 0']]],
+        ['basic','一時停止 1000 ミリ秒']]]]}},
+
+{id:'mc-analog', title:'【MakeCode】センサの値を測って記録する（計測）', plat:'microbit', lv:2,
+ goal:'センサの値を調べたい・グラフにしたい',
+ kw2:['あなろぐ','アナログ','あたいをみ','値を見','そくてい','測定','ぐらふ','グラフ','きろく','記録','しりある','シリアル'],
+ kw:['けいそく','計測','せんさ','センサ','すうち','数値','しらべ','調べ','ひかり','光','あかるさ','明るさ'],
+ sc:null,
+ why:'制御プログラムを作る前に、まず「今いくつなのか」を測ります。serial.writeValue で送った値は、MakeCode の「データを表示する」ボタンでグラフとCSVになります。',
+ miss:['しきい値を勝手に決めてしまい、実際の値と合わない','一時停止がなく、データが多すぎて読めない',
+       'アナログ入力に使える端子（P0/P1/P2など）を確認していない'],
+ next:'測った表から、明るいとき・暗いときの数値を読み取り、その真ん中をしきい値にすると安定します。',
+ mc:{code:'basic.forever(function () {\n    let v = pins.analogReadPin(AnalogPin.P0)\n    serial.writeValue("sensor", v)\n    basic.showNumber(v)\n    basic.pause(500)\n})',
+     blocks:[['basic','ずっと',[['variables','変数 v を アナログで読み取る 端子 P0 にする'],
+        ['serial','シリアル通信 "sensor" の値 v を書き出す'],['basic','数を表示 v'],['basic','一時停止 500 ミリ秒']]]]}},
+
+{id:'mc-servo', title:'【MakeCode】サーボモーターを角度で動かす', plat:'microbit', lv:2,
+ goal:'サーボを決まった角度に動かしたい',
+ kw2:['さーぼ','サーボ','かくど','角度','ど','どうかす','ばー','バー','しゃだんき','遮断機','あーむ','アーム'],
+ kw:['もーた','モータ','うごか','動か','かいてん','回転','90','180','せいぎょ','制御'],
+ sc:null,
+ why:'サーボは「角度」を指定して動かすアクチュエータです。0〜180度の範囲で指定します。動いている途中でも次の命令が来るので、pause で待ちます。',
+ miss:['pause を入れず、動き切る前に次の角度を指示している','micro:bitの端子から直接電源を取り、電流不足で動かない（外部電源を使う）',
+       'サーボをつなぐ端子を P0 以外にしたのに、プログラムは P0 のまま'],
+ next:'センサの値を map で 0〜180 に変換すると、明るさに応じて角度が変わる装置になります。',
+ mc:{code:'input.onButtonPressed(Button.A, function () {\n    pins.servoWritePin(AnalogPin.P0, 0)\n    basic.pause(1000)\n    pins.servoWritePin(AnalogPin.P0, 90)\n})',
+     blocks:[['input','ボタン A が押されたとき',[['pins','サーボ 出力する 端子 P0 に 0'],
+        ['basic','一時停止 1000 ミリ秒'],['pins','サーボ 出力する 端子 P0 に 90']]]]}},
+
+{id:'mc-radio', title:'【MakeCode】無線で値を送る・受け取る（遠隔制御）', plat:'microbit', lv:3,
+ goal:'2台のmicro:bitで通信したい',
+ kw2:['むせん','無線','らじお','ラジオ','radio','つうしん','通信','おくる','送る','うけとる','受け取る','えんかく','遠隔','2だい','2台'],
+ kw:['とばす','飛ばす','りもこん','リモコン','ぐるーぷ','グループ','ぺあ'],
+ sc:null,
+ why:'送る側と受け取る側で、必ず同じグループ番号（0〜255）を「最初だけ」で設定します。班ごとに番号を変えると混信しません。',
+ miss:['グループ番号が合っていない','送信側と受信側で同じプログラムを書いてしまっている',
+       'radio.setGroup を「ずっと」に入れている'],
+ next:'受け取った値でモーターを制御すれば、遠隔操作のロボットになります。',
+ mc:{code:'// ---- 送る側 ----\nradio.setGroup(1)\ninput.onButtonPressed(Button.A, function () {\n    radio.sendNumber(1)\n})\n\n// ---- 受け取る側（別のmicro:bitに書き込む）----\n// radio.setGroup(1)\n// radio.onReceivedNumber(function (receivedNumber) {\n//     if (receivedNumber == 1) {\n//         pins.digitalWritePin(DigitalPin.P0, 1)\n//     }\n// })',
+     blocks:[['basic','最初だけ',[['radio','無線のグループを 1 に設定']]],
+             ['input','ボタン A が押されたとき',[['radio','無線で数値を送信 1']]],
+             ['radio','無線で受信したとき receivedNumber',[['logic','もし receivedNumber = 1 なら',[['pins','デジタルで出力 端子 P0 に 1']]]]]]}},
+
+{id:'mc-hyst', title:'【MakeCode・発展】ON/OFFがバタつくのを直す（しきい値に幅）', plat:'microbit', lv:3,
+ goal:'しきい値の前後で動作が安定しない',
+ kw2:['ばたつ','がたが','ちかちか','チカチカ','ふあんてい','不安定','こきざみ','小刻み','ひすてりしす','ちゃたりんぐ'],
+ kw:['しきいち','しきい値','あんてい','安定','きりかわ','切り替わ','なおし','直し','せいぎょ','制御'],
+ sc:null,
+ why:'しきい値ちょうどの値を行ったり来たりすると、ONとOFFが高速でくり返されます。ONにする値とOFFにする値に差をつけると安定します（ヒステリシス）。',
+ miss:['ON条件とOFF条件を同じ値にしている','pause が短すぎて反応が忙しない'],
+ next:'実際の製品（エアコン・冷蔵庫）も同じしくみです。生徒に「なぜ差をつけるのか」を説明させると理解が深まります。',
+ mc:{code:'let on = false\nbasic.forever(function () {\n    let light = input.lightLevel()\n    if (!on && light < 40) {\n        on = true\n    } else if (on && light > 60) {\n        on = false\n    }\n    pins.digitalWritePin(DigitalPin.P0, on ? 1 : 0)\n    basic.pause(200)\n})',
+     blocks:[['basic','最初だけ',[['variables','変数 on を false にする']]],
+             ['basic','ずっと',[['variables','変数 light を 明るさ にする'],
+              ['logic','もし on でない かつ light < 40 なら',[['variables','on を true にする']]],
+              ['logic','でなければ もし on かつ light > 60 なら',[['variables','on を false にする']]],
+              ['pins','デジタルで出力 端子 P0 に（on なら 1）'],['basic','一時停止 200 ミリ秒']]]]}}
+);
+
+/* =======================================================================
+   5. つまずき診断ライブラリ（症状 → 原因 → 直し方）
+   ======================================================================= */
+const F=(op,x)=>Object.assign({op:op},x||{});
+const SYMPTOMS = [
+{id:'s-nothing', label:'旗を押しても、何も起きない', look:'events',
+ kw:['なにもおきない','何も起きない','はんのうしない','反応しない','むし','無視','ぜんぜんうごか','全然動か','うんともすんとも','はたをおしても','旗を押しても','スタートしない'],
+ kw1:['うごかない','動かない','うごきません','動きません','できない'],
+ causes:[
+  {t:'きっかけ（黄色のイベントブロック）がついていない',
+   fix:'いちばん上に「⚑ が押されたとき」をつけます。黄色い帽子の形のブロックが、プログラムの入り口です。',
+   bad:[F('motion_movesteps',{in:{STEPS:10},mark:1})],
+   good:[F('event_whenflagclicked'),F('motion_movesteps',{in:{STEPS:10}})]},
+  {t:'ブロックがくっついていない（すき間がある）',
+   fix:'ブロック同士をドラッグして、カチッとはまるまで近づけます。離れているブロックは実行されません。'},
+  {t:'別のスプライト（または背景）にコードを書いている',
+   fix:'画面右下で、動かしたいスプライトが選ばれているか確かめます。'},
+  {t:'すでに実行中で、同じ場所をくり返している',
+   fix:'いったん赤い停止ボタンを押してから、もう一度旗を押します。'}]},
+
+{id:'s-once', label:'1回しか動かない／一瞬で終わってしまう', look:'control',
+ kw:['いっかいしか','1回しか','一回しか','かいしか','回しか','しかうごか','しか動か','いちどしか','一度しか','いっしゅん','一瞬','すぐおわる','すぐ終わる','つづかない','続かない','1かいしか'],
+ kw1:['いっかい','1回','一回','とまってしまう','みえない'],
+ causes:[
+  {t:'動かすブロックが「ずっと」の外にある',
+   fix:'くり返したいブロックを「ずっと」の中（オレンジのCの内側）へドラッグして入れます。',
+   bad:[F('event_whenflagclicked'),F('control_forever',{sub:[]}),F('motion_movesteps',{in:{STEPS:10},mark:1})],
+   good:[F('event_whenflagclicked'),F('control_forever',{sub:[F('motion_movesteps',{in:{STEPS:10}})]})]},
+  {t:'速すぎて見えていない（実際は動いている）',
+   fix:'「〇秒待つ」を入れて、目で追える速さにします。',
+   good:[F('control_repeat',{in:{TIMES:10},sub:[F('motion_changexby',{in:{DX:20}}),F('control_wait',{in:{DURATION:0.3}})]})]}]},
+
+{id:'s-nostop', label:'止まらない／終わってくれない', look:'control',
+ kw:['とまらな','止まらな','おわらな','終わらな','えんえん','永遠','むげん','無限','ずっとうごく','とまってくれ','止まってくれ'],
+ causes:[
+  {t:'「ずっと」には終わりがない',
+   fix:'終わらせたいときは「〈条件〉まで繰り返す」に変えるか、「もし〜なら → すべてを止める」を中に入れます。',
+   bad:[F('control_forever',{mark:1,sub:[F('motion_movesteps',{in:{STEPS:5}})]})],
+   good:[F('control_repeat_until',{in:{CONDITION:F('sensing_touchingobject',{fl:{TOUCHINGOBJECTMENU:'端'}})},
+         sub:[F('motion_movesteps',{in:{STEPS:5}})]}),F('looks_sayforsecs',{in:{MESSAGE:'ゴール！',SECS:2}})]},
+  {t:'終了の条件が絶対に成り立たない',
+   fix:'条件に使っている値を画面に表示して、本当にその値になるのか確かめます。'}]},
+
+{id:'s-if', label:'「もし〜なら」が反応しない', look:'control',
+ kw:['もしがきかない','じょうけんがきかない','条件が効かない','はんていしない','判定しない','はんのうしない','もしなら','きかない','効かない'],
+ causes:[
+  {t:'「もし〜なら」が「ずっと」の外にある',
+   fix:'条件の判定は、一瞬で通り過ぎてしまいます。「ずっと」の中に入れて、くり返し調べさせます。',
+   bad:[F('event_whenflagclicked'),F('control_if',{mark:1,in:{CONDITION:F('sensing_keypressed',{fl:{KEY_OPTION:'スペース'}})},
+        sub:[F('looks_say',{in:{MESSAGE:'押された'}})]})],
+   good:[F('event_whenflagclicked'),F('control_forever',{sub:[
+        F('control_if',{in:{CONDITION:F('sensing_keypressed',{fl:{KEY_OPTION:'スペース'}})},
+        sub:[F('looks_say',{in:{MESSAGE:'押された'}})]})]})]},
+  {t:'不等号の向きが逆、またはしきい値が実際の値と合っていない',
+   fix:'まず値そのものを表示して、どのくらいの数になるのか確かめてから、しきい値を決めます。'},
+  {t:'条件ブロックを六角形のあなにはめ込めていない',
+   fix:'六角形（とがった形）のブロックだけが、条件のあなに入ります。丸い形は入りません。'}]},
+
+{id:'s-var', label:'変数の値がおかしい（増えすぎる・0のまま）', look:'variables',
+ kw:['へんすう','変数','ふえすぎ','増えすぎ','いっきに','一気に','０のまま','0のまま','かわらない','変わらない','てんすうが','得点が'],
+ causes:[
+  {t:'はじめに 0 にしていない（初期化わすれ）',
+   fix:'旗の下に「〈変数〉を 0 にする」を入れます。前回の値が残らないようにするためです。',
+   bad:[F('event_whenflagclicked'),F('control_forever',{sub:[F('data_changevariableby',{fl:{VARIABLE:'得点'},in:{VALUE:1},mark:1})]})],
+   good:[F('event_whenflagclicked'),F('data_setvariableto',{fl:{VARIABLE:'得点'},in:{VALUE:0}}),
+         F('control_forever',{sub:[F('control_if',{in:{CONDITION:F('sensing_touchingobject',{fl:{TOUCHINGOBJECTMENU:'端'}})},
+           sub:[F('data_changevariableby',{fl:{VARIABLE:'得点'},in:{VALUE:1}}),F('control_wait',{in:{DURATION:0.5}})]})]})]},
+  {t:'「〜にする」と「〜ずつ変える」を取りちがえている',
+   fix:'「にする」＝その値に置きかえる。「ずつ変える」＝今の値に足す。目的に合うほうを選びます。'},
+  {t:'条件が成り立っている間ずっと増え続けている',
+   fix:'増やした直後に「0.5秒待つ」を入れるか、一度離れたことを確認してから増やします。'}]},
+
+{id:'s-gone', label:'スプライトが画面から消えた／見つからない', look:'motion',
+ kw:['きえ','消え','みえない','見えない','どこかにいった','がめんのそと','画面の外','いなくなった','ちいさく','小さく','がめんがい','はみだ','はみ出'],
+ causes:[
+  {t:'画面の外まで行ってしまった',
+   fix:'「x座標を 0、y座標を 0 にする」を旗の下に入れて、いつも中央から始めます。跳ね返りも入れましょう。',
+   good:[F('event_whenflagclicked'),F('motion_gotoxy',{in:{X:0,Y:0}}),F('looks_setsizeto',{in:{SIZE:100}}),
+         F('looks_show'),F('control_forever',{sub:[F('motion_movesteps',{in:{STEPS:5}}),F('motion_ifonedgebounce')]})]},
+  {t:'「隠す」のままになっている／大きさが極端',
+   fix:'旗の下に「表示する」「大きさを100%にする」を入れて、毎回同じ状態から始めます。'}]},
+
+{id:'s-upside', label:'キャラクターが逆さまになる', look:'motion',
+ kw:['さかさ','逆さ','ひっくりかえ','ひっくり返','うらがえ','裏返','かいてん','回転','むきがおかしい','向きがおかしい'],
+ causes:[
+  {t:'回転方法が「自由に回転」になっている',
+   fix:'旗の下に「回転方法を〈左右のみ〉にする」を入れます。',
+   good:[F('event_whenflagclicked'),F('motion_setrotationstyle',{fl:{STYLE:'左右のみ'}}),
+         F('control_forever',{sub:[F('motion_movesteps',{in:{STEPS:10}}),F('motion_ifonedgebounce')]})]}]},
+
+{id:'s-conflict', label:'2つのプログラムが取り合って、変な動きになる', look:'events',
+ kw:['ふたつ','2つ','けんか','取り合','かってに','勝手に','がたがた','ぶるぶる','おかしなうごき','変な動き'],
+ causes:[
+  {t:'同じスプライトに、同じきっかけの塊が2つある',
+   fix:'両方とも同時に動いています。1つにまとめるか、片方を消します。使っていない塊はブロックパレットへドラッグして削除。'},
+  {t:'同じ変数を2か所から書きかえている',
+   fix:'変数を変更する場所は、できるだけ1か所にまとめます。'}]},
+
+{id:'s-mbconnect', label:'micro:bit がスクラッチにつながらない', look:null, hw:1,
+ kw:['つながらない','接続できない','せつぞく','接続','ぶるーとぅーす','Bluetooth','ぺありんぐ','ペアリング','scratchlink','リンク'],
+ causes:[
+  {t:'確認のじゅんばん（上から順に試す）',
+   fix:'① Scratch Link が起動しているか（タスクバーに常駐）　② micro:bit に Scratch 用の HEX を書き込んだか　③ micro:bit に電源（USBか電池）が入っているか　④ パソコンの Bluetooth がONか　⑤ ほかの人の micro:bit とつながっていないか　⑥ 一度 micro:bit の裏のリセットボタンを押して、再度ペアリング'},
+  {t:'教室でよく起きること',
+   fix:'複数台が同時に接続しようとすると失敗しやすいです。班ごとに順番に接続すると成功率が上がります。'}]},
+
+{id:'s-mbdownload', label:'MakeCode のプログラムが micro:bit に書き込めない', look:null, hw:1,
+ kw:['かきこめない','書き込めない','だうんろーど','ダウンロード','てんそう','転送','hex','usb','にんしきしない','認識しない'],
+ causes:[
+  {t:'USBケーブルがデータ通信に対応していない',
+   fix:'充電専用ケーブルでは転送できません。データ通信対応のケーブルに替えます。'},
+  {t:'ダウンロードした HEX を MICROBIT ドライブにコピーしていない',
+   fix:'ダウンロードフォルダの .hex ファイルを、「MICROBIT」という名前のドライブにドラッグ＆ドロップします。転送中は黄色のLEDが点滅します。'},
+  {t:'MICROBIT ドライブが出てこない',
+   fix:'別のUSBポートを試す／ケーブルを替える／micro:bit裏面のリセットボタンを押す、の順に試します。'}]},
+
+{id:'s-sensor', label:'センサの値が思ったとおりにならない', look:null, hw:1,
+ kw:['せんさ','センサ','あたいがおかしい','値がおかしい','はんのうしない','しきいち','しきい値','あかるさ','明るさ','おんど','温度','かず'],
+ causes:[
+  {t:'しきい値を測らずに決めている',
+   fix:'まず値を画面に表示（または serial でグラフ化）して、「明るいとき」「暗いとき」の実際の数値を記録します。その真ん中あたりをしきい値にします。',
+   },
+  {t:'測る間隔が短すぎて、値がバタついている',
+   fix:'「一時停止 200〜500ミリ秒」を入れる、または数回測った平均を使います。'},
+  {t:'ON/OFF がチカチカ切りかわる',
+   fix:'ONにする値とOFFにする値に差をつけます（例：40未満でON、60以上でOFF）。「なおす」の発展パターンを参照。'}]},
+
+{id:'s-motor', label:'モーター（LED）が動かない・光らない', look:null, hw:1,
+ kw:['もーた','モータ','まわらない','回らない','ひからない','光らない','うごかない','でんげん','電源','はいせん','配線','らいと'],
+ causes:[
+  {t:'GND（0V）を共通につないでいない',
+   fix:'micro:bit の GND と、外部回路の GND を必ずつなぎます。これを忘れると信号が伝わりません。'},
+  {t:'micro:bit の端子から直接モーターを回そうとしている',
+   fix:'端子から取り出せる電流はごくわずかです。モーターはトランジスタやモータードライバ、外部電源を使って動かします。'},
+  {t:'プログラムの端子番号と、実際につないだ端子が違う',
+   fix:'P0 に配線したのに P1 に出力していないか確認します。まずは LED をつないで、出力そのものが出ているか確かめると切り分けが早いです。'},
+  {t:'digital と analog を取りちがえている',
+   fix:'ON/OFF は digitalWritePin（0か1）、強さを変えるのは analogWritePin（0〜1023）です。'}]}
+];
+
+/* =======================================================================
+   6. 文章から意図を読み取るエンジン
+   ======================================================================= */
+function norm(s){
+  return String(s||'')
+    .replace(/[Ａ-Ｚａ-ｚ０-９]/g,c=>String.fromCharCode(c.charCodeAt(0)-0xFEE0))
+    .replace(/[ァ-ヶ]/g,c=>String.fromCharCode(c.charCodeAt(0)-0x60))
+    .replace(/[－―~〜]/g,'ー')
+    .toLowerCase()
+    .replace(/[\s　、。，．・「」『』()（）!！?？]/g,'');
+}
+const NEG = ['ない','ません','できない','うまくいか','おかしい','こまっ','困っ','ばぐ','バグ','しまう','だめ','ちがう','違う','へん','変な','なおし','直し','えらー','エラー',
+ 'きえた','消えた','ふえすぎ','増えすぎ','なくなっ','こわれ','壊れ','とまらな','止まらな','さかさ','逆さ','つながらな','まわらな','回らな','ひからな','光らな','かきこめ','書き込め','うごきません','動きません','しか動か','しかうごか'];
+function isTrouble(t){ return NEG.some(w=>t.includes(norm(w))); }
+
+function nset(arr){
+  const st=new Set();
+  (arr||[]).forEach(k=>{ const n=norm(k); if(n.length>=2) st.add(n); });
+  return Array.from(st);
+}
+function hitCount(list,t,hits){
+  let c=0; list.forEach(n=>{ if(t.indexOf(n)>=0){ c++; hits.push(n); } }); return c;
+}
+function matchPatterns(text){
+  const t=norm(text);
+  if(!t) return [];
+  const mbHint = /まいくろびっと|microbit|micro:bit|めいくこーど|makecode|ぼたんa|えるいーでぃー|むせん|さーぼ|たんし|せんさ/.test(t);
+  return PATTERNS.map(p=>{
+    if(!p._k2){ p._k2=nset(p.kw2); p._k1=nset(p.kw); }
+    const hits=[];
+    let s = hitCount(p._k2,t,hits)*3 + hitCount(p._k1,t,hits);
+    if(t.indexOf(norm(p.title))>=0) s+=5;
+    if(mbHint && (p.plat==='microbit'||p.plat==='both')) s+=2;
+    if(!mbHint && p.plat==='microbit') s-=1;
+    return {p:p,s:s,hits:Array.from(new Set(hits))};
+  }).filter(r=>r.s>0).sort((a,b)=>b.s-a.s);
+}
+function matchSymptoms(text){
+  const t=norm(text); if(!t) return [];
+  return SYMPTOMS.map(sy=>{
+    if(!sy._k2){ sy._k2=nset(sy.kw); sy._k1=nset(sy.kw1); }
+    const hits=[];
+    let s = hitCount(sy._k2,t,hits)*3 + hitCount(sy._k1,t,hits);
+    if(t.indexOf(norm(sy.label))>=0) s+=5;
+    return {sy:sy,s:s,hits:hits};
+  }).filter(r=>r.s>0).sort((a,b)=>b.s-a.s);
+}
+
+/* ---- 手順の自動生成（コードが組めない生徒向け） ---- */
+function plainLabel(b){
+  const d=OPS[b.op]; if(!d) return b.op;
+  const vals=Object.assign({},b.fl||{},b.in||{});
+  return d.t.replace(/\{([A-Z_0-9]+)\}/g,(m,k)=>{
+    const v=vals[k];
+    if(v&&typeof v==='object'&&v.op) return '〈'+plainLabel(v)+'〉';
+    return '［'+(v==null?'　':v)+'］';
+  });
+}
+function stepsFor(list){
+  const out=[];
+  const walk=(l,where)=>{
+    (l||[]).forEach((b,i)=>{
+      const d=OPS[b.op]||{};
+      const pos = where ? where+'の中に' : (i===0?'コードエリアに':'その下に');
+      out.push(pos+'「'+plainLabel(b)+'」を'+(where?'入れる':'つなげる'));
+      if(d.sub) walk(b.sub,'「'+plainLabel(b)+'」');
+      if(d.sub2) walk(b.sub2,'「でなければ」');
+    });
+  };
+  walk(list,null);
+  return out;
+}
+
+/* =======================================================================
+   7. 結果カードの描画
+   ======================================================================= */
+function platTag(p){
+  if(p.plat==='scratch') return '<span class="tag sc">スクラッチ</span>';
+  if(p.plat==='microbit') return '<span class="tag mb">マイクロビット</span>';
+  return '<span class="tag sc">スクラッチ</span><span class="tag mb">マイクロビット</span>';
+}
+function lvTag(lv){ return '<span class="tag lv">'+['','きほん','ふつう','はってん'][lv||1]+'</span>'; }
+
+function patternCard(p, score, hits, open){
+  let h='<div class="card" data-pid="'+p.id+'">';
+  h+='<h4>🧩 '+esc(p.title)+' '+platTag(p)+lvTag(p.lv);
+  if(score!=null) h+='<span class="score" title="あてはまり度"><i style="width:'+Math.min(100,score*14)+'%"></i></span>';
+  h+='</h4>';
+  h+='<p class="muted" style="margin:.1rem 0 .5rem">ねらい：'+esc(p.goal)+
+     (hits&&hits.length?'　<span class="muted">（読み取った言葉：'+esc(hits.slice(0,6).join('・'))+'）</span>':'')+'</p>';
+
+  if(p.sc){
+    h+='<h3 style="margin-top:.4rem">スクラッチのコード</h3>'+renderScript(p.sc);
+    h+='<div class="btnrow noprint">';
+    if(canExport(p.sc)) h+='<button class="btn green mini" data-sb3="'+p.id+'">⬇ .sb3 で書き出す（スクラッチで開ける）</button>';
+    else h+='<span class="muted">※拡張機能のブロックを含むため、書き出しはできません。図を見ながら組み立てましょう。</span>';
+    h+='<button class="btn sub mini" data-steps="'+p.id+'">📋 組み立て手順を見る</button></div>';
+    h+='<div class="hidden" id="st-'+p.id+'"><ol class="steps">'+
+       stepsFor(p.sc).map(s=>'<li>'+esc(s)+'</li>').join('')+'</ol></div>';
+  }
+  if(p.mc){
+    h+='<h3>MakeCode（マイクロビット）</h3>';
+    if(p.mc.blocks) h+=renderMC(p.mc.blocks);
+    h+='<details><summary>JavaScript のコード（コピーして MakeCode の JavaScript 画面に貼りつけるとブロックに戻ります）</summary>'+
+       '<pre class="code">'+hl(p.mc.code)+'</pre>'+
+       '<div class="btnrow noprint"><button class="btn sub mini" data-copy="'+p.id+'">📄 コードをコピー</button></div></details>';
+  }
+  h+='<div class="note info"><b>しくみ：</b>'+esc(p.why)+'</div>';
+  h+='<details'+(open?' open':'')+'><summary>⚠ よくあるつまずき</summary><ul class="tight">'+
+     p.miss.map(m=>'<li>'+esc(m)+'</li>').join('')+'</ul></details>';
+  h+='<details><summary>🚀 もう一歩すすめると</summary><p style="margin:.3rem 0">'+esc(p.next)+'</p></details>';
+  h+='</div>';
+  return h;
+}
+function symptomCard(sy){
+  let h='<div class="card"><h4>🔍 '+esc(sy.label)+(sy.hw?'<span class="tag">配線・接続</span>':'')+'</h4>';
+  sy.causes.forEach((c,i)=>{
+    h+='<div class="note'+(i===0?' warn':'')+'"><b>げんいん'+(i+1)+'：'+esc(c.t)+'</b><br>'+esc(c.fix)+'</div>';
+    if(c.bad||c.good){
+      h+='<div class="grid2">';
+      if(c.bad) h+='<div><div class="muted">✗ よくある形</div>'+renderScript(c.bad)+'</div>';
+      if(c.good) h+='<div><div class="muted">✓ 直した形</div>'+renderScript(c.good)+'</div>';
+      h+='</div>';
+    }
+  });
+  h+='<div class="note ok"><b>たしかめ方：</b>直したら、旗を1回押して確かめる → うまくいかなければ、ブロックを1つずつクリックして、どこまで動くか確かめる。</div>';
+  h+='</div>';
+  return h;
+}
+
+/* =======================================================================
+   8. 組み立てウィザード（3つ選ぶとコードになる）
+   ======================================================================= */
+const TRIG=[
+ {id:'t1',n:'⚑ 旗が押されたとき',sc:[{op:'event_whenflagclicked'}],mcO:'',mcC:'',mcNote:'// スタート'},
+ {id:'t2',n:'スペースキーが押されたとき',sc:[{op:'event_whenkeypressed',fl:{KEY_OPTION:'スペース'}}],
+   mcO:'input.onButtonPressed(Button.A, function () {',mcC:'})'},
+ {id:'t3',n:'このスプライトが押されたとき',sc:[{op:'event_whenthisspriteclicked'}],
+   mcO:'input.onButtonPressed(Button.A, function () {',mcC:'})'},
+ {id:'t4',n:'micro:bit のボタンAが押されたとき',sc:[{op:'microbit_whenbuttonpressed',fl:{BTN:'A'}}],
+   mcO:'input.onButtonPressed(Button.A, function () {',mcC:'})'},
+ {id:'t5',n:'micro:bit がゆさぶられたとき',sc:[{op:'microbit_whengesture',fl:{GESTURE:'ゆさぶられた'}}],
+   mcO:'input.onGesture(Gesture.Shake, function () {',mcC:'})'}
+];
+const LOOP=[
+ {id:'l0',n:'くりかえさない（1回だけ）',k:'none'},
+ {id:'l1',n:'ずっとくりかえす',k:'forever'},
+ {id:'l2',n:'10回くりかえす',k:'repeat'},
+ {id:'l3',n:'条件が成り立つまでくりかえす',k:'until'}
+];
+const COND=[
+ {id:'c0',n:'（条件なし）',sc:null,mc:null},
+ {id:'c1',n:'端に触れた',sc:{op:'sensing_touchingobject',fl:{TOUCHINGOBJECTMENU:'端'}},mc:null},
+ {id:'c2',n:'右向き矢印キーが押された',sc:{op:'sensing_keypressed',fl:{KEY_OPTION:'右向き矢印'}},
+   mc:'input.buttonIsPressed(Button.A)'},
+ {id:'c3',n:'得点 > 10',sc:{op:'operator_gt',in:{OPERAND1:{op:'data_variable',fl:{VARIABLE:'得点'}},OPERAND2:10}},
+   mc:'count > 10'},
+ {id:'c4',n:'micro:bit のボタンAが押された',sc:{op:'microbit_isbuttonpressed',fl:{BTN:'A'}},
+   mc:'input.buttonIsPressed(Button.A)'},
+ {id:'c5',n:'明るさ < 50（暗い）',sc:{op:'operator_lt',in:{OPERAND1:{op:'mbmore_lightlevel'},OPERAND2:50}},
+   mc:'input.lightLevel() < 50'},
+ {id:'c6',n:'温度 ≧ 28（暑い）',sc:{op:'operator_gt',in:{OPERAND1:{op:'mbmore_temperature'},OPERAND2:28}},
+   mc:'input.temperature() >= 28'}
+];
+const ACT=[
+ {id:'a1',n:'10歩動かす',sc:{op:'motion_movesteps',in:{STEPS:10}},mc:null},
+ {id:'a2',n:'x座標を10ずつ変える',sc:{op:'motion_changexby',in:{DX:10}},mc:null},
+ {id:'a3',n:'右に15度回す',sc:{op:'motion_turnright',in:{DEGREES:15}},mc:null},
+ {id:'a4',n:'もし端に着いたら跳ね返る',sc:{op:'motion_ifonedgebounce'},mc:null},
+ {id:'a5',n:'「こんにちは！」と2秒言う',sc:{op:'looks_sayforsecs',in:{MESSAGE:'こんにちは！',SECS:2}},
+   mc:'basic.showString("Hello!")'},
+ {id:'a6',n:'次のコスチュームにする',sc:{op:'looks_nextcostume'},mc:null},
+ {id:'a7',n:'大きさを10ずつ変える',sc:{op:'looks_changesizeby',in:{CHANGE:10}},mc:null},
+ {id:'a8',n:'得点を1ずつ変える',sc:{op:'data_changevariableby',fl:{VARIABLE:'得点'},in:{VALUE:1}},
+   mc:'count += 1'},
+ {id:'a9',n:'1秒待つ',sc:{op:'control_wait',in:{DURATION:1}},mc:'basic.pause(1000)'},
+ {id:'a10',n:'micro:bit に Hello と表示する',sc:{op:'microbit_displaytext',in:{TEXT:'Hello'}},
+   mc:'basic.showString("Hello")'},
+ {id:'a11',n:'端子P0をON（1を出力）',sc:{op:'mbmore_digitalset',fl:{PIN:'P0',LEVEL:'ON'}},
+   mc:'pins.digitalWritePin(DigitalPin.P0, 1)'},
+ {id:'a12',n:'端子P0をOFF（0を出力）',sc:{op:'mbmore_digitalset',fl:{PIN:'P0',LEVEL:'OFF'}},
+   mc:'pins.digitalWritePin(DigitalPin.P0, 0)'}
+];
+const pick={trig:'t1',loop:'l1',cond:'c0',acts:['a1']};
+
+function composeScript(){
+  const tr=TRIG.find(x=>x.id===pick.trig), lp=LOOP.find(x=>x.id===pick.loop), cd=COND.find(x=>x.id===pick.cond);
+  let body=pick.acts.map(id=>{const a=ACT.find(x=>x.id===id); return JSON.parse(JSON.stringify(a.sc));});
+  if(!body.length) body=[{op:'motion_movesteps',in:{STEPS:10}}];
+  let inner=body;
+  if(cd.sc && lp.k!=='until') inner=[{op:'control_if',in:{CONDITION:cd.sc},sub:body}];
+  let out;
+  if(lp.k==='forever') out=[{op:'control_forever',sub:inner}];
+  else if(lp.k==='repeat') out=[{op:'control_repeat',in:{TIMES:10},sub:inner}];
+  else if(lp.k==='until') out=[{op:'control_repeat_until',in:{CONDITION:cd.sc||{op:'sensing_mousedown'}},sub:inner}];
+  else out=inner;
+  return tr.sc.concat(out);
+}
+function composeMC(){
+  const tr=TRIG.find(x=>x.id===pick.trig), lp=LOOP.find(x=>x.id===pick.loop), cd=COND.find(x=>x.id===pick.cond);
+  const lines=[]; let ind=0;
+  const push=s=>lines.push('    '.repeat(ind)+s);
+  const acts=pick.acts.map(id=>ACT.find(x=>x.id===id));
+  if(tr.mcNote) push(tr.mcNote);
+  if(tr.mcO){ push(tr.mcO); ind++; }
+  if(lp.k==='forever'){ push('basic.forever(function () {'); ind++; }
+  else if(lp.k==='repeat'){ push('for (let i = 0; i < 10; i++) {'); ind++; }
+  else if(lp.k==='until'){ push('while (!('+(cd.mc||'false')+')) {'); ind++; }
+  let closeIf=false;
+  if(cd.sc && lp.k!=='until'){
+    if(cd.mc){ push('if ('+cd.mc+') {'); ind++; closeIf=true; }
+    else push('// ※この条件はスクラッチだけのものです（micro:bit の入力に置きかえよう）');
+  }
+  acts.forEach(a=>{ push(a.mc ? a.mc : '// ※「'+a.n+'」はスクラッチだけの動きです'); });
+  if(closeIf){ ind--; push('}'); }
+  if(lp.k!=='none'){ ind--; push(lp.k==='forever'?'})':'}'); }
+  if(tr.mcC){ ind--; push(tr.mcC); }
+  return lines.join('\n');
+}
+
+/* =======================================================================
+   9. スクリーンショット診断（ブロックの色を読み取って図をつくる）
+   ======================================================================= */
+const CATCOL = [
+ {k:'events',   n:'イベント（きっかけ）', c:[255,191,0]},
+ {k:'control',  n:'制御（ずっと・もし）', c:[255,171,25]},
+ {k:'motion',   n:'動き',                c:[76,151,255]},
+ {k:'looks',    n:'見た目',              c:[153,102,255]},
+ {k:'sound',    n:'音',                  c:[207,99,207]},
+ {k:'sensing',  n:'調べる（センサ）',     c:[92,177,214]},
+ {k:'operators',n:'演算',                c:[89,192,89]},
+ {k:'variables',n:'変数',                c:[255,140,26]},
+ {k:'microbit', n:'micro:bit 拡張',      c:[15,189,140]}
+];
+let shotImg=null, shotStats=null;
+
+function analyzeImage(img){
+  const W=Math.min(420,img.naturalWidth||img.width), sc=W/(img.naturalWidth||img.width);
+  const H=Math.max(1,Math.round((img.naturalHeight||img.height)*sc));
+  const oc=document.createElement('canvas'); oc.width=W; oc.height=H;
+  const cx=oc.getContext('2d',{willReadFrequently:true});
+  cx.imageSmoothingEnabled=false; cx.drawImage(img,0,0,W,H);
+  const px=cx.getImageData(0,0,W,H).data;
+  const st={}; CATCOL.forEach(c=>st[c.k]={n:0,sx:0,sy:0,minY:1e9,maxY:-1,minX:1e9,maxX:-1});
+  const TH=46*46*3;
+  for(let y=0;y<H;y++) for(let x=0;x<W;x++){
+    const i=(y*W+x)*4; if(px[i+3]<200) continue;
+    const r=px[i],g=px[i+1],b=px[i+2];
+    if(Math.abs(r-g)<12&&Math.abs(g-b)<12) continue; /* 白黒グレーは無視 */
+    let best=null,bd=TH;
+    for(let c=0;c<CATCOL.length;c++){
+      const cc=CATCOL[c].c, dr=r-cc[0], dg=g-cc[1], db=b-cc[2], dd=dr*dr+dg*dg+db*db;
+      if(dd<bd){bd=dd;best=CATCOL[c].k;}
+    }
+    if(best){const s=st[best]; s.n++; s.sx+=x; s.sy+=y;
+      if(y<s.minY)s.minY=y; if(y>s.maxY)s.maxY=y; if(x<s.minX)s.minX=x; if(x>s.maxX)s.maxX=x;}
+  }
+  let tot=0; CATCOL.forEach(c=>tot+=st[c.k].n);
+  CATCOL.forEach(c=>{const s=st[c.k];
+    s.pct = tot? s.n/tot*100 : 0;
+    s.cx = s.n? s.sx/s.n/sc : 0; s.cy = s.n? s.sy/s.n/sc : 0;
+    s.top = s.maxY>=0 ? s.minY/sc : 0; s.left = s.maxX>=0 ? s.minX/sc : 0; s.right = s.maxX>=0 ? s.maxX/sc : 0;
+  });
+  st._total=tot; st._area=W*H; st._cover= tot/(W*H)*100;
+  return st;
+}
+function findingsFor(st, symId){
+  const f=[];
+  /* イベントの黄色と制御のオレンジは色が近いため、ふちの画素で誤検出しないよう割合で判定する */
+  const has=k=>st[k].pct>=5 && st[k].n>=60;
+  if(st._cover < 1.2){
+    f.push({lv:'warn',t:'ブロックが小さく写っているかも',
+      m:'コードの部分だけを大きく切り取ると、正しく読み取れます。',k:null});
+  }
+  if(!has('events')&&(has('motion')||has('looks')||has('control')||has('variables')||has('microbit'))){
+    if(has('microbit')){
+      f.push({lv:'note',t:'黄色のきっかけブロックが見あたりません',
+        m:'micro:bit の緑のブロックが「ボタンAが押されたとき」などの帽子の形なら大丈夫です。そうでなければ、いちばん上に「⚑ が押されたとき」を足しましょう。',k:'microbit'});
+    }else{
+      f.push({lv:'warn',t:'きっかけ（黄色のイベントブロック）が見あたりません',
+        m:'いちばん上に「⚑ が押されたとき」などの黄色い帽子ブロックが必要です。これが無いと、旗を押しても動きません。',
+        k:'events',missing:1});
+    }
+  }
+  if(!has('control')&&(has('motion')||has('looks'))){
+    f.push({lv:'warn',t:'くりかえし・条件（オレンジの制御ブロック）が見あたりません',
+      m:'写っている範囲に「ずっと」や「もし〜なら」が見つかりません。これが無いと1回動いて終わります。動きを続けたいときは、オレンジのブロックで囲みます。',
+      k:'control',missing:1});
+  }
+  if(has('events')&&has('control')&&st.events.top > st.control.top + 12){
+    f.push({lv:'note',t:'きっかけブロックが、いちばん上ではないかもしれません',
+      m:'黄色い帽子ブロックは、かならずコードのいちばん上に置きます。位置を確かめましょう。',k:'events'});
+  }
+  if(has('sensing')&&!has('control')){
+    f.push({lv:'warn',t:'調べるブロック（水色）はあるのに、判断（オレンジ）がありません',
+      m:'センサの値は「もし〜なら」と組み合わせて使います。水色のブロックは、六角形のあなにはめ込みます。',k:'sensing'});
+  }
+  if(has('variables')&&!has('events')){
+    f.push({lv:'note',t:'変数（オレンジの丸）を使っています。初期化はできていますか？',
+      m:'旗の下に「〈変数〉を 0 にする」を入れて、始める前にリセットしましょう。',k:'variables'});
+  }
+  if(has('microbit')){
+    f.push({lv:'ok',t:'micro:bit の拡張機能ブロックが写っています',
+      m:'動かないときは、Scratch Link の起動・HEXの書き込み・ペアリングを順に確かめます。',k:'microbit'});
+  }
+  if(!f.length){
+    f.push({lv:'ok',t:'ブロックの種類は、そろっているようです',
+      m:'形の問題ではなく、数値（しきい値・歩数・秒数）や順番が原因かもしれません。下の症状から選んで調べてみましょう。',k:null});
+  }
+  if(symId){
+    const sy=SYMPTOMS.find(s=>s.id===symId);
+    if(sy&&sy.look&&st[sy.look]&&st[sy.look].n>0)
+      f.push({lv:'note',t:'選んだ症状「'+sy.label+'」で注目するところ',
+        m:'この色のブロックの位置と、入れ子（中に入っているか）を確かめましょう。',k:sy.look});
+  }
+  return f;
+}
+function drawShot(symId){
+  const cv=document.getElementById('cv'), ctx=cv.getContext('2d');
+  const maxW=900, sc=Math.min(1,maxW/shotImg.naturalWidth);
+  const iw=Math.round(shotImg.naturalWidth*sc), ih=Math.round(shotImg.naturalHeight*sc);
+  const pad=250, tw=pad-24;
+  const f=findingsFor(shotStats,symId);
+  /* ① 説明文の高さを先に測る */
+  const m=document.createElement('canvas').getContext('2d');
+  let need=32;
+  f.forEach((fi,i)=>{
+    m.font='bold 12px sans-serif'; need=wrapText(m,(i+1)+'. '+fi.t,0,need,tw,15,true)+1;
+    m.font='11px sans-serif';      need=wrapText(m,fi.m,0,need,tw,14,true)+10;
+  });
+  cv.width=iw+pad; cv.height=Math.max(ih,need+16,240);
+  ctx.fillStyle='#ffffff'; ctx.fillRect(0,0,cv.width,cv.height);
+  ctx.drawImage(shotImg,0,0,iw,ih);
+  ctx.strokeStyle='#d7dee9'; ctx.lineWidth=1; ctx.strokeRect(.5,.5,iw-1,ih-1);
+  ctx.fillStyle='#f4f7fb'; ctx.fillRect(iw,0,pad,cv.height);
+  ctx.textBaseline='top';
+  ctx.fillStyle='#1c2430'; ctx.font='bold 13px sans-serif'; ctx.fillText('診断メモ',iw+12,10);
+  let ty=32;
+  f.forEach((fi,i)=>{
+    const num=i+1, col = fi.lv==='warn'?'#d9480f': fi.lv==='ok'?'#0f7b46':'#2f6fd0';
+    const anchorY=ty+6;
+    if(fi.missing){
+      const vis=CATCOL.map(c=>shotStats[c.k]).filter(s2=>s2.pct>=5);
+      const cand=vis.slice().sort((a,b)=>a.top-b.top)[0];
+      const rightEdge=vis.length?Math.max.apply(null,vis.map(s2=>s2.right))*sc:iw*0.5;
+      const topY=cand?cand.top*sc:ih*0.1, leftX=cand?cand.left*sc:iw*0.08;
+      const label=num+'. ここに '+(fi.k==='events'?'きっかけ':'くりかえし')+' が必要かも';
+      ctx.font='bold 13px sans-serif';
+      const w=ctx.measureText(label).width+18, bh=24;
+      let bx,by,arrow;
+      if(rightEdge+14+w < iw-4){ bx=rightEdge+14; by=Math.max(2,topY-2); arrow='left'; }
+      else if(topY>36){ bx=Math.max(4,leftX); by=topY-30; arrow='down'; }
+      else { bx=Math.max(4,Math.min(leftX+40,iw-w-4)); by=Math.min(ih-bh-4,topY+34); arrow='up'; }
+      ctx.fillStyle='rgba(217,72,15,.93)'; ctx.fillRect(bx,by,w,bh);
+      ctx.fillStyle='#fff'; ctx.textBaseline='top'; ctx.fillText(label,bx+9,by+5);
+      ctx.fillStyle='rgba(217,72,15,.93)'; ctx.beginPath();
+      if(arrow==='left'){ ctx.moveTo(bx,by+6); ctx.lineTo(bx-12,by+12); ctx.lineTo(bx,by+18); }
+      else if(arrow==='down'){ ctx.moveTo(bx+16,by+bh); ctx.lineTo(bx+26,by+bh+14); ctx.lineTo(bx+36,by+bh); }
+      else { ctx.moveTo(bx+16,by); ctx.lineTo(bx+26,by-14); ctx.lineTo(bx+36,by); }
+      ctx.fill();
+      ctx.beginPath(); ctx.moveTo(bx+w,by+12); ctx.lineTo(iw+4,anchorY);
+      ctx.strokeStyle=col; ctx.lineWidth=1.5; ctx.setLineDash([4,3]); ctx.stroke(); ctx.setLineDash([]);
+    } else if(fi.k && shotStats[fi.k] && shotStats[fi.k].pct>=5){
+      const x=shotStats[fi.k].cx*sc, y=shotStats[fi.k].cy*sc;
+      ctx.beginPath(); ctx.moveTo(x,y); ctx.lineTo(iw+4,anchorY);
+      ctx.strokeStyle=col; ctx.lineWidth=1.5; ctx.setLineDash([4,3]); ctx.stroke(); ctx.setLineDash([]);
+      ctx.beginPath(); ctx.arc(x,y,15,0,Math.PI*2); ctx.fillStyle='rgba(255,255,255,.88)'; ctx.fill();
+      ctx.lineWidth=3; ctx.strokeStyle=col; ctx.stroke();
+      ctx.fillStyle=col; ctx.font='bold 15px sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillText(String(num),x,y+1); ctx.textAlign='left'; ctx.textBaseline='top';
+    }
+    ctx.fillStyle=col; ctx.font='bold 12px sans-serif';
+    ty=wrapText(ctx,num+'. '+fi.t,iw+12,ty,tw,15)+1;
+    ctx.fillStyle='#55637a'; ctx.font='11px sans-serif';
+    ty=wrapText(ctx,fi.m,iw+12,ty,tw,14)+10;
+  });
+  return f;
+}
+function wrapText(ctx,text,x,y,maxW,lh,dry){
+  const chars=String(text).split(''); let line='';
+  chars.forEach(ch=>{
+    if(ctx.measureText(line+ch).width>maxW){ if(!dry)ctx.fillText(line,x,y); y+=lh; line=ch; }
+    else line+=ch;
+  });
+  if(line){ if(!dry)ctx.fillText(line,x,y); y+=lh; }
+  return y;
+}
+
+/* =======================================================================
+   10. 対応表・用語・先生用ページ
+   ======================================================================= */
+const DICT=[
+ ['プログラムの始まり','⚑ が押されたとき','最初だけ（on start）','旗＝スタート。MakeCodeの「最初だけ」は電源ONで1回だけ。'],
+ ['ずっとくり返す','ずっと','ずっと（basic.forever）','計測・制御のプログラムはここに書く。'],
+ ['決まった回数','10回繰り返す','くりかえし 4回（for）','図形を描くときなど。'],
+ ['待つ','1秒待つ','一時停止 1000 ミリ秒','MakeCodeはミリ秒（1000=1秒）。'],
+ ['条件で分ける','もし〜なら','もし〜なら（logic）','センサの値で判断する部分。'],
+ ['2つに分ける','もし〜なら・でなければ','もし〜なら・でなければ','ON/OFFの切りかえに必須。'],
+ ['くらべる','＜ ＝ ＞','＜ ＝ ＞ ≧ ≦','しきい値との比較。'],
+ ['条件の組み合わせ','かつ／または／ではない','and／or／not','複数センサを使うとき。'],
+ ['変数をつくる','変数を 0 にする','変数 x を 0 にする','初期化は「最初だけ」に書く。'],
+ ['変数を増やす','1 ずつ変える','x を 1 だけ増やす','回数のカウントなど。'],
+ ['乱数','1 から 6 までの乱数','0 から 10 までの乱数を選ぶ','サイコロなど。'],
+ ['ボタン入力','ボタン A が押されたとき（拡張機能）','ボタン A が押されたとき','どちらも同じ考え方。'],
+ ['ゆさぶり','ゆさぶられた とき（拡張機能）','ゆさぶられた とき','加速度センサ。'],
+ ['傾き','〈右〉に傾いた（拡張機能）','傾斜 (°) ロール','MakeCodeは角度の数値が取れる。'],
+ ['明るさ（光センサ）','公式拡張機能には無し ※','明るさ（input.lightLevel）','0〜255。計測・制御で使うならMakeCode。'],
+ ['温度','公式拡張機能には無し ※','温度（input.temperature）','℃。CPU温度なのでやや高め。'],
+ ['アナログ入力','公式拡張機能には無し ※','アナログで読み取る 端子 P0','0〜1023。外部センサはここ。'],
+ ['デジタル出力','公式拡張機能には無し ※','デジタルで出力 端子 P0 に 1','LED・モータードライバのON/OFF。'],
+ ['サーボ','公式拡張機能には無し ※','サーボ 出力する 端子 P0 に 90','0〜180度。'],
+ ['LED表示','〈ハート〉を表示する（拡張機能）','アイコンを表示 ♥','5×5のLED。'],
+ ['文字表示','Hello を表示する（拡張機能）','文字列を表示 "Hello"','英数字のみ。'],
+ ['音','〈ニャー〉の音を鳴らす','音を鳴らす 高さ ド（music）','micro:bitはブザーを使う。'],
+ ['通信・連携','メッセージを送る（スプライト間）','無線で数値を送信（radio）','2台以上で使う遠隔制御。']
+];
+const TERMS=[
+ ['計測','センサを使って、明るさ・温度・傾きなどの状態を数値として取り込むこと。'],
+ ['制御','計測した値をもとに判断し、モーターやライトなどを目的どおりに動かすこと。'],
+ ['センサ','外の様子を電気信号に変える部品。micro:bitには光・温度・加速度・磁気などが内蔵されている。'],
+ ['アクチュエータ','電気信号を動きや光・音に変える部品。モーター、サーボ、LED、ブザーなど。'],
+ ['しきい値','「ここを超えたら動かす」という境目の数値。必ず先に測ってから決める。'],
+ ['入力→処理→出力','計測（入力）→ 判断（処理）→ 制御（出力）。すべての制御プログラムの骨組み。'],
+ ['順次・分岐・反復','プログラムの3つの基本形。上から順に／条件で分かれて／くり返す。'],
+ ['初期化','始める前に、変数や出力を決まった状態に戻すこと。忘れると前回の値が残る。'],
+ ['デバッグ','思いどおりに動かない原因を見つけて直すこと。「どこまで動くか」を切り分けるのがコツ。'],
+ ['フローチャート','処理の流れを図で表したもの。ブロックを組む前に、これを書くと迷わない。']
+];
+const TEACH = `
+<div class="panel"><h2>🧑‍🏫 配布と使い方</h2>
+<ul class="tight">
+<li>このファイル（block-coach.html）1つだけで動きます。<b>インターネット接続は不要</b>、インストールも不要です。</li>
+<li>配布方法：共有フォルダ・Teams/Classroom・USBメモリなどで配り、生徒はデスクトップに置いて<b>ダブルクリック</b>するだけ。</li>
+<li>入力した文章や画像は外部に送信されません（すべてブラウザの中だけで処理します）。個人情報の心配なく使えます。</li>
+<li>右上の「文字を大きく」で表示を拡大できます。「印刷」で、今開いているタブをそのままワークシートとして印刷／PDF保存できます。</li>
+</ul></div>
+
+<div class="panel"><h2>📚 授業での使いどころ（例）</h2>
+<table><tr><th>場面</th><th>使うタブ</th><th>ねらい／声かけ</th></tr>
+<tr><td>自分で組める生徒</td><td>🎯 つくる → 🚀 もう一歩</td><td>提案をそのまま使わせず、「この数字を変えるとどうなる？」と発展課題へ。</td></tr>
+<tr><td>手が止まる生徒</td><td>🧱 くみたて</td><td>「いつ・どうやって・なにを」の3択で形にする。まず動かす体験を先にする。</td></tr>
+<tr><td>つまずいた生徒</td><td>🔍 なおす</td><td>教師を呼ぶ前に自己診断。「どの症状？」と問うだけで原因を言語化できる。</td></tr>
+<tr><td>スクラッチ→micro:bit</td><td>📖 対応表</td><td>同じ考え方が別の道具でも使えることを確認（転移）。</td></tr>
+<tr><td>計測・制御の設計</td><td>📡 計測・制御</td><td>「①ずっと ②測る ③判断 ④出力」の型を全員で共有する。</td></tr>
+</table>
+<h3>3時間の展開例</h3>
+<ol class="steps">
+<li><b>第1時</b>　Scratchで「ずっと＋もし〜なら」を体験（つくる／くみたてタブ）。センサ＝「調べる」ブロックだと気づかせる。</li>
+<li><b>第2時</b>　micro:bitをMakeCodeで計測（明るさ・温度を表示してデータを記録）。しきい値を自分たちで決める。</li>
+<li><b>第3時</b>　計測した値で出力を制御（LED・モーター）。動かない班は「なおす」タブで自己診断→改善→発表。</li>
+</ol></div>
+
+<div class="panel"><h2>🧭 指導のポイント（差がある学級で）</h2>
+<ul class="tight">
+<li><b>提案されたコードを写すだけで終わらせない</b>ために、各パターンの「しくみ」を音読させる、数値を1つ変えて違いを説明させる、の2つを課すと定着します。</li>
+<li><b>組めない生徒</b>には「くみたて」タブの3択 →「組み立て手順」ボタンで、置く順番を1行ずつ示せます。手順どおりに置く作業から始めれば、必ず動くものができます。</li>
+<li><b>できる生徒</b>には「もう一歩すすめると」と、発展パターン（ヒステリシス・無線）を。班内での教え合い役をお願いするのも有効です。</li>
+<li>しきい値は<b>必ず測ってから決める</b>よう徹底すると、「計測」と「制御」のつながりが実感できます。</li>
+</ul></div>
+
+<div class="panel"><h2>⚖️ このアプリの限界（正直なところ）</h2>
+<ul class="tight">
+<li>文章の理解は<b>キーワードによる照合</b>です（AIによる文脈理解ではありません）。辞書にない表現は「くみたて」タブに誘導されます。想定外の言い回しが多い場合は、下の方法で語句を追加できます。</li>
+<li>スクリーンショット診断は、<b>ブロックの色の分布</b>から「足りない種類・怪しい場所」を推定するものです。画像の文字を読み取っているわけではないので、数値の間違いや順序の誤りは検出できません。症状の選択と組み合わせて使ってください。</li>
+<li>.sb3の書き出しは、拡張機能（micro:bit）を含まないコードのみ対応しています。拡張機能ブロックは画面の図を見ながら組み立ててください。</li>
+</ul></div>
+
+<div class="panel"><h2>🛠 先生によるカスタマイズ</h2>
+<p class="lead">このファイルをテキストエディタ（メモ帳・VSCodeなど）で開くと、次の場所を書きかえられます。授業や使用教材に合わせて増やしてください。</p>
+<ul class="tight">
+<li><code>const PATTERNS = [ ... ]</code>　…　やりたいこと→コードの辞書。<code>kw2</code>（強いキーワード）と <code>kw</code> を増やすほど、生徒の言い回しに当たりやすくなります。</li>
+<li><code>const SYMPTOMS = [ ... ]</code>　…　つまずき診断。学級でよく出る質問を追加すると、教師の手が空きます。</li>
+<li><code>const ACT / COND / TRIG</code>　…　「くみたて」タブの選択肢。</li>
+</ul>
+<p class="muted">※ 書きかえる前に、必ずコピーを残しておいてください。</p></div>`;
+
+/* =======================================================================
+   11. 画面の組み立て・イベント
+   ======================================================================= */
+const $=s=>document.querySelector(s), $$=s=>Array.from(document.querySelectorAll(s));
+const EXAMPLES=['ねこを矢印キーで動かしたい','ずっと動き続けるようにしたい','端で跳ね返るようにしたい',
+ '点数を数えたい','何かに触れたら止めたい','くりかえしても1回しか動かない','旗を押しても何も起きない',
+ 'micro:bitのボタンAで動かしたい','暗くなったらライトをつけたい','温度が高くなったらファンを回したい',
+ '無線で2台をつなげたい','サーボを90度にしたい'];
+
+function switchTab(id){
+  $$('nav.tabs button').forEach(b=>{
+    const on = b.id==='tab-'+id;
+    b.setAttribute('aria-selected',on?'true':'false');
+    $('#p-'+b.id.slice(4)).hidden = !on;
+  });
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+function runSearch(){
+  const txt=$('#q').value.trim(), box=$('#makeResult');
+  if(!txt){ box.innerHTML='<div class="note warn">やりたいことを入力してください。</div>'; return; }
+  const t=norm(txt), ps=matchPatterns(txt), ss=matchSymptoms(txt), trouble=isTrouble(t);
+  let h='';
+  const topP = ps.length?ps[0].s:0, topS = ss.length?ss[0].s:0;
+  const showSym = topS>=3 && (trouble || topS>=6), symFirst = showSym && (trouble || topS>topP);
+  const symBlock = ()=>{
+    let x='<div class="note '+(trouble?'warn':'')+'"><b>'+
+      (trouble?'「うまくいかない」タイプの相談ですね。':'もしかして、うまく動かなくて困っていますか？')+
+      '</b>　次の診断を確かめてみましょう。（くわしくは「🔍 なおす」タブへ）</div>';
+    ss.slice(0,2).forEach(r=>x+=symptomCard(r.sy));
+    return x;
+  };
+  if(symFirst) h+=symBlock();
+  if(ps.length){
+    h+='<h2 style="margin-top:1rem">💡 こんなコードはどうでしょう</h2>';
+    ps.slice(0,3).forEach((r,i)=>h+=patternCard(r.p,r.s,r.hits,i===0&&trouble));
+    if(ps.length>3){
+      h+='<details><summary>ほかの候補（'+(ps.length-3)+'件）</summary>'+
+         ps.slice(3,8).map(r=>'<div class="chips"><button class="chip" data-open="'+r.p.id+'">'+esc(r.p.title)+'</button></div>').join('')+
+         '</details>';
+    }
+  }
+  if(showSym && !symFirst) h+=symBlock();
+  if(!ps.length && !showSym){
+    h+='<div class="note"><b>ぴったりの言葉が見つかりませんでした。</b><br>'+
+       '① もう少し短い言葉で書く（例：「キー」「ずっと」「音」「明るさ」）　'+
+       '② 下の「🧱 くみたて」で3つ選んで組み立てる　の2つを試してみましょう。</div>'+
+       '<div class="btnrow"><button class="btn" id="toBuild">🧱 くみたてタブへ</button></div>'+
+       '<h3>よく使うパターン</h3>';
+    PATTERNS.filter(p=>p.lv===1).slice(0,6).forEach(p=>{
+      h+='<div class="chips" style="margin:.2rem 0"><button class="chip" data-open="'+p.id+'">'+esc(p.title)+'</button></div>';
+    });
+  }
+  box.innerHTML=h;
+  const tb=$('#toBuild'); if(tb) tb.onclick=()=>switchTab('build');
+}
+
+function renderBuild(){
+  const mk=(el,arr,cur,multi)=>{
+    $(el).innerHTML=arr.map(o=>{
+      const on = multi ? pick.acts.indexOf(o.id)>=0 : cur===o.id;
+      return '<button class="chip'+(on?' on':'')+'" data-pick="'+el.slice(1)+'" data-id="'+o.id+'">'+esc(o.n)+'</button>';
+    }).join('');
+  };
+  mk('#bTrig',TRIG,pick.trig); mk('#bLoop',LOOP,pick.loop);
+  mk('#bCond',COND,pick.cond); mk('#bAct',ACT,null,true);
+}
+function runBuild(){
+  const sc=composeScript(), mc=composeMC();
+  let h='<div class="card"><h4>🧩 できあがったコード</h4>';
+  h+='<h3>スクラッチ</h3>'+renderScript(sc);
+  h+='<div class="btnrow noprint">';
+  if(canExport(sc)) h+='<button class="btn green mini" id="bSb3">⬇ .sb3 で書き出す</button>';
+  else h+='<span class="muted">※拡張機能のブロックを含むため書き出しはできません。</span>';
+  h+='<button class="btn sub mini" id="bStep">📋 組み立て手順を見る</button></div>';
+  h+='<div class="hidden" id="bSteps"><ol class="steps">'+stepsFor(sc).map(x=>'<li>'+esc(x)+'</li>').join('')+'</ol></div>';
+  h+='<h3>MakeCode（マイクロビットに置きかえると）</h3><pre class="code">'+hl(mc)+'</pre>';
+  h+='<div class="btnrow noprint"><button class="btn sub mini" id="bCopy">📄 コードをコピー</button>'+
+     '<span class="muted">MakeCodeの「JavaScript」画面に貼りつけると、ブロックに変わります。</span></div>';
+  h+='<div class="note info">スクラッチと同じ形を、そのままマイクロビットに移せるか確かめてみよう。'+
+     '「※スクラッチだけの動き」と出た行は、micro:bit では何に置きかえられるか考えるのが課題です。</div></div>';
+  $('#buildResult').innerHTML=h;
+  $('#bStep').onclick=()=>$('#bSteps').classList.toggle('hidden');
+  const b3=$('#bSb3'); if(b3) b3.onclick=()=>exportSb3(sc,'くみたて');
+  $('#bCopy').onclick=e=>copyText(mc,e.target);
+}
+function renderSymptoms(){
+  $('#symChips').innerHTML=SYMPTOMS.map(s=>'<button class="chip" data-sym="'+s.id+'">'+esc(s.label)+'</button>').join('');
+  $('#shotSym').innerHTML='<option value="">（選ばなくてもOK）</option>'+
+    SYMPTOMS.map(s=>'<option value="'+s.id+'">'+esc(s.label)+'</option>').join('');
+}
+function renderMbTab(f){
+  const list=PATTERNS.filter(p=>(p.plat==='microbit'||p.plat==='both'||p.id.indexOf('mb-')===0));
+  const filtered = f&&f!=='all' ? list.filter(p=>f==='sc'?p.sc:!!p.mc) : list;
+  $('#mbList').innerHTML=filtered.map(p=>patternCard(p,null,null,false)).join('');
+  $('#mbFilter').innerHTML=[['all','すべて'],['sc','スクラッチ拡張機能で'],['mc','MakeCodeで']]
+    .map(o=>'<button class="chip'+((f||'all')===o[0]?' on':'')+'" data-mbf="'+o[0]+'">'+o[1]+'</button>').join('');
+}
+function renderDict(){
+  $('#dictTable').innerHTML='<table><tr><th style="width:9rem">したいこと</th><th>スクラッチ</th><th>MakeCode（micro:bit）</th><th>メモ</th></tr>'+
+    DICT.map(r=>'<tr><td><b>'+esc(r[0])+'</b></td><td>'+esc(r[1])+'</td><td>'+esc(r[2])+'</td><td class="muted">'+esc(r[3])+'</td></tr>').join('')+'</table>';
+  $('#dictLimit').innerHTML=
+   '<div class="note warn"><b>※ スクラッチ公式の micro:bit 拡張機能には、光センサ・温度センサ・端子の入出力のブロックがありません。</b><br>'+
+   '使えるのは「ボタン」「ゆさぶり等のジェスチャー」「傾き」「LED表示」「端子がつながったとき」だけです。</div>'+
+   '<div class="grid2"><div><h3>✅ スクラッチ拡張機能でできること</h3><ul class="tight">'+
+   ['ボタンA／B／A+Bが押されたとき','ゆさぶられた・落とした・跳ねた（ジェスチャー）',
+    '前後左右に傾いた／傾きの角度','5×5 LEDに文字・模様を表示する','端子 P0〜P2 がつながったとき'].map(x=>'<li>'+x+'</li>').join('')+
+   '</ul></div><div><h3>⛔️ できないこと（MakeCodeが必要）</h3><ul class="tight">'+
+   ['明るさ（光センサ）の値を読む','温度の値を読む','アナログ入力（外部センサ）','デジタル／アナログ出力（LED・モーター制御）',
+    'サーボモーターの角度制御','無線（radio）通信'].map(x=>'<li>'+x+'</li>').join('')+'</ul></div></div>'+
+   '<div class="note info"><b>授業での組み立て方：</b>スクラッチでは「ずっと＋もし〜なら」という<b>考え方</b>を身につけ、'+
+   '実際のセンサを使った計測・制御は MakeCode で行う、という流れが無理がありません。<br>'+
+   'どうしてもスクラッチ上でセンサ値を使いたい場合は、有志が公開している拡張機能（例：Microbit More）を使う方法があります。'+
+   '校内のネットワーク・端末の運用ルールを確認のうえ、先生が動作確認してから導入してください。'+
+   'このアプリでは、その場合のブロックを緑色で参考表示しています。</div>';
+  $('#dictTerms').innerHTML='<table><tr><th style="width:10rem">ことば</th><th>意味</th></tr>'+
+    TERMS.map(t=>'<tr><td><b>'+esc(t[0])+'</b></td><td>'+esc(t[1])+'</td></tr>').join('')+'</table>';
+}
+function copyText(txt,btn){
+  const done=()=>{ if(btn){const o=btn.textContent; btn.textContent='✓ コピーしました'; setTimeout(()=>btn.textContent=o,1500);} };
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(txt).then(done,()=>fallback());
+  } else fallback();
+  function fallback(){
+    const ta=document.createElement('textarea'); ta.value=txt; ta.style.position='fixed'; ta.style.opacity='0';
+    document.body.appendChild(ta); ta.select();
+    try{document.execCommand('copy'); done();}catch(e){alert('コピーできませんでした。コードを選んで Ctrl+C を押してください。');}
+    ta.remove();
+  }
+}
+/* ---- スクリーンショット ---- */
+function loadShot(src){
+  const img=new Image();
+  img.onload=()=>{
+    shotImg=img; shotStats=analyzeImage(img);
+    $('#shotArea').classList.remove('hidden');
+    $('#drop').classList.add('hidden');
+    showShotResult();
+  };
+  img.onerror=()=>alert('画像を読み込めませんでした。別の画像で試してください。');
+  img.src=src;
+}
+function showShotResult(){
+  const sym=$('#shotSym').value;
+  const f=drawShot(sym);
+  $('#shotLegend').innerHTML='<b style="font-size:.84rem">読み取ったブロックの割合：</b>'+
+    CATCOL.filter(c=>shotStats[c.k].pct>=1).sort((a,b)=>shotStats[b.k].pct-shotStats[a.k].pct)
+    .map(c=>'<span><i class="sw" style="background:rgb('+c.c.join(',')+')"></i>'+c.n+
+      ' '+shotStats[c.k].pct.toFixed(0)+'%</span>').join('') ||
+    '<span class="muted">ブロックの色が見つかりませんでした。コードの部分を大きく写してみてください。</span>';
+  let h='<h3>診断結果</h3>';
+  f.forEach((fi,i)=>{
+    h+='<div class="note '+(fi.lv==='warn'?'warn':fi.lv==='ok'?'ok':'info')+'"><b>'+(i+1)+'. '+esc(fi.t)+'</b><br>'+esc(fi.m)+'</div>';
+  });
+  if(sym){ const sy=SYMPTOMS.find(s=>s.id===sym); if(sy) h+=symptomCard(sy); }
+  else h+='<div class="note">上の「気になる症状」を選ぶと、直し方の図もいっしょに出ます。</div>';
+  $('#shotFindings').innerHTML=h;
+}
+function handleFiles(files){
+  if(!files||!files.length) return;
+  const f=files[0];
+  if(!/^image\//.test(f.type)){ alert('画像ファイルを選んでください。'); return; }
+  const r=new FileReader(); r.onload=e=>loadShot(e.target.result); r.readAsDataURL(f);
+}
+
+/* ---- 初期化 ---- */
+function init(){
+  $('#exChips').innerHTML='<span class="muted" style="width:100%">例をクリックすると入ります：</span>'+
+    EXAMPLES.map(x=>'<button class="chip" data-ex="'+esc(x)+'">'+esc(x)+'</button>').join('');
+  renderBuild(); renderSymptoms(); renderMbTab('all'); renderDict();
+  $('#teachBody').innerHTML=TEACH;
+
+  $$('nav.tabs button').forEach(b=>b.onclick=()=>switchTab(b.id.slice(4)));
+  $('#printBtn').onclick=()=>window.print();
+  let fs=16;
+  $('#fontBtn').onclick=()=>{ fs = fs>=20?16:fs+2;
+    document.documentElement.style.setProperty('--fs',fs+'px');
+    $('#fontBtn').textContent = fs>=20?'文字をもどす':'文字を大きく'; };
+  $('#goBtn').onclick=runSearch;
+  $('#clearBtn').onclick=()=>{ $('#q').value=''; $('#makeResult').innerHTML=''; $('#q').focus(); };
+  $('#q').addEventListener('keydown',e=>{ if(e.key==='Enter'&&(e.ctrlKey||e.metaKey)) runSearch(); });
+  $('#bMake').onclick=runBuild;
+  $('#bReset').onclick=()=>{ pick.trig='t1'; pick.loop='l1'; pick.cond='c0'; pick.acts=['a1'];
+    renderBuild(); $('#buildResult').innerHTML=''; };
+
+  document.addEventListener('click',e=>{
+    const t=e.target.closest('[data-ex],[data-sb3],[data-steps],[data-copy],[data-open],[data-pick],[data-sym],[data-mbf]');
+    if(!t) return;
+    if(t.dataset.ex){ $('#q').value=t.dataset.ex; runSearch(); }
+    else if(t.dataset.sb3){ const p=PATTERNS.find(x=>x.id===t.dataset.sb3); if(p) exportSb3(p.sc,p.title); }
+    else if(t.dataset.steps){ const el=$('#st-'+t.dataset.steps); if(el) el.classList.toggle('hidden'); }
+    else if(t.dataset.copy){ const p=PATTERNS.find(x=>x.id===t.dataset.copy); if(p&&p.mc) copyText(p.mc.code,t); }
+    else if(t.dataset.open){ const p=PATTERNS.find(x=>x.id===t.dataset.open);
+      if(p){ $('#makeResult').innerHTML=patternCard(p,null,null,true); window.scrollTo({top:0,behavior:'smooth'}); } }
+    else if(t.dataset.pick){
+      const g=t.dataset.pick, id=t.dataset.id;
+      if(g==='bAct'){ const i=pick.acts.indexOf(id); if(i>=0) pick.acts.splice(i,1); else pick.acts.push(id); }
+      else if(g==='bTrig') pick.trig=id; else if(g==='bLoop') pick.loop=id; else if(g==='bCond') pick.cond=id;
+      renderBuild();
+    }
+    else if(t.dataset.sym){ const sy=SYMPTOMS.find(s=>s.id===t.dataset.sym);
+      if(sy){ $('#symResult').innerHTML=symptomCard(sy);
+        $$('#symChips .chip').forEach(c=>c.classList.toggle('on',c.dataset.sym===sy.id)); } }
+    else if(t.dataset.mbf){ renderMbTab(t.dataset.mbf); }
+  });
+
+  /* スクリーンショット */
+  const drop=$('#drop');
+  $('#pickBtn').onclick=e=>{ e.stopPropagation(); $('#file').click(); };
+  drop.onclick=()=>$('#file').click();
+  $('#file').onchange=e=>handleFiles(e.target.files);
+  ['dragenter','dragover'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.add('hot');}));
+  ['dragleave','drop'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.remove('hot');}));
+  drop.addEventListener('drop',e=>handleFiles(e.dataTransfer.files));
+  document.addEventListener('paste',e=>{
+    const items=(e.clipboardData||{}).items||[];
+    for(let i=0;i<items.length;i++){
+      if(items[i].type.indexOf('image')>=0){
+        const f=items[i].getAsFile(); if(f){ switchTab('fix'); handleFiles([f]); e.preventDefault(); }
+        return;
+      }
+    }
+  });
+  $('#shotGo').onclick=showShotResult;
+  $('#shotSym').onchange=showShotResult;
+  $('#shotSave').onclick=()=>{
+    const cv=$('#cv');
+    if(cv.toBlob) cv.toBlob(b=>downloadBlob(b,'診断結果.png'));
+    else downloadBlob(new Blob([],{type:'image/png'}),'診断結果.png');
+  };
+  $('#shotClear').onclick=()=>{ shotImg=null; shotStats=null; $('#file').value='';
+    $('#shotArea').classList.add('hidden'); $('#drop').classList.remove('hidden'); $('#shotFindings').innerHTML=''; };
+}
+document.addEventListener('DOMContentLoaded',init);
+</script>
+</body>
+</html>
