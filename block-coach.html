@@ -94,6 +94,9 @@ textarea:focus,input:focus,select:focus{outline:3px solid #bcd5f7;border-color:v
 .f-microbit{background:var(--microbit)} .f-sensing{background:var(--sensing)} .f-looks{background:var(--looks)}
 .f-operators{background:var(--operators)} .f-variables{background:var(--variables)} .f-sound{background:var(--sound)}
 .mark{outline:3px dashed #d9480f;outline-offset:3px;animation:pulse 1.4s infinite}
+.scriptgroup{display:inline-block;vertical-align:top;margin:0 1.4rem .8rem 0;padding:.3rem .5rem .1rem;
+  border:1px solid #dde5f0;border-radius:10px;background:#fff}
+.gtag{font-size:.72rem;color:#55637a;margin-bottom:.25rem}
 @keyframes pulse{50%{outline-color:#ffb08a}}
 
 /* ---- 結果カード ---- */
@@ -141,7 +144,7 @@ footer{max-width:1180px;margin:0 auto;padding:1rem;color:var(--ink2);font-size:.
 <header class="app">
   <div class="hrow">
     <div class="logo">🧩 ブロックコーチ
-      <small>やりたいことを文章で書くと、スクラッチ／マイクロビットのコードを提案します</small></div>
+      <small>やりたいことを文章で書くと、スクラッチ／マイクロビットのコードを提案します（<span id="hdCount">…</span>パターン収録）</small></div>
     <div class="hspacer"></div>
     <button class="hbtn" id="fontBtn" title="文字の大きさを変える">文字を大きく</button>
     <button class="hbtn" id="printBtn" title="今の画面を印刷 / PDF保存">印刷</button>
@@ -149,6 +152,7 @@ footer{max-width:1180px;margin:0 auto;padding:1rem;color:var(--ink2);font-size:.
   <nav class="tabs" role="tablist">
     <button role="tab" id="tab-make"  aria-controls="p-make"  aria-selected="true">🎯 つくる</button>
     <button role="tab" id="tab-build" aria-controls="p-build" aria-selected="false">🧱 くみたて</button>
+    <button role="tab" id="tab-mario" aria-controls="p-mario" aria-selected="false">🍄 マリオ制作</button>
     <button role="tab" id="tab-fix"   aria-controls="p-fix"   aria-selected="false">🔍 なおす</button>
     <button role="tab" id="tab-mb"    aria-controls="p-mb"    aria-selected="false">📡 計測・制御</button>
     <button role="tab" id="tab-dict"  aria-controls="p-dict"  aria-selected="false">📖 対応表</button>
@@ -161,7 +165,8 @@ footer{max-width:1180px;margin:0 auto;padding:1rem;color:var(--ink2);font-size:.
 <section role="tabpanel" id="p-make" aria-labelledby="tab-make">
   <div class="panel">
     <h2>🎯 やりたいことを、ふつうの文で書いてみよう</h2>
-    <p class="lead">「〜したい」「〜にならない」「〜がうまくいかない」など、話しことばのままでOK。キーワードを読み取って、近いコードを提案します。</p>
+    <p class="lead">「〜したい」「〜にならない」「〜がうまくいかない」など、話しことばのままでOK。キーワードを読み取って、近いコードを提案します。
+マリオゲームの作り方は <b>🍄 マリオ制作</b> タブに、作る順番でまとめてあります。</p>
     <label for="q" class="muted">やりたいこと / こまっていること</label>
     <textarea id="q" placeholder="例）ねこを矢印キーで動かしたい&#10;例）ボタンAを押したら前に進むようにしたい&#10;例）くりかえしにしても1回しか動かない"></textarea>
     <div class="btnrow">
@@ -172,6 +177,27 @@ footer{max-width:1180px;margin:0 auto;padding:1rem;color:var(--ink2);font-size:.
     <div class="chips" id="exChips"></div>
   </div>
   <div id="makeResult"></div>
+  <div class="panel noprint">
+    <h3 style="margin-top:0">📚 パターン一覧から選ぶ<span class="muted" id="patCount"></span></h3>
+    <p class="lead">言葉が思いつかないときは、種類から探せます。</p>
+    <div class="chips" id="catChips"></div>
+    <div id="catList"></div>
+  </div>
+</section>
+
+<!-- ============ マリオ制作 ============ -->
+<section role="tabpanel" id="p-mario" aria-labelledby="tab-mario" hidden>
+  <div class="panel">
+    <h2>🍄 マリオゲームの作り方ロードマップ</h2>
+    <p class="lead">上から順に作っていけば完成します。1つの段階ができたら必ず動かして確かめ、次へ進みましょう。
+      いきなり全部作ろうとせず、<b>「動くものを少しずつ育てる」</b>のがコツです。</p>
+    <div id="marioRoad"></div>
+  </div>
+  <div class="panel noprint">
+    <h3>🎒 作るときの準備（スプライトと色）</h3>
+    <div id="marioPrep"></div>
+  </div>
+  <div id="marioResult"></div>
 </section>
 
 <!-- ============ くみたて ============ -->
@@ -269,8 +295,8 @@ const OPS = {
   event_whenflagclicked:{c:'events',t:'⚑ が押されたとき',hat:1},
   event_whenkeypressed:{c:'events',t:'{KEY_OPTION} キーが押されたとき',hat:1,fields:['KEY_OPTION']},
   event_whenthisspriteclicked:{c:'events',t:'このスプライトが押されたとき',hat:1},
-  event_whenbroadcastreceived:{c:'events',t:'{BROADCAST_OPTION} を受け取ったとき',hat:1,fields:['BROADCAST_OPTION'],noexp:1},
-  event_broadcast:{c:'events',t:'{BROADCAST_INPUT} を送る',noexp:1},
+  event_whenbroadcastreceived:{c:'events',t:'{BROADCAST_OPTION} を受け取ったとき',hat:1,bcfield:'BROADCAST_OPTION'},
+  event_broadcast:{c:'events',t:'{BROADCAST_INPUT} を送る',menu:{BROADCAST_INPUT:['event_broadcast_menu','BROADCAST_OPTION']}},
   /* --- 制御 --- */
   control_wait:{c:'control',t:'{DURATION} 秒待つ'},
   control_forever:{c:'control',t:'ずっと',sub:1,cap:1},
@@ -345,6 +371,89 @@ const OPS = {
   mbmore_servo:{c:'microbit',t:'端子 {PIN} のサーボを {ANGLE} 度にする',noexp:1,fields:['PIN']}
 };
 
+/* --- 追加ブロック（ゲーム制作でよく使うもの） --- */
+Object.assign(OPS,{
+  /* 動き */
+  motion_setx:{c:'motion',t:'x座標を {X} にする'},
+  motion_sety:{c:'motion',t:'y座標を {Y} にする'},
+  motion_glidesecstoxy:{c:'motion',t:'{SECS} 秒でx座標を {X} に、y座標を {Y} に変える'},
+  motion_goto:{c:'motion',t:'{TO} へ行く',menu:{TO:'motion_goto_menu'}},
+  motion_pointtowards:{c:'motion',t:'{TOWARDS} へ向ける',menu:{TOWARDS:'motion_pointtowards_menu'}},
+  motion_yposition:{c:'motion',t:'y座標',rep:1},
+  motion_direction:{c:'motion',t:'向き',rep:1},
+  /* 見た目 */
+  looks_switchcostumeto:{c:'looks',t:'コスチュームを {COSTUME} にする',menu:{COSTUME:'looks_costume'}},
+  looks_switchbackdropto:{c:'looks',t:'背景を {BACKDROP} にする',menu:{BACKDROP:'looks_backdrops'}},
+  looks_nextbackdrop:{c:'looks',t:'次の背景にする'},
+  looks_costumenumbername:{c:'looks',t:'コスチュームの {NUMBER_NAME}',rep:1,fields:['NUMBER_NAME']},
+  looks_backdropnumbername:{c:'looks',t:'背景の {NUMBER_NAME}',rep:1,fields:['NUMBER_NAME']},
+  looks_thinkforsecs:{c:'looks',t:'{MESSAGE} と {SECS} 秒考える'},
+  looks_changeeffectby:{c:'looks',t:'{EFFECT} の効果を {CHANGE} ずつ変える',fields:['EFFECT']},
+  looks_seteffectto:{c:'looks',t:'{EFFECT} の効果を {VALUE} にする',fields:['EFFECT']},
+  looks_cleargraphiceffects:{c:'looks',t:'画像効果をなくす'},
+  looks_gotofrontback:{c:'looks',t:'{FRONT_BACK} へ出す',fields:['FRONT_BACK']},
+  looks_goforwardbackwardlayers:{c:'looks',t:'{FORWARD_BACKWARD} へ {NUM} 層送る',fields:['FORWARD_BACKWARD']},
+  looks_size:{c:'looks',t:'大きさ',rep:1},
+  /* 音（書き出し対象外：音は自分で選ぶ） */
+  sound_stopallsounds:{c:'sound',t:'すべての音を止める',noexp:1},
+  sound_changevolumeby:{c:'sound',t:'音量を {VOLUME} ずつ変える',noexp:1},
+  sound_setvolumeto:{c:'sound',t:'音量を {VOLUME} %にする',noexp:1},
+  /* イベント */
+  event_whenbackdropswitchesto:{c:'events',t:'背景が {BACKDROP} になったとき',hat:1,fields:['BACKDROP']},
+  event_whengreaterthan:{c:'events',t:'{WHENGREATERTHANMENU} > {VALUE} のとき',hat:1,fields:['WHENGREATERTHANMENU']},
+  event_broadcastandwait:{c:'events',t:'{BROADCAST_INPUT} を送って待つ',
+    menu:{BROADCAST_INPUT:['event_broadcast_menu','BROADCAST_OPTION']},bcmenu:1},
+  /* 制御・クローン */
+  control_create_clone_of:{c:'control',t:'{CLONE_OPTION} のクローンを作る',
+    menu:{CLONE_OPTION:'control_create_clone_of_menu'}},
+  control_start_as_clone:{c:'control',t:'クローンされたとき',hat:1},
+  control_delete_this_clone:{c:'control',t:'このクローンを削除する',cap:1},
+  /* 調べる */
+  sensing_touchingcolor:{c:'sensing',t:'色 {COLOR} に触れた',rep:1,boolrep:1},
+  sensing_coloristouchingcolor:{c:'sensing',t:'色 {COLOR} が色 {COLOR2} に触れた',rep:1,boolrep:1},
+  sensing_distanceto:{c:'sensing',t:'{DISTANCETOMENU} までの距離',rep:1,menu:{DISTANCETOMENU:'sensing_distancetomenu'}},
+  sensing_mousex:{c:'sensing',t:'マウスのx座標',rep:1},
+  sensing_mousey:{c:'sensing',t:'マウスのy座標',rep:1},
+  sensing_loudness:{c:'sensing',t:'音量',rep:1},
+  sensing_of:{c:'sensing',t:'{OBJECT} の {PROPERTY}',rep:1,fields:['PROPERTY','OBJECT'],noexp:1},
+  /* 演算 */
+  operator_multiply:{c:'operators',t:'{NUM1} × {NUM2}',rep:1},
+  operator_divide:{c:'operators',t:'{NUM1} ÷ {NUM2}',rep:1},
+  operator_mod:{c:'operators',t:'{NUM1} を {NUM2} で割った余り',rep:1},
+  operator_round:{c:'operators',t:'{NUM} を四捨五入',rep:1},
+  operator_mathop:{c:'operators',t:'{OPERATOR} ( {NUM} )',rep:1,fields:['OPERATOR']},
+  operator_join:{c:'operators',t:'{STRING1} と {STRING2}',rep:1},
+  operator_contains:{c:'operators',t:'{STRING1} に {STRING2} が含まれる',rep:1,boolrep:1},
+  /* 変数・リスト */
+  data_showvariable:{c:'variables',t:'変数 {VARIABLE} を表示する',var:'VARIABLE'},
+  data_hidevariable:{c:'variables',t:'変数 {VARIABLE} を隠す',var:'VARIABLE'},
+  data_addtolist:{c:'variables',t:'{ITEM} を {LIST} に追加する',list:'LIST'},
+  data_deletealloflist:{c:'variables',t:'{LIST} のすべてを削除する',list:'LIST'},
+  data_itemoflist:{c:'variables',t:'{LIST} の {INDEX} 番目',rep:1,list:'LIST'},
+  data_lengthoflist:{c:'variables',t:'{LIST} の長さ',rep:1,list:'LIST'}
+});
+
+/* ドロップダウンの表示名（左：Scratch内部の値／右：画面に出る日本語） */
+const FIELDVAL = {
+  KEY_OPTION:{'space':'スペース','up arrow':'上向き矢印','down arrow':'下向き矢印','right arrow':'右向き矢印',
+    'left arrow':'左向き矢印','any':'どれかの','a':'a','b':'b','x':'x','z':'z'},
+  TOUCHINGOBJECTMENU:{'_edge_':'端','_mouse_':'マウスのポインター'},
+  DISTANCETOMENU:{'_mouse_':'マウスのポインター'},
+  TO:{'_mouse_':'マウスのポインター','_random_':'どこかの場所'},
+  TOWARDS:{'_mouse_':'マウスのポインター'},
+  CLONE_OPTION:{'_myself_':'自分自身'},
+  STOP_OPTION:{'all':'すべて','this script':'このスクリプト','other scripts in sprite':'スプライトの他のスクリプト'},
+  STYLE:{'left-right':'左右のみ',"don't rotate":'回転しない','all around':'自由に回転'},
+  FRONT_BACK:{'front':'最前面','back':'最背面'},
+  FORWARD_BACKWARD:{'forward':'前','backward':'後ろ'},
+  NUMBER_NAME:{'number':'番号','name':'名前'},
+  EFFECT:{'GHOST':'幽霊','COLOR':'色','BRIGHTNESS':'明るさ','FISHEYE':'魚眼','PIXELATE':'ピクセル化','MOSAIC':'モザイク','WHIRL':'渦巻き'},
+  WHENGREATERTHANMENU:{'TIMER':'タイマー','LOUDNESS':'音量'},
+  OPERATOR:{'abs':'絶対値','floor':'切り下げ','ceiling':'切り上げ','sqrt':'平方根'},
+  PROPERTY:{'x position':'x座標','y position':'y座標','direction':'向き','size':'大きさ','costume #':'コスチュームの番号'}
+};
+const dispVal = (key,v)=> (FIELDVAL[key]&&FIELDVAL[key][v]!==undefined) ? FIELDVAL[key][v] : v;
+
 /* =======================================================================
    2. ブロック描画（Scratch風）
    ======================================================================= */
@@ -352,6 +461,8 @@ const esc = s => String(s).replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&g
 
 function slotHTML(v, isBool){
   if(v && typeof v==='object' && v.op) return renderReporter(v);
+  if(typeof v==='string' && /^#[0-9a-fA-F]{6}$/.test(v))
+    return '<span class="slot" style="background:'+v+';min-width:1.5rem;border:1px solid rgba(0,0,0,.25)" title="'+v+'">&nbsp;</span>';
   if(isBool) return '<span class="slot bool"><span>'+esc(v==null?'':v)+'</span></span>';
   return '<span class="slot">'+esc(v==null?'':v)+'</span>';
 }
@@ -361,9 +472,9 @@ function labelHTML(b){
   const bools=d.bool||[];
   return esc(d.t).replace(/\{([A-Z_0-9]+)\}/g,(m,key)=>{
     const raw=vals[key];
-    if(d.rep && d.var===key) return esc(raw==null?'':raw);
-    const isDrop = (d.fields&&d.fields.indexOf(key)>=0) || (d.menu&&d.menu[key]) || (d.var===key);
-    if(isDrop && !(raw&&raw.op)) return '<span class="drop">'+esc(raw==null?'':raw)+' ▾</span>';
+    if((d.rep && d.var===key) || (d.rep && d.list===key)) return esc(raw==null?'':raw);
+    const isDrop = (d.fields&&d.fields.indexOf(key)>=0) || (d.menu&&d.menu[key]) || (d.var===key) || (d.list===key) || (d.bcfield===key);
+    if(isDrop && !(raw&&raw.op)) return '<span class="drop">'+esc(dispVal(key,raw==null?'':raw))+' ▾</span>';
     return slotHTML(raw, bools.indexOf(key)>=0);
   });
 }
@@ -394,7 +505,24 @@ function renderStack(list,path){
   if(!list||!list.length) return '<div class="muted" style="font-size:.8rem;padding:.1rem .3rem">（ここにブロックを入れる）</div>';
   return '<div class="stack">'+list.map((b,i)=>renderBlock(b,path+i)).join('')+'</div>';
 }
-function renderScript(list){ return '<div class="blocks">'+renderStack(list)+'</div>'; }
+/* 帽子ブロック（〜のとき）ごとに、別々のスクリプトに分ける */
+function splitScripts(list){
+  const gs=[]; let cur=[];
+  (list||[]).forEach(b=>{
+    const d=OPS[b.op];
+    if(d&&d.hat&&cur.length){ gs.push(cur); cur=[b]; } else cur.push(b);
+  });
+  if(cur.length) gs.push(cur);
+  return gs;
+}
+function renderScript(list){
+  const gs=splitScripts(list);
+  if(gs.length<2) return '<div class="blocks">'+renderStack(list)+'</div>';
+  return '<div class="blocks">'+gs.map((g,i)=>
+    '<div class="scriptgroup"><div class="gtag">かたまり '+(i+1)+'</div>'+renderStack(g,'g'+i)+'</div>').join('')+
+    '<div class="muted" style="font-size:.8rem;margin-top:.4rem">※ '+gs.length+
+    'つの別々のかたまりです。くっつけずに、離して置きます。</div></div>';
+}
 
 /* MakeCode風ブロック：[カテゴリ, 文字, 子] の入れ子配列 */
 function renderMC(list){
@@ -443,33 +571,47 @@ function canExport(list){
   });
   walk(list); return ok;
 }
-function buildProject(script){
-  const blocks={}, vars={}; let n=0;
+function buildProject(script,owner){
+  const blocks={}, vars={}, lists={}, bcs={}, sprites={}, costumes={}, backdrops={};
+  let n=0;
   const nid=()=>'bc'+(++n)+'k';
-  const varId=name=>{ if(!vars[name]) vars[name]={id:'v'+(Object.keys(vars).length+1)+'-bc',name:name}; return vars[name].id; };
+  const idFor=(store,name,pre)=>{ if(!store[name]) store[name]=pre+(Object.keys(store).length+1)+'-bc'; return store[name]; };
+  const SPECIAL=['_edge_','_mouse_','_myself_','_random_','_stage_'];
+  const noteSprite=v=>{ if(v&&SPECIAL.indexOf(v)<0&&v!==(owner||'')) sprites[v]=1; };
   function addBlock(b,parent){
     const d=OPS[b.op], id=nid();
     const o={opcode:b.op,next:null,parent:parent||null,inputs:{},fields:{},shadow:false,topLevel:false};
     blocks[id]=o;
     const fl=b.fl||{}, iv=b.in||{};
-    if(d.fields) d.fields.forEach(k=>{ o.fields[k]=[String(fl[k]!==undefined?fl[k]:(iv[k]!==undefined?iv[k]:'')),null]; });
-    if(d.var){ const nm=String(fl[d.var]!==undefined?fl[d.var]:(iv[d.var]!==undefined?iv[d.var]:'変数')); o.fields[d.var]=[nm,varId(nm)]; }
-    if(d.stopmut) o.mutation={tagName:'mutation',children:[],hasnext:'false'};
-    if(d.menu) for(const k in d.menu){
-      const mid=nid(), val=String(fl[k]!==undefined?fl[k]:(iv[k]!==undefined?iv[k]:''));
-      blocks[mid]={opcode:d.menu[k],next:null,parent:id,inputs:{},fields:{},shadow:true,topLevel:false};
-      blocks[mid].fields[k]=[val,null];
-      o.inputs[k]=[1,mid];
+    const val=k=>String(fl[k]!==undefined?fl[k]:(iv[k]!==undefined?iv[k]:''));
+    if(d.fields) d.fields.forEach(k=>{ o.fields[k]=[val(k),null]; });
+    if(d.var){ const nm=val(d.var)||'変数'; o.fields[d.var]=[nm,idFor(vars,nm,'v')]; }
+    if(d.list){ const nm=val(d.list)||'リスト'; o.fields[d.list]=[nm,idFor(lists,nm,'l')]; }
+    if(d.bcfield){ const nm=val(d.bcfield)||'メッセージ1'; o.fields[d.bcfield]=[nm,idFor(bcs,nm,'m')]; }
+    if(d.stopmut){
+      const stop=val('STOP_OPTION');
+      o.mutation={tagName:'mutation',children:[],hasnext:(stop==='other scripts in sprite')?'true':'false'};
     }
+    if(d.menu) for(const k in d.menu){
+      const spec=d.menu[k], mop=(typeof spec==='string')?spec:spec[0], mfield=(typeof spec==='string')?k:spec[1];
+      const mid=nid(), v=val(k);
+      blocks[mid]={opcode:mop,next:null,parent:id,inputs:{},fields:{},shadow:true,topLevel:false};
+      blocks[mid].fields[mfield] = (mfield==='BROADCAST_OPTION') ? [v||'メッセージ1',idFor(bcs,v||'メッセージ1','m')] : [v,null];
+      o.inputs[k]=[1,mid];
+      if(k==='TOUCHINGOBJECTMENU'||k==='DISTANCETOMENU'||k==='CLONE_OPTION'||k==='TO'||k==='TOWARDS') noteSprite(v);
+      if(k==='COSTUME') costumes[v]=1;
+      if(k==='BACKDROP') backdrops[v]=1;
+    }
+    if(d.fields&&d.fields.indexOf('BACKDROP')>=0) backdrops[val('BACKDROP')]=1;
     for(const k in iv){
-      if((d.menu&&d.menu[k])||d.var===k||(d.fields&&d.fields.indexOf(k)>=0)) continue;
-      const v=iv[k], isBool=(d.bool||[]).indexOf(k)>=0;
-      const shadow = TEXTIN.indexOf(k)>=0 ? [10,''] : [4,''];
+      if((d.menu&&d.menu[k])||d.var===k||d.list===k||d.bcfield===k||(d.fields&&d.fields.indexOf(k)>=0)) continue;
+      const v=iv[k], isBool=(d.bool||[]).indexOf(k)>=0, isColor=(k==='COLOR'||k==='COLOR2');
+      const shadow = isColor ? [9,'#4c97ff'] : (TEXTIN.indexOf(k)>=0 ? [10,''] : [4,'']);
       if(v&&typeof v==='object'&&v.op){
         const cid=addBlock(v,id);
         o.inputs[k]= isBool ? [2,cid] : [3,cid,shadow];
       }else if(v!==undefined&&v!==null&&!isBool){
-        o.inputs[k]=[1,[TEXTIN.indexOf(k)>=0?10:4,String(v)]];
+        o.inputs[k]=[1,[isColor?9:(TEXTIN.indexOf(k)>=0?10:4),String(v)]];
       }
     }
     if(d.sub){ const s=addStack(b.sub||[],id); if(s) o.inputs.SUBSTACK=[2,s]; }
@@ -481,20 +623,39 @@ function buildProject(script){
     (list||[]).forEach(b=>{ const id=addBlock(b,prev||parent); if(!first)first=id; if(prev)blocks[prev].next=id; prev=id; });
     return first;
   }
-  const top=addStack(script,null);
-  if(top){ blocks[top].topLevel=true; blocks[top].parent=null; blocks[top].x=70; blocks[top].y=70; }
-  const stageVars={};
-  Object.keys(vars).forEach(nm=>{ stageVars[vars[nm].id]=[nm,0]; });
+  splitScripts(script).forEach((g,i)=>{
+    const top=addStack(g,null);
+    if(top){ blocks[top].topLevel=true; blocks[top].parent=null;
+      blocks[top].x=70+(i%2)*360; blocks[top].y=70+Math.floor(i/2)*300; }
+  });
+
+  const stageVars={}, stageLists={}, stageBc={};
+  Object.keys(vars).forEach(nm=>{ stageVars[vars[nm]]=[nm,0]; });
+  Object.keys(lists).forEach(nm=>{ stageLists[lists[nm]]=[nm,[]]; });
+  Object.keys(bcs).forEach(nm=>{ stageBc[bcs[nm]]=nm; });
   const cos=(name,a,w)=>({name:name,bitmapResolution:1,dataFormat:'svg',assetId:a.id,md5ext:a.id+'.svg',
     rotationCenterX:w,rotationCenterY:w});
-  return {targets:[
-    {isStage:true,name:'Stage',variables:stageVars,lists:{},broadcasts:{},blocks:{},comments:{},currentCostume:0,
-     costumes:[cos('背景1',ASSETS.bg,0)],sounds:[],volume:100,layerOrder:0,tempo:60,videoTransparency:50,
+  /* コードの中で名前が出てきたコスチューム／背景／スプライトを、空の状態で用意しておく */
+  const myCos=[cos('コスチューム1',ASSETS.cos,48)];
+  Object.keys(costumes).forEach(nm=>{ if(nm&&nm!=='コスチューム1') myCos.push(cos(nm,ASSETS.cos,48)); });
+  const bgCos=[cos('背景1',ASSETS.bg,0)];
+  Object.keys(backdrops).forEach(nm=>{ if(nm&&nm!=='背景1'&&SPECIAL.indexOf(nm)<0&&['next backdrop','previous backdrop','random backdrop'].indexOf(nm)<0) bgCos.push(cos(nm,ASSETS.bg,0)); });
+  const targets=[
+    {isStage:true,name:'Stage',variables:stageVars,lists:stageLists,broadcasts:stageBc,blocks:{},comments:{},
+     currentCostume:0,costumes:bgCos,sounds:[],volume:100,layerOrder:0,tempo:60,videoTransparency:50,
      videoState:'off',textToSpeechLanguage:null},
-    {isStage:false,name:'スプライト1',variables:{},lists:{},broadcasts:{},blocks:blocks,comments:{},currentCostume:0,
-     costumes:[cos('コスチューム1',ASSETS.cos,48)],sounds:[],volume:100,layerOrder:1,visible:true,
+    {isStage:false,name:owner||'スプライト1',variables:{},lists:{},broadcasts:{},blocks:blocks,comments:{},
+     currentCostume:0,costumes:myCos,sounds:[],volume:100,layerOrder:1,visible:true,
      x:0,y:0,size:100,direction:90,draggable:false,rotationStyle:'all around'}
-  ],monitors:[],extensions:[],meta:{semver:'3.0.0',vm:'0.2.0',agent:'block-coach'}};
+  ];
+  let layer=2, px=-120;
+  Object.keys(sprites).forEach(nm=>{
+    targets.push({isStage:false,name:nm,variables:{},lists:{},broadcasts:{},blocks:{},comments:{},currentCostume:0,
+      costumes:[cos('コスチューム1',ASSETS.cos,48)],sounds:[],volume:100,layerOrder:layer++,visible:true,
+      x:px,y:-60,size:100,direction:90,draggable:false,rotationStyle:'all around'});
+    px+=90; if(px>180) px=-180;
+  });
+  return {targets:targets,monitors:[],extensions:[],meta:{semver:'3.0.0',vm:'0.2.0',agent:'block-coach'}};
 }
 const CRCT=(()=>{const t=new Uint32Array(256);for(let i=0;i<256;i++){let c=i;for(let k=0;k<8;k++)c=(c&1)?(0xEDB88320^(c>>>1)):(c>>>1);t[i]=c>>>0;}return t;})();
 function crc32(u8){let c=0xFFFFFFFF;for(let i=0;i<u8.length;i++)c=CRCT[(c^u8[i])&0xFF]^(c>>>8);return (c^0xFFFFFFFF)>>>0;}
@@ -527,9 +688,9 @@ function downloadBlob(blob,name){
   a.href=u; a.download=name; document.body.appendChild(a); a.click();
   setTimeout(()=>{URL.revokeObjectURL(u); a.remove();},400);
 }
-function exportSb3(script,title){
+function exportSb3(script,title,owner){
   const enc=new TextEncoder();
-  const json=JSON.stringify(buildProject(script));
+  const json=JSON.stringify(buildProject(script,owner));
   downloadBlob(zipStore([
     {name:'project.json',data:enc.encode(json)},
     {name:ASSETS.bg.id+'.svg',data:enc.encode(ASSETS.bg.svg)},
@@ -540,6 +701,92 @@ function exportSb3(script,title){
 /* =======================================================================
    4. パターンライブラリ（やりたいこと → コード）
    ======================================================================= */
+/* --- ブロックを短く書くための道具 -----------------------------------------
+   例）flag(), fore( move(10) )  →  「旗が押されたとき／ずっと／10歩動かす」
+   先生がパターンを追加するときも、この道具を使うと短く書けます。
+   パターンの書き方：_P(ID, 分類, レベル, 題名, ねらい, 強い言葉, 言葉, コード,
+                      しくみ, つまずき, 発展, {追加})   ※言葉は | で区切る
+--------------------------------------------------------------------------- */
+const flag=()=>({op:'event_whenflagclicked'});
+const key=k=>({op:'event_whenkeypressed',fl:{KEY_OPTION:k}});
+const onclick=()=>({op:'event_whenthisspriteclicked'});
+const fore=(...b)=>({op:'control_forever',sub:b});
+const rep=(n,...b)=>({op:'control_repeat',in:{TIMES:n},sub:b});
+const iff=(c,...b)=>({op:'control_if',in:{CONDITION:c},sub:b});
+const ifel=(c,a,b)=>({op:'control_if_else',in:{CONDITION:c},sub:a,sub2:b});
+const untl=(c,...b)=>({op:'control_repeat_until',in:{CONDITION:c},sub:b});
+const waituntil=c=>({op:'control_wait_until',in:{CONDITION:c}});
+const wait=s=>({op:'control_wait',in:{DURATION:s}});
+const stopall=(o)=>({op:'control_stop',fl:{STOP_OPTION:o||'all'}});
+const move=n=>({op:'motion_movesteps',in:{STEPS:n}});
+const chx=n=>({op:'motion_changexby',in:{DX:n}});
+const chy=n=>({op:'motion_changeyby',in:{DY:n}});
+const setx=n=>({op:'motion_setx',in:{X:n}});
+const sety=n=>({op:'motion_sety',in:{Y:n}});
+const goxy=(x,y)=>({op:'motion_gotoxy',in:{X:x,Y:y}});
+const glide=(s,x,y)=>({op:'motion_glidesecstoxy',in:{SECS:s,X:x,Y:y}});
+const point=d=>({op:'motion_pointindirection',in:{DIRECTION:d}});
+const pointto=o=>({op:'motion_pointtowards',fl:{TOWARDS:o}});
+const bounce=()=>({op:'motion_ifonedgebounce'});
+const rotstyle=v=>({op:'motion_setrotationstyle',fl:{STYLE:v||'left-right'}});
+const turnR=d=>({op:'motion_turnright',in:{DEGREES:d}});
+const X=()=>({op:'motion_xposition'}), Y=()=>({op:'motion_yposition'});
+const say=(m,s)=>s?({op:'looks_sayforsecs',in:{MESSAGE:m,SECS:s}}):({op:'looks_say',in:{MESSAGE:m}});
+const cost=c=>({op:'looks_switchcostumeto',fl:{COSTUME:c}});
+const nextcost=()=>({op:'looks_nextcostume'});
+const setsize=n=>({op:'looks_setsizeto',in:{SIZE:n}});
+const chsize=n=>({op:'looks_changesizeby',in:{CHANGE:n}});
+const show=()=>({op:'looks_show'}), hide=()=>({op:'looks_hide'});
+const effect=(e,n)=>({op:'looks_changeeffectby',fl:{EFFECT:e},in:{CHANGE:n}});
+const seteffect=(e,n)=>({op:'looks_seteffectto',fl:{EFFECT:e},in:{VALUE:n}});
+const cleareff=()=>({op:'looks_cleargraphiceffects'});
+const front=()=>({op:'looks_gotofrontback',fl:{FRONT_BACK:'front'}});
+const bd=b=>({op:'looks_switchbackdropto',fl:{BACKDROP:b}});
+const setv=(v,x)=>({op:'data_setvariableto',fl:{VARIABLE:v},in:{VALUE:x}});
+const chv=(v,x)=>({op:'data_changevariableby',fl:{VARIABLE:v},in:{VALUE:x}});
+const V=v=>({op:'data_variable',fl:{VARIABLE:v}});
+const showv=v=>({op:'data_showvariable',fl:{VARIABLE:v}});
+const hidev=v=>({op:'data_hidevariable',fl:{VARIABLE:v}});
+const addlist=(x,l)=>({op:'data_addtolist',fl:{LIST:l},in:{ITEM:x}});
+const dellist=l=>({op:'data_deletealloflist',fl:{LIST:l}});
+const itemof=(i,l)=>({op:'data_itemoflist',fl:{LIST:l},in:{INDEX:i}});
+const lenlist=l=>({op:'data_lengthoflist',fl:{LIST:l}});
+const kp=k=>({op:'sensing_keypressed',fl:{KEY_OPTION:k}});
+const touch=o=>({op:'sensing_touchingobject',fl:{TOUCHINGOBJECTMENU:o}});
+const tcol=c=>({op:'sensing_touchingcolor',in:{COLOR:c}});
+const dist=o=>({op:'sensing_distanceto',fl:{DISTANCETOMENU:o}});
+const timer=()=>({op:'sensing_timer'}), resettimer=()=>({op:'sensing_resettimer'});
+const mousedown=()=>({op:'sensing_mousedown'});
+const loud=()=>({op:'sensing_loudness'});
+const gt=(a,b)=>({op:'operator_gt',in:{OPERAND1:a,OPERAND2:b}});
+const lt=(a,b)=>({op:'operator_lt',in:{OPERAND1:a,OPERAND2:b}});
+const eq=(a,b)=>({op:'operator_equals',in:{OPERAND1:a,OPERAND2:b}});
+const and=(a,b)=>({op:'operator_and',in:{OPERAND1:a,OPERAND2:b}});
+const or2=(a,b)=>({op:'operator_or',in:{OPERAND1:a,OPERAND2:b}});
+const not=a=>({op:'operator_not',in:{OPERAND:a}});
+const add=(a,b)=>({op:'operator_add',in:{NUM1:a,NUM2:b}});
+const mul=(a,b)=>({op:'operator_multiply',in:{NUM1:a,NUM2:b}});
+const div=(a,b)=>({op:'operator_divide',in:{NUM1:a,NUM2:b}});
+const modop=(a,b)=>({op:'operator_mod',in:{NUM1:a,NUM2:b}});
+const absop=a=>({op:'operator_mathop',fl:{OPERATOR:'abs'},in:{NUM:a}});
+const rnd=(a,b)=>({op:'operator_random',in:{FROM:a,TO:b}});
+const join=(a,b)=>({op:'operator_join',in:{STRING1:a,STRING2:b}});
+const bcast=m=>({op:'event_broadcast',fl:{BROADCAST_INPUT:m}});
+const bcastwait=m=>({op:'event_broadcastandwait',fl:{BROADCAST_INPUT:m}});
+const onbcast=m=>({op:'event_whenbroadcastreceived',fl:{BROADCAST_OPTION:m}});
+const clone=t=>({op:'control_create_clone_of',fl:{CLONE_OPTION:t||'_myself_'}});
+const asclone=()=>({op:'control_start_as_clone'});
+const delclone=()=>({op:'control_delete_this_clone'});
+const snd=s=>({op:'sound_play',fl:{SOUND_MENU:s}});
+const sndwait=s=>({op:'sound_playuntildone',fl:{SOUND_MENU:s}});
+const stopsnd=()=>({op:'sound_stopallsounds'});
+const GRASS='#3ec13e';   /* 地面の色（ステージに描く緑） */
+const BRICK='#b5651d';   /* ブロックの色（茶色） */
+const _P=(id,cat,lv,title,goal,kw2,kw,sc,why,miss,next,extra)=>Object.assign(
+  {id:id,cat:cat,lv:lv,title:title,goal:goal,plat:'scratch',
+   kw2:kw2?kw2.split('|'):[],kw:kw?kw.split('|'):[],sc:sc,why:why,
+   miss:miss?miss.split('|'):[],next:next||''},extra||{});
+
 const PATTERNS = [
 {id:'p-forever-move', title:'旗を押したら、ずっと動き続ける', plat:'scratch', lv:1,
  goal:'スタートしたら、止まらずに前へ進ませたい',
@@ -554,8 +801,8 @@ const PATTERNS = [
 {id:'p-bounce', title:'画面の端に着いたら跳ね返る', plat:'scratch', lv:1,
  goal:'画面の外に出ていかないようにしたい',
  kw2:['はねかえ','跳ね返','はしにつ','端に着','がめんのそと','画面の外','そとにでる','外に出','そとにいって','外に行って','でていって','出ていって'],
- kw:['きえ','消え','みえなく','見えなく','いなくなる','もどって','戻って','はし','端'],
- sc:[{op:'event_whenflagclicked'},{op:'motion_setrotationstyle',fl:{STYLE:'左右のみ'}},
+ kw:['きえ','消え','みえなく','見えなく','いなくなる','もどって','戻って','がめんのはし','画面の端'],
+ sc:[{op:'event_whenflagclicked'},{op:'motion_setrotationstyle',fl:{STYLE:'left-right'}},
      {op:'control_forever',sub:[{op:'motion_movesteps',in:{STEPS:10}},{op:'motion_ifonedgebounce'}]}],
  why:'「もし端に着いたら、跳ね返る」を「ずっと」の中に入れて、毎回チェックさせます。回転方法を「左右のみ」にしておくと、逆さまになりません。',
  miss:['「跳ね返る」を「ずっと」の外に置いている（1回しかチェックされない）',
@@ -565,16 +812,16 @@ const PATTERNS = [
 {id:'p-arrow', title:'矢印キーでキャラクターを動かす', plat:'scratch', lv:1,
  goal:'キーボードの矢印で上下左右に動かしたい',
  kw2:['やじるし','矢印','じょうげさゆう','上下左右','きーぼーど','キーボード','そうさ','操作','うごかしたい'],
- kw:['きー','キー','みぎ','右','ひだり','左','うえ','上','した','下','そうじゅう','操縦','うごか','動か'],
+ kw:['きー','キー','みぎむき','右向き','ひだりむき','左向き','うえきー','上キー','したきー','下キー','そうじゅう','操縦','うごか','動か'],
  sc:[{op:'event_whenflagclicked'},
      {op:'control_forever',sub:[
-       {op:'control_if',in:{CONDITION:{op:'sensing_keypressed',fl:{KEY_OPTION:'右向き矢印'}}},
+       {op:'control_if',in:{CONDITION:{op:'sensing_keypressed',fl:{KEY_OPTION:'right arrow'}}},
         sub:[{op:'motion_changexby',in:{DX:10}}]},
-       {op:'control_if',in:{CONDITION:{op:'sensing_keypressed',fl:{KEY_OPTION:'左向き矢印'}}},
+       {op:'control_if',in:{CONDITION:{op:'sensing_keypressed',fl:{KEY_OPTION:'left arrow'}}},
         sub:[{op:'motion_changexby',in:{DX:-10}}]},
-       {op:'control_if',in:{CONDITION:{op:'sensing_keypressed',fl:{KEY_OPTION:'上向き矢印'}}},
+       {op:'control_if',in:{CONDITION:{op:'sensing_keypressed',fl:{KEY_OPTION:'up arrow'}}},
         sub:[{op:'motion_changeyby',in:{DY:10}}]},
-       {op:'control_if',in:{CONDITION:{op:'sensing_keypressed',fl:{KEY_OPTION:'下向き矢印'}}},
+       {op:'control_if',in:{CONDITION:{op:'sensing_keypressed',fl:{KEY_OPTION:'down arrow'}}},
         sub:[{op:'motion_changeyby',in:{DY:-10}}]}]}],
  why:'「ずっと」の中で4つの「もし〜なら」を使い、押されているキーを毎回調べます。「キーが押されたとき」の帽子ブロックより、なめらかに動きます。',
  miss:['「もし」を「ずっと」の外に置いた（1回しか反応しない）',
@@ -585,7 +832,7 @@ const PATTERNS = [
  goal:'キーを押したときだけ動作させたい',
  kw2:['すぺーす','スペース','おしたら','押したら','おすと','押すと','きーをおし'],
  kw:['きー','キー','じゃんぷ','ジャンプ','はっしゃ','発射','おと','音','こうげき','攻撃'],
- sc:[{op:'event_whenkeypressed',fl:{KEY_OPTION:'スペース'}},
+ sc:[{op:'event_whenkeypressed',fl:{KEY_OPTION:'space'}},
      {op:'looks_sayforsecs',in:{MESSAGE:'ジャンプ！',SECS:1}},
      {op:'motion_changeyby',in:{DY:50}},{op:'control_wait',in:{DURATION:0.3}},
      {op:'motion_changeyby',in:{DY:-50}}],
@@ -600,8 +847,8 @@ const PATTERNS = [
  kw:['とまる','止まる','ていし','停止','はんてい','判定','せんさ','センサ','いろ','色'],
  sc:[{op:'event_whenflagclicked'},
      {op:'control_forever',sub:[{op:'motion_movesteps',in:{STEPS:5}},
-       {op:'control_if',in:{CONDITION:{op:'sensing_touchingobject',fl:{TOUCHINGOBJECTMENU:'端'}}},
-        sub:[{op:'looks_sayforsecs',in:{MESSAGE:'ぶつかった！',SECS:1}},{op:'control_stop',fl:{STOP_OPTION:'すべて'}}]}]}],
+       {op:'control_if',in:{CONDITION:{op:'sensing_touchingobject',fl:{TOUCHINGOBJECTMENU:'_edge_'}}},
+        sub:[{op:'looks_sayforsecs',in:{MESSAGE:'ぶつかった！',SECS:1}},{op:'control_stop',fl:{STOP_OPTION:'all'}}]}]}],
  why:'センサ（調べるブロック）→ 判断（もし〜なら）→ 動作、という計測・制御と同じ流れです。判定は「ずっと」の中に入れて、くり返し調べるのがポイント。',
  miss:['触れたかどうかを1回しか調べていない','「すべてを止める」の位置が違い、止めたくないものまで止まる'],
  next:'「端」を別のスプライトや色に変えると、ゲームの当たり判定になります。'},
@@ -632,7 +879,7 @@ const PATTERNS = [
  kw:['もし','じょうけん','条件','はんだん','判断','いがい','以外','そうでな'],
  sc:[{op:'event_whenflagclicked'},
      {op:'control_forever',sub:[
-       {op:'control_if_else',in:{CONDITION:{op:'sensing_keypressed',fl:{KEY_OPTION:'スペース'}}},
+       {op:'control_if_else',in:{CONDITION:{op:'sensing_keypressed',fl:{KEY_OPTION:'space'}}},
         sub:[{op:'looks_say',in:{MESSAGE:'押されている'}}],
         sub2:[{op:'looks_say',in:{MESSAGE:'押されていない'}}]}]}],
  why:'「もし〜なら・でなければ」は、条件が成り立つときと、そうでないときの2通りに必ず分かれます。ONとOFFを切りかえる制御の基本形です。',
@@ -645,7 +892,7 @@ const PATTERNS = [
  kw:['ふやす','増やす','きろく','記録','ごうけい','合計','たまる','たす','足す'],
  sc:[{op:'event_whenflagclicked'},{op:'data_setvariableto',fl:{VARIABLE:'得点'},in:{VALUE:0}},
      {op:'control_forever',sub:[
-       {op:'control_if',in:{CONDITION:{op:'sensing_touchingobject',fl:{TOUCHINGOBJECTMENU:'端'}}},
+       {op:'control_if',in:{CONDITION:{op:'sensing_touchingobject',fl:{TOUCHINGOBJECTMENU:'_edge_'}}},
         sub:[{op:'data_changevariableby',fl:{VARIABLE:'得点'},in:{VALUE:1}},{op:'control_wait',in:{DURATION:0.5}}]}]}],
  why:'変数は「数をしまっておく箱」。始めに 0 にする（初期化）のを忘れると、前回の値が残ったままになります。',
  miss:['最初に「0にする」を入れていない（初期化忘れ）','「ずつ変える」と「にする」を取りちがえている',
@@ -657,7 +904,7 @@ const PATTERNS = [
  kw2:['までくりかえ','まで繰り返','になるまで','とどくまで','届くまで','たっするまで','達するまで'],
  kw:['おわり','終わり','しゅうりょう','終了','ゴール','ごーる','とまる','止まる','じょうけん','条件'],
  sc:[{op:'event_whenflagclicked'},
-     {op:'control_repeat_until',in:{CONDITION:{op:'sensing_touchingobject',fl:{TOUCHINGOBJECTMENU:'端'}}},
+     {op:'control_repeat_until',in:{CONDITION:{op:'sensing_touchingobject',fl:{TOUCHINGOBJECTMENU:'_edge_'}}},
       sub:[{op:'motion_movesteps',in:{STEPS:5}}]},
      {op:'looks_sayforsecs',in:{MESSAGE:'ゴール！',SECS:2}}],
  why:'「〜まで繰り返す」は、条件が成り立った瞬間にループを抜けます。センサの値が目標に届くまで動かし続ける制御に使えます。',
@@ -667,7 +914,7 @@ const PATTERNS = [
 {id:'p-sensor-loop', title:'【計測・制御の基本形】ずっと調べて、条件で動かす', plat:'both', lv:2,
  goal:'センサの値を見て自動で動かしたい',
  kw2:['くらくなったら','暗くなったら','くらくなると','あかるさが','明るさが','せんさ','センサ','じどう','自動','せいぎょ','制御','けいそく','計測','しきいち','しきい値','いじょうになったら','以上になったら','よるになったら'],
- kw:['あかるさ','明るさ','くらい','暗い','くらく','暗く','あかるい','明るい','ひかり','光','ひかりせんさ','光センサ','らいと','ライト','でんき','電気','てんとう','点灯','よる','夜','おんど','温度','ねつ','熱','はんだん','判断','ちかづい','近づい'],
+ kw:['あかるさ','明るさ','くらい','暗い','くらく','暗く','あかるい','明るい','ひかり','光','ひかりせんさ','光センサ','らいとをつけ','ライトをつけ','らいとがつ','でんき','電気','てんとう','点灯','よる','夜','おんど','温度','ねつ','熱','はんだん','判断','ちかづい','近づい'],
  sc:[{op:'event_whenflagclicked'},
      {op:'control_forever',sub:[
        {op:'control_if_else',in:{CONDITION:{op:'operator_lt',in:{OPERAND1:{op:'mbmore_lightlevel'},OPERAND2:50}}},
@@ -687,8 +934,8 @@ const PATTERNS = [
  sc:[{op:'event_whenflagclicked'},
      {op:'control_forever',sub:[
        {op:'control_if',in:{CONDITION:{op:'operator_and',
-          in:{OPERAND1:{op:'sensing_keypressed',fl:{KEY_OPTION:'右向き矢印'}},
-              OPERAND2:{op:'sensing_keypressed',fl:{KEY_OPTION:'上向き矢印'}}}}},
+          in:{OPERAND1:{op:'sensing_keypressed',fl:{KEY_OPTION:'right arrow'}},
+              OPERAND2:{op:'sensing_keypressed',fl:{KEY_OPTION:'up arrow'}}}}},
         sub:[{op:'looks_say',in:{MESSAGE:'ななめ移動！'}},{op:'motion_changexby',in:{DX:7}},{op:'motion_changeyby',in:{DY:7}}]}]}],
  why:'「かつ」は両方とも成り立つときだけ、「または」はどちらか一方でも成り立てば実行されます。制御では「暗くて、かつ、スイッチON」のような条件に使います。',
  miss:['「かつ」と「または」を取りちがえている','条件ブロックのはめ込み先をまちがえている'],
@@ -865,6 +1112,1314 @@ PATTERNS.push(
               ['pins','デジタルで出力 端子 P0 に（on なら 1）'],['basic','一時停止 200 ミリ秒']]]]}}
 );
 
+/* ===== マリオゲーム：動きとジャンプ ===== */
+PATTERNS.push(
+_P('mm-walk','move',1,'左右の矢印キーで歩く','マリオを左右に動かしたい',
+ 'ひだりみぎ|左右|やじるしできーであるく|あるかせ|歩かせ|さゆうにうごか|左右に動か|まりおをうごか|マリオを動か',
+ 'あるく|歩く|うごかす|動かす|ある|きー|キー|そうさ|操作|いどう|移動|よこ|横',
+ [flag(),rotstyle('left-right'),fore(
+   iff(kp('right arrow'),point(90),chx(5)),
+   iff(kp('left arrow'),point(-90),chx(-5)))],
+ 'ずっとの中で「キーが押されたか」を調べ続けるので、押している間なめらかに歩きます。回転方法を「左右のみ」にしないと、左を向いたとき上下逆さまになります。',
+ '左に動かすのに -5 ではなく 5 を入れている|回転方法の設定を忘れて逆さまになる',
+ '5 を「速さ」という変数にすると、ダッシュやスロー再生が作れます。',{owner:'マリオ'}),
+
+_P('mm-speed','move',2,'速さの変数でなめらかに動かす（加速と摩擦）','本物みたいにスーッと動き出して、スーッと止まりたい',
+ 'なめらか|かそく|加速|つるつる|すべる|滑る|かんせい|慣性|はやさのへんすう|速さの変数|じょじょに',
+ 'はやさ|速さ|そくど|速度|まさつ|摩擦|うごきだし|とまりかた|しぜん|自然',
+ [flag(),setv('よこの速さ',0),fore(
+   iff(kp('right arrow'),chv('よこの速さ',1)),
+   iff(kp('left arrow'),chv('よこの速さ',-1)),
+   setv('よこの速さ',mul(V('よこの速さ'),0.85)),
+   chx(V('よこの速さ')))],
+ '「速さ」という変数に力を足し、毎回 0.85 をかけて少しずつ減らします（摩擦）。これだけで、動き出しと止まり方が本物らしくなります。',
+ '摩擦（0.85をかける）を忘れて、いつまでも止まらない|速さを足す順番と動かす順番が逆になっている',
+ '0.85 を 0.95 にするとツルツルの氷、0.6 にするとすぐ止まる砂の床になります。',{owner:'マリオ'}),
+
+_P('mm-maxspeed','move',2,'速くなりすぎないように上限をつける','だんだん速くなりすぎて操作できない',
+ 'はやくなりすぎ|速くなりすぎ|じょうげん|上限|はやすぎ|速すぎ|せいげん|制限|とめられない',
+ 'はやさ|速さ|そくど|速度|さいだい|最大|くるう|あばれる',
+ [flag(),fore(
+   iff(gt(V('よこの速さ'),8),setv('よこの速さ',8)),
+   iff(lt(V('よこの速さ'),-8),setv('よこの速さ',-8)),
+   chx(V('よこの速さ')))],
+ '足し算だけだと速さは無限に増えます。上限と下限をはさんで、決めた速さより速くならないようにします。',
+ '右の上限だけ入れて、左に進むと止まらない|上限の判定を「ずっと」の外に置いている',
+ '上限を変数にすれば、アイテムを取ったときだけ速くできます。',{owner:'マリオ'}),
+
+_P('mm-face','move',1,'進む向きにキャラクターを向ける','進む方向にマリオを向かせたい',
+ 'むきをかえ|向きを変え|ひだりむき|左向き|みぎむき|右向き|はんてん|反転|むきがおかしい',
+ 'むき|向き|かいてん|回転|こすちゅーむ|コスチューム|さかさ|逆さ|うしろむき',
+ [flag(),rotstyle('left-right'),fore(
+   iff(kp('right arrow'),point(90)),
+   iff(kp('left arrow'),point(-90)))],
+ '「回転方法を左右のみ」にしてから向きを変えると、上下がひっくり返らずに左右だけ反転します。',
+ '回転方法を「自由に回転」のままにして逆さまになる|向きを変えるブロックを「ずっと」の外に置いている',
+ 'コスチュームを「右向き」「左向き」の2枚用意して切りかえる方法もあります。',{owner:'マリオ'}),
+
+_P('mm-walkanim','move',2,'歩くアニメーション（コスチュームを切りかえる）','歩いているように見せたい',
+ 'あにめ|アニメ|ぱたぱた|こすちゅーむをきりかえ|コスチュームを切りかえ|あるいてるよう|歩いてるよう|あしがうごか|足が動か',
+ 'こすちゅーむ|コスチューム|きりかえ|切りかえ|え|絵|うごき|動き|なめらか',
+ [flag(),fore(ifel(or2(kp('right arrow'),kp('left arrow')),
+   [nextcost(),wait(0.1)],
+   [cost('立つ')]))],
+ 'キーが押されている間だけコスチュームを次々に変えると、歩いて見えます。待つ時間を入れないと速すぎて絵が見えません。',
+ '「0.1秒待つ」を入れず、ちらついて見える|止まったときに立ちコスチュームへ戻していない',
+ 'ジャンプ中は別のコスチュームにすると、ぐっとそれらしくなります。',{owner:'マリオ'}),
+
+_P('mm-jump-easy','move',1,'かんたんなジャンプ（上がって下りる）','とりあえずジャンプさせたい',
+ 'じゃんぷ|ジャンプ|とぶ|跳ぶ|飛ぶ|はねる|跳ねる|ちょうやく',
+ 'すぺーす|スペース|うえ|上|あがる|上がる|おりる|下りる|そら|空',
+ [key('space'),rep(10,chy(12)),rep(10,chy(-12))],
+ 'まず10回上げて、次に10回下げるだけのジャンプです。しくみが分かりやすいので、最初はこれで十分です。',
+ '連打すると空中でも何度でも跳べてしまう|地面の高さと関係なく下りるので、床にめり込む',
+ '「重力を使った本格ジャンプ」に進むと、床の高さに合ったジャンプになります。',{owner:'マリオ'}),
+
+_P('mm-gravity','move',3,'★重力を使った本格ジャンプ（プラットフォーマーの基本形）','マリオみたいなジャンプにしたい',
+ 'じゅうりょく|重力|ほんかくてきなじゃんぷ|本格|まりおみたい|マリオみたい|らっかそくど|落下速度|ぷらっとふぉーま|おちてこない|落ちてこない|うかんだまま|じゃんぷしたあと|ジャンプしたあと|とんだまま',
+ 'じゃんぷ|ジャンプ|おちる|落ちる|ゆか|床|じめん|地面|たかさ|高さ|ものり|めりこむ',
+ [flag(),setv('落ちる速さ',0),fore(
+   chy(V('落ちる速さ')),
+   chv('落ちる速さ',-1),
+   iff(tcol(GRASS),
+     untl(not(tcol(GRASS)),chy(1)),
+     setv('落ちる速さ',0),
+     iff(kp('up arrow'),setv('落ちる速さ',12))))],
+ 'マリオ系ゲームの心臓部です。①「落ちる速さ」の分だけ y を動かす ②毎回 1 ずつ下向きに加速（重力）③地面の色に触れたら、抜けるまで上に押し戻して速さを 0 にする ④地面にいるときだけ上キーで速さを 12 にする（ジャンプ）。',
+ '地面の色が、ステージに描いた色とぴったり合っていない（スポイトで取る）|地面に触れたときに速さを 0 に戻していないので、めり込み続ける|ジャンプの判定を地面の外に置き、空中で何度も跳べる',
+ '12 を変えるとジャンプの高さ、1 を変えると重力の強さが変わります。数値を変えて手ざわりを探すのが、この単元のおもしろいところです。',{owner:'マリオ'}),
+
+_P('mm-ground','move',2,'地面に着いたら止まる（めり込みを直す）','床をすり抜けてしまう・めり込む',
+ 'めりこむ|めり込む|すりぬけ|すり抜け|ゆかをとおりぬけ|床|じめんにとまら|地面に止ま|しずむ|沈む',
+ 'じめん|地面|ゆか|床|とまる|止まる|あたり|当たり|はんてい|判定|いろ|色',
+ [flag(),fore(
+   chy(-5),
+   iff(tcol(GRASS),untl(not(tcol(GRASS)),chy(1))))],
+ '毎回少し下げて、地面の色に触れていたら「触れなくなるまで」1 ずつ上げて戻します。この押し戻しが、めり込みを防ぐ定番の方法です。',
+ '押し戻しを「〜まで繰り返す」にせず、1回だけ上げている|下げる量が大きすぎて、細い床をすり抜ける',
+ '下げる量（-5）より押し戻す量（1）を小さくするのがコツです。',{owner:'マリオ'}),
+
+_P('mm-double','move',3,'二段ジャンプ','空中でもう一度だけ跳びたい',
+ 'にだんじゃんぷ|二段ジャンプ|2だんじゃんぷ|くうちゅうでじゃんぷ|空中でジャンプ|もういちどとぶ|にかいとべ',
+ 'じゃんぷ|ジャンプ|かいすう|回数|くうちゅう|空中|とべる',
+ [flag(),setv('ジャンプ回数',0),fore(
+   iff(tcol(GRASS),setv('ジャンプ回数',0)),
+   iff(and(kp('up arrow'),lt(V('ジャンプ回数'),2)),
+     setv('落ちる速さ',12),chv('ジャンプ回数',1),wait(0.25)))],
+ 'ジャンプした回数を数えて、2回までなら跳べるようにします。地面に着いたら回数を 0 に戻すのが大事なところです。',
+ '地面で回数を 0 に戻さず、一度着地すると二度と跳べない|待つブロックがなく、1回押しただけで2回分使われる',
+ '2 を 3 にすれば三段ジャンプ。アイテムで回数が増える仕組みも作れます。',{owner:'マリオ'}),
+
+_P('mm-jumphold','move',3,'長く押すほど高く跳ぶ','ボタンを押す長さでジャンプの高さを変えたい',
+ 'ながおし|長押し|たかくとぶ|高く跳ぶ|おすながさ|押す長さ|かへんじゃんぷ|ちょうせつ|調節',
+ 'じゃんぷ|ジャンプ|たかさ|高さ|ちから|力|ちょうせい|調整',
+ [flag(),fore(
+   iff(and(kp('up arrow'),tcol(GRASS)),
+     setv('落ちる速さ',8),
+     rep(8,iff(kp('up arrow'),chv('落ちる速さ',1)),chy(V('落ちる速さ')))))],
+ 'ジャンプの出だしの8回だけ、キーを押し続けていたら上向きの力を足します。すぐ離せば低く、押し続ければ高く跳びます。',
+ '足す回数が多すぎて、飛びすぎる|押し続ける判定を入れず、いつも同じ高さになる',
+ '本物のマリオもこの仕組みです。回数と力の数字を変えて、気持ちよさを探してみよう。',{owner:'マリオ'}),
+
+_P('mm-wall','move',2,'壁にぶつかったら進めないようにする','ブロックをすり抜けてしまう',
+ 'かべ|壁|ぶろっくをすりぬけ|ブロックをすり抜け|とおりぬけ|通り抜け|かべにめりこ|ぶつかってとまる|とまらない',
+ 'ぶろっく|ブロック|あたり|当たり|はんてい|判定|すすめない|いろ|色',
+ [flag(),fore(
+   iff(kp('right arrow'),chx(5),iff(tcol(BRICK),chx(-5))),
+   iff(kp('left arrow'),chx(-5),iff(tcol(BRICK),chx(5))))],
+ 'いったん動かしてみて、壁の色に触れていたら同じだけ戻す、という考え方です。「動かす→確かめる→戻す」の3手順で覚えましょう。',
+ '戻す量が動かした量と違い、壁でガタガタする|壁と地面を同じ色にしてしまい、登れなくなる',
+ '壁の色と地面の色は変えておくと、判定が作りやすくなります。',{owner:'マリオ'}),
+
+_P('mm-slope','move',3,'坂道をのぼる','坂で止まってしまう',
+ 'さかみち|坂道|さか|坂|のぼる|登る|しゃめん|斜面|かいだん|階段',
+ 'あがる|上がる|うごけない|動けない|とまる|止まる|じめん|地面',
+ [flag(),fore(
+   iff(kp('right arrow'),chx(4),rep(4,iff(tcol(GRASS),chy(1)))))],
+ '横に進んだあと、地面にめり込んでいたら少しだけ持ち上げます。持ち上げる回数より坂の傾きがゆるければ、なめらかに登れます。',
+ '持ち上げる回数が足りず、坂の途中で止まる|持ち上げすぎて、坂を飛び上がってしまう',
+ '階段状のステージなら、1段の高さを持ち上げ回数より小さくして描きます。',{owner:'マリオ'}),
+
+_P('mm-fall','move',2,'穴に落ちたらミスにする','下に落ちたらやり直したい',
+ 'あなにおち|穴に落ち|したにおち|下に落ち|らっか|落下|おちたらみす|落ちたらミス|がめんのしたに',
+ 'あな|穴|みす|ミス|やりなおし|やり直し|しっぱい|失敗|y ざひょう|y座標',
+ [flag(),fore(
+   iff(lt(Y(),-170),bcast('ミス'),goxy(-180,0),setv('落ちる速さ',0)))],
+ 'y座標が画面の下（-170くらい）より小さくなったら落ちたと判断します。ステージの下端は -180 なので、その少し上で判定します。',
+ '判定を「ずっと」の外に置き、1回しか調べない|落ちたあと落ちる速さを 0 に戻さず、復活してすぐまた落ちる',
+ '「ミス」のメッセージを受け取って、残機を1減らす仕組みにつなげましょう。',{owner:'マリオ'}),
+
+_P('mm-maxfall','move',3,'落ちる速さが速くなりすぎないようにする','落ちるときに床をすり抜ける',
+ 'はやくおちすぎ|速く落ちすぎ|らっかそくどのじょうげん|すりぬけてしまう|つきぬけ|突き抜け|そこぬけ',
+ 'おちる|落ちる|はやさ|速さ|ゆか|床|すりぬけ|じゅうりょく|重力',
+ [flag(),fore(
+   chv('落ちる速さ',-1),
+   iff(lt(V('落ちる速さ'),-15),setv('落ちる速さ',-15)),
+   chy(V('落ちる速さ')))],
+ '落ちる速さが床の厚みより大きくなると、1回の移動で床を飛びこえてしまいます。速さに下限をつけて防ぎます。',
+ '下限をつけず、高いところから落ちると床を貫通する|床を細く描きすぎている',
+ '床は厚めに描く、落ちる速さの下限をつける、の両方をやると安定します。',{owner:'マリオ'}),
+
+_P('mm-aircontrol','move',2,'ジャンプ中でも左右に動けるようにする','ジャンプすると左右に動けなくなる',
+ 'くうちゅうそうさ|空中操作|じゃんぷちゅうにうごか|ジャンプ中に動か|とんでるときにうごけ|うごけなくなる',
+ 'じゃんぷ|ジャンプ|さゆう|左右|うごか|動か|そうさ|操作|べつべつ',
+ [flag(),fore(
+   iff(kp('right arrow'),chx(4)),
+   iff(kp('left arrow'),chx(-4)))],
+ '横の動きとジャンプを別々の「ずっと」に分けて書くと、同時に働きます。1つの「ずっと」に全部入れて、ジャンプ中に横の処理が止まっていないか確かめましょう。',
+ 'ジャンプの上下移動を「〇回繰り返す」で書き、その間ずっと横移動が止まっている|2つの塊に分けず、条件が競合している',
+ '「重力を使った本格ジャンプ」と、この横移動を別々の塊にするのが定番の形です。',{owner:'マリオ'}),
+
+_P('mm-start','move',1,'★スタート位置と状態を最初に戻す（初期化）','2回目から動きがおかしくなる',
+ 'しょきか|初期化|さいしょにもど|最初に戻|すたーといち|スタート位置|にかいめ|2回目|まいかいちがう',
+ 'はじめ|初め|いち|位置|おおきさ|大きさ|むき|向き|りせっと|リセット|じょうたい|状態',
+ [flag(),goxy(-180,-60),point(90),setsize(100),show(),cleareff(),
+  setv('落ちる速さ',0),setv('得点',0),setv('残機',3)],
+ 'ゲームは何度も遊ぶものなので、始まるときに位置・向き・大きさ・表示・変数を全部きめた状態に戻します。これを初期化といい、忘れると2回目から動きが変わります。',
+ '初期化を書かず、前回の位置や得点が残る|変数だけ初期化して、大きさや画像効果を戻し忘れる',
+ 'この塊をいちばん最初に作っておくと、あとの作業がとても楽になります。',{owner:'マリオ'}),
+
+_P('mm-crouch','move',2,'下キーでしゃがむ','しゃがませたい',
+ 'しゃがむ|しゃがみ|かがむ|ちいさくなる|小さくなる|したきー|下キー|ふせる',
+ 'したむきやじるし|下向き矢印|おおきさ|大きさ|こすちゅーむ|コスチューム|よける',
+ [flag(),fore(ifel(kp('down arrow'),
+   [cost('しゃがむ'),setsize(70)],
+   [cost('立つ'),setsize(100)]))],
+ '押している間だけ小さくして、離したら元に戻します。「でなければ」で元に戻す処理を書くのがポイントです。',
+ '「でなければ」を書かず、一度しゃがむと戻らない|大きさを変えると当たり判定も変わることに気づいていない',
+ 'しゃがんでいる間は敵の弾に当たらない、という仕掛けが作れます。',{owner:'マリオ'}),
+
+_P('mm-dash','move',2,'ダッシュ（ボタンを押している間だけ速く）','走らせたい',
+ 'だっしゅ|ダッシュ|はしる|走る|はやくうごく|速く動く|しふと|シフト|かそく',
+ 'はやさ|速さ|そくど|速度|ぼたん|ボタン|おしながら',
+ [flag(),fore(
+   ifel(kp('z'),[setv('速さ',8)],[setv('速さ',4)]),
+   iff(kp('right arrow'),chx(V('速さ'))),
+   iff(kp('left arrow'),chx(mul(V('速さ'),-1))))],
+ 'ダッシュキーを押している間だけ「速さ」の値を大きくします。移動そのものは1か所にまとめると、あとで直しやすくなります。',
+ '速さを戻す「でなければ」を書かず、ずっとダッシュのまま|左に動かすとき、速さにマイナスをかけ忘れる',
+ 'ダッシュ中だけコスチュームを変えると、走っている感じが出ます。',{owner:'マリオ'}),
+
+_P('mm-turnaround','move',1,'コスチュームで左右を向きかえる','回転させずに向きだけ変えたい',
+ 'こすちゅーむでむき|コスチュームで向き|えをきりかえてむき|みぎむきひだりむき|むきだけかえ',
+ 'むき|向き|こすちゅーむ|コスチューム|はんてん|反転|さかさ|逆さ',
+ [flag(),fore(
+   iff(kp('right arrow'),cost('右向き'),chx(5)),
+   iff(kp('left arrow'),cost('左向き'),chx(-5)))],
+ '「向き」を変えずにコスチュームを差しかえると、絵が変形せずきれいに左右が変わります。コスチュームは右向き・左向きの2枚を用意します。',
+ 'コスチューム名とプログラムの名前が違う|コスチュームを用意せずに切りかえようとしている',
+ '歩くアニメーションと組み合わせるときは、右歩き1・右歩き2…と名前を決めておくと管理が楽です。',{owner:'マリオ'}),
+
+_P('mm-updown','move',1,'上下左右の4方向に動かす（見下ろし型）','上下にも動かしたい',
+ 'じょうげ|上下|よんほうこう|4方向|みおろし|見下ろし|うえしたにもうごか|ぜんほうこう',
+ 'うごか|動か|やじるし|矢印|いどう|移動|うえきー|上キー|したきー|下キー|よんほうこう',
+ [flag(),fore(
+   iff(kp('right arrow'),chx(5)),
+   iff(kp('left arrow'),chx(-5)),
+   iff(kp('up arrow'),chy(5)),
+   iff(kp('down arrow'),chy(-5)))],
+ 'マリオのような横から見るゲームではなく、上から見下ろすゲームのときの動かし方です。重力は使いません。',
+ '斜めに動けないように「でなければ」でつないでしまう|ジャンプの重力処理を混ぜてしまう',
+ '4つとも同時に成り立つので、斜め移動が自然にできます。',{owner:'マリオ'})
+);
+
+/* ===== マリオゲーム：ステージ・地面・スクロール ===== */
+const sub=(a,b)=>({op:'operator_subtract',in:{NUM1:a,NUM2:b}});
+PATTERNS.push(
+_P('ms-ground','stage',1,'★地面を「色」で作る（当たり判定の土台）','マリオが立つ地面を作りたい',
+ 'じめんをつくり|地面を作り|ゆかをつくり|床を作り|あしば|足場|だいち|ステージをつくり|ステージを作り',
+ 'じめん|地面|ゆか|床|いろ|色|はんてい|判定|えがく|描く|はいけい|背景',
+ [flag(),fore(
+   ifel(tcol(GRASS),
+     [setv('落ちる速さ',0)],
+     [chy(-5)]))],
+ 'マリオ系ゲームでは、地面を「背景に描いた緑色」として作り、その色に触れているかどうかで足元を判定するのが定番です。背景に直接描けば、足場をいくつでも自由に作れます。',
+ '色をスポイトで取らず、似ているけれど違う色を指定している|地面と壁とアイテムを同じ色で描いてしまい、判定が混ざる',
+ '地面＝緑、壁＝茶色、はしご＝黄色…と色で役割を決めておくと、あとの判定がとても楽になります。',{owner:'マリオ'}),
+
+_P('ms-scroll','stage',3,'★横スクロール（ステージが流れる）','画面より広いステージを作りたい',
+ 'すくろーる|スクロール|がめんがながれ|画面が流れ|ひろいすてーじ|広いステージ|すてーじをひろく|ステージを広く|ひろくしたい|広くしたい|よこにながい|横に長い|がめんよりひろい|画面より広い',
+ 'すてーじ|ステージ|はいけい|背景|うごく|動く|ひろい|広い|つづき|続き',
+ [flag(),setv('スクロールX',0),fore(
+   setx(mul(V('スクロールX'),-1)))],
+ 'マリオを動かすかわりに、地面のスプライトを反対向きに動かすと、世界が流れて見えます。「スクロールX」という変数を1つ決め、地面の x座標を その逆の値にするのが基本形です。',
+ 'スクロールXにマイナスをかけ忘れ、地面が逆向きに流れる|地面を背景（ステージ）に描いてしまい、動かせない',
+ 'ステージは横長のスプライトとして描きます。地面・敵・アイテムすべてを同じスクロールXで動かすと、ずれません。',{owner:'地面'}),
+
+_P('ms-camera','stage',3,'マリオが中央を超えたらスクロールする','マリオを画面の真ん中に置いたままステージを進めたい',
+ 'まんなかをこえ|真ん中を超え|ちゅうおう|中央|かめらがおいかけ|カメラが追いかけ|まりおについてくる|がめんがついてくる',
+ 'すくろーる|スクロール|かめら|カメラ|まんなか|真ん中|いち|位置|すすむ|進む',
+ [flag(),fore(
+   iff(gt(X(),100),setx(100),chv('スクロールX',5)),
+   iff(lt(X(),-100),setx(-100),chv('スクロールX',-5)))],
+ 'マリオが画面の中央より前に出そうになったら、マリオを止めて、かわりにスクロール量を増やします。すると「マリオは中央、世界が流れる」という本物と同じ見え方になります。',
+ 'マリオの位置を戻し忘れ、画面の外へ出ていく|増やすスクロール量と、マリオの移動量が違い、地面がガタつく',
+ '増やす値（5）は、マリオの移動の速さと同じにそろえます。',{owner:'マリオ'}),
+
+_P('ms-scroll-all','stage',3,'敵やアイテムもいっしょにスクロールさせる','スクロールすると敵だけ動かない',
+ 'てきがいっしょにうごか|敵が一緒に動か|あいてむがついてこ|アイテムがついてこ|ずれる|いっしょにすくろーる|同期',
+ 'すくろーる|スクロール|てき|敵|あいてむ|アイテム|いち|位置|ずれ',
+ [asclone(),fore(
+   setx(sub(V('元のx'),V('スクロールX'))))],
+ 'ステージの上に置くものは全部、「本当の位置（元のx）− スクロールX」を x座標にします。クローンごとに「元のx」を覚えさせておくのがコツです（このスプライトのみの変数）。',
+ '「元のx」を全スプライト用の変数にしてしまい、全部が同じ場所に重なる|スクロールXを引かずに足している',
+ 'この形にしておくと、敵・コイン・足場すべてが同じ動きでスクロールします。',{owner:'敵'}),
+
+_P('ms-platform','stage',3,'足場をクローンで並べる','足場をたくさん置きたい',
+ 'あしばをならべ|足場を並べ|ぶろっくをならべ|ブロックを並べ|くろーんでならべ|たくさんおく|たくさん置く',
+ 'あしば|足場|ぶろっく|ブロック|くろーん|クローン|ならべる|並べる|はいち|配置',
+ [flag(),hide(),
+  rep(5,clone('_myself_'),chv('置くx',120)),
+  asclone(),setv('元のx',V('置くx')),show()],
+ 'もとのスプライトは隠しておき、位置をずらしながらクローンを作ります。クローンは「クローンされたとき」から動き出します。',
+ 'もとのスプライトを隠し忘れ、余分な足場が1つ残る|クローンを作る前に位置を変えていないので、全部同じ場所に重なる',
+ '置く位置をリストに入れておくと、ステージのデータを作り替えるだけで地形を変えられます。',{owner:'足場'}),
+
+_P('ms-moving','stage',3,'動く床（乗ると一緒に運ばれる）','床が動くしかけを作りたい',
+ 'うごくゆか|動く床|うごくあしば|動く足場|りふと|リフト|はこばれ|運ばれ|いどうゆか|移動床',
+ 'ゆか|床|あしば|足場|うごく|動く|のる|乗る|いったりきたり',
+ [flag(),goxy(0,-50),fore(
+   rep(60,chx(2),iff(touch('マリオ'),chx(0))),
+   rep(60,chx(-2)))],
+ '床を左右に往復させます。マリオ側では「床に触れていたら、床と同じだけ x を動かす」処理を入れると、乗って運ばれる感じになります。',
+ '床だけ動いてマリオが置いていかれる（マリオ側の処理を書いていない）|往復の回数と移動量が合わず、だんだんずれていく',
+ 'マリオ側に「もし〈動く床に触れた〉なら x座標を 2 ずつ変える」を入れると、一緒に運ばれます。',{owner:'動く床'}),
+
+_P('ms-fallfloor','stage',3,'乗ると落ちる床','踏むと崩れる床を作りたい',
+ 'おちるゆか|落ちる床|くずれる|崩れる|ふむとおちる|踏むと落ちる|きえるあしば|消える足場',
+ 'ゆか|床|あしば|足場|おちる|落ちる|きえる|消える|わな|罠',
+ [flag(),goxy(60,-80),show(),fore(
+   iff(touch('マリオ'),
+     rep(10,chx(2),chx(-2)),
+     rep(20,chy(-8)),
+     hide(),wait(2),goxy(60,-80),show()))],
+ 'マリオが触れたら、少し揺らしてから落として消します。少し待ってから元の位置に戻して表示すれば、何度でも遊べます。',
+ '元の位置に戻す処理を書かず、一度落ちたら二度と出てこない|揺れの表現を入れず、突然消えて理不尽になる',
+ '揺れている間に逃げれば助かる、という調整がゲームらしさを生みます。',{owner:'落ちる床'}),
+
+_P('ms-spring','stage',2,'ジャンプ台（バネ）で高く跳ぶ','踏むと高く跳ぶ場所を作りたい',
+ 'じゃんぷだい|ジャンプ台|ばね|バネ|とらんぽりん|トランポリン|たかくとばす|高く跳ばす|はねあがる',
+ 'じゃんぷ|ジャンプ|たかく|高く|とぶ|跳ぶ|しかけ|仕掛け',
+ [flag(),fore(
+   iff(touch('マリオ'),
+     setv('落ちる速さ',20),
+     cost('のびる'),wait(0.2),cost('ちぢむ')))],
+ 'ジャンプ台に触れたら、マリオの「落ちる速さ」を大きな値にします。ふつうのジャンプが 12 なら、20 にすると2倍近く跳びます。',
+ 'マリオ側の変数名と、ジャンプ台で使う変数名が違う|「落ちる速さ」を変えたあとに、重力の処理で上書きしている',
+ '数値を変えて、どのくらいで気持ちよく跳ぶか班で比べてみよう。',{owner:'ジャンプ台'}),
+
+_P('ms-ladder','stage',3,'はしごを登る','はしごを登れるようにしたい',
+ 'はしご|梯子|のぼる|登る|よじのぼ|つたのぼり|らだー',
+ 'うえ|上|うごく|動く|じゅうりょく|重力|とめる|止める|いろ|色',
+ [flag(),fore(
+   iff(tcol('#ffd11a'),
+     setv('落ちる速さ',0),
+     iff(kp('up arrow'),chy(4)),
+     iff(kp('down arrow'),chy(-4))))],
+ 'はしごの色に触れている間は重力を止めて（落ちる速さを0にして）、上下キーで動けるようにします。色で役割を分けるやり方の応用です。',
+ 'はしごの色を地面と同じにしてしまい、登れない|はしごから離れたときに重力を戻し忘れる',
+ 'はしごの上で左右キーを無効にすると、より本物らしくなります。',{owner:'マリオ'}),
+
+_P('ms-pipe','stage',2,'土管に入って別の場所へ移動する','ワープさせたい',
+ 'どかん|土管|わーぷ|ワープ|べつのばしょ|別の場所|はいる|入る|しょーとかっと|移動させ',
+ 'いち|位置|ざひょう|座標|うごかす|動かす|したきー|下キー|めっせーじ',
+ [flag(),fore(
+   iff(and(touch('土管'),kp('down arrow')),
+     say('土管に入った！',1),
+     goxy(0,120),
+     bcast('地下へ')))],
+ '土管に触れていて、さらに下キーが押されたときだけ移動します。「かつ」で2つの条件を組み合わせるのがポイントです。',
+ '触れただけで勝手に移動してしまう（下キーの条件を入れていない）|移動先の座標が地面の中で、めり込む',
+ '移動と同時にメッセージを送って、背景も切りかえると場面転換になります。',{owner:'マリオ'}),
+
+_P('ms-water','stage',3,'水中はゆっくり沈む・泳ぐ','水の中の動きを作りたい',
+ 'すいちゅう|水中|みずのなか|水の中|およぐ|泳ぐ|しずむ|沈む|うく|浮く',
+ 'みず|水|じゅうりょく|重力|ゆっくり|おそく|遅く|いろ|色',
+ [flag(),fore(
+   ifel(tcol('#29a8ff'),
+     [chv('落ちる速さ',-0.3),iff(kp('up arrow'),setv('落ちる速さ',4))],
+     [chv('落ちる速さ',-1)]))],
+ '水の色に触れている間は、重力を弱く（-1 ではなく -0.3）し、上キーで小さく上に進めるようにします。同じ仕組みの数値を変えるだけで、まったく違う手ざわりになります。',
+ '水から出たときに重力を戻し忘れ、地上でもふわふわする|水中の判定を「でなければ」で書かず、両方の重力がかかる',
+ '水中だけ泳ぐコスチュームに変えると、ぐっとそれらしくなります。',{owner:'マリオ'}),
+
+_P('ms-checkpoint','stage',2,'チェックポイント（復活地点を記録する）','ミスしても途中から再開したい',
+ 'ちぇっくぽいんと|チェックポイント|ふっかつちてん|復活地点|とちゅうから|途中から|さいかい|再開|せーぶ',
+ 'きろく|記録|へんすう|変数|いち|位置|みす|ミス|もどる|戻る',
+ [flag(),setv('復活x',-180),setv('復活y',-60),fore(
+   iff(touch('旗'),setv('復活x',X()),setv('復活y',Y()),say('チェックポイント！',1))),
+  onbcast('ミス'),goxy(V('復活x'),V('復活y'))],
+ '通過した場所の座標を変数に覚えておき、ミスしたらそこへ戻します。「今の位置を変数に入れる」という書き方を覚えると、いろいろ応用できます。',
+ '復活地点の初期値を入れ忘れ、最初のミスで座標 0 に戻る|x だけ記録して y を忘れる',
+ 'チェックポイントを通ったら旗の色を変えると、通過が分かりやすくなります。',{owner:'マリオ'}),
+
+_P('ms-goal','stage',1,'ゴールに触れたらクリア','ゴールを作りたい',
+ 'ごーる|ゴール|くりあ|クリア|とうちゃく|到着|はたにさわ|旗に触|おしろ|お城',
+ 'さわる|触る|ふれる|触れる|おわり|終わり|つぎ|次|めっせーじ',
+ [flag(),fore(
+   iff(touch('ゴール'),
+     say('クリア！',2),
+     bcast('ステージクリア'),
+     stopall('other scripts in sprite')))],
+ 'ゴールに触れたらメッセージを送って、ほかの動きを止めます。「すべてを止める」を使うと、クリア画面の処理まで止まってしまうので注意しましょう。',
+ '「すべてを止める」を使い、クリア演出が動かない|ゴール判定を「ずっと」の外に置いている',
+ 'クリアのメッセージを受け取って、次のステージへ進む処理につなげます。',{owner:'マリオ'}),
+
+_P('ms-nextstage','stage',2,'次のステージへ進む（背景とステージ番号）','ステージを増やしたい',
+ 'つぎのすてーじ|次のステージ|すてーじをふやし|ステージを増やし|めん|面|わーるど|ワールド|だい2すてーじ',
+ 'はいけい|背景|きりかえ|切りかえ|ばんごう|番号|へんすう|変数|めっせーじ',
+ [onbcast('ステージクリア'),
+  chv('ステージ',1),
+  ifel(gt(V('ステージ'),3),
+    [bd('エンディング'),say('全部クリア！',3),stopall('all')],
+    [bd(join('ステージ',V('ステージ'))),goxy(-180,-60),bcast('ステージ開始')])],
+ 'ステージ番号の変数を1増やして、その番号の背景に切りかえます。番号が最後を超えたらエンディングへ、という分け方をします。',
+ '背景の名前と、つなげた文字（ステージ1など）が一致していない|ステージ番号を初期化しておらず、前回の続きから始まる',
+ '敵やアイテムの配置もステージ番号で分けると、1つのスプライトで何ステージでも作れます。',{owner:'マリオ'}),
+
+_P('ms-blockhit','stage',3,'下からブロックを叩く','ジャンプしてブロックを叩きたい',
+ 'したからたた|下から叩|ぶろっくをたた|ブロックを叩|あたまでたた|頭で叩|つきあげ|突き上げ',
+ 'ぶろっく|ブロック|じゃんぷ|ジャンプ|あたる|当たる|うえ|上|はんてい|判定',
+ [flag(),fore(
+   iff(and(touch('マリオ'),gt(V('落ちる速さ'),0)),
+     chy(8),wait(0.1),chy(-8),
+     bcast('ブロックを叩いた')))],
+ 'マリオに触れていて、かつマリオが上向きに動いている（落ちる速さがプラス）ときだけ、叩かれたと判断します。「触れた」だけだと、上に乗ったときも反応してしまいます。',
+ '上向きかどうかを調べず、乗っただけで叩いたことになる|叩いたあと元の位置に戻していない',
+ '叩いたらアイテムを出す、壊れる、など次の処理につなげましょう。',{owner:'ブロック'}),
+
+_P('ms-question','stage',3,'ハテナブロックからアイテムを出す','叩くとアイテムが出るようにしたい',
+ 'はてなぶろっく|ハテナブロック|あいてむがでる|アイテムが出る|きのこがでる|キノコが出る|なかみ|中身',
+ 'ぶろっく|ブロック|あいてむ|アイテム|だす|出す|くろーん|クローン|たたく',
+ [onbcast('ブロックを叩いた'),
+  iff(eq(V('中身'),0),
+    setv('中身',1),
+    cost('空ブロック'),
+    clone('_myself_')),
+  asclone(),cost('キノコ'),show(),
+  rep(20,chy(4)),
+  fore(chx(2),iff(touch('マリオ'),bcast('パワーアップ'),delclone()))],
+ 'ブロックが叩かれたらアイテムのクローンを作り、上にせり出させてから横に動かします。中身が空かどうかを変数で覚えておけば、2回目は何も出ません。',
+ '中身の判定をせず、叩くたびに無限にアイテムが出る|クローンを削除せず、画面に残り続ける',
+ '中身をリストで管理すると、ブロックごとに違うアイテムを入れられます。',{owner:'ハテナブロック'}),
+
+_P('ms-hidden','stage',2,'隠しブロック（当たると現れる）','隠し要素を作りたい',
+ 'かくし|隠し|かくれた|隠れた|とうめい|透明|あらわれる|現れる|ひみつ|秘密',
+ 'ぶろっく|ブロック|ひょうじ|表示|かくす|隠す|さわる|触る',
+ [flag(),hide(),fore(
+   iff(and(touch('マリオ'),gt(V('落ちる速さ'),0)),
+     show(),
+     say('隠しブロック発見！',1),
+     bcast('ブロックを叩いた')))],
+ '最初は隠しておき、下から当たったときだけ表示します。隠れていても当たり判定は働くことを利用しています。',
+ '「隠す」と当たり判定が消えると思い込んでいる（隠れていても触れた判定は使えます）|最初に隠す処理を書き忘れる',
+ '画面外に置かず「隠す」で消すのがコツ。位置はそのままなので当たり判定が残ります。',{owner:'隠しブロック'}),
+
+_P('ms-parallax','stage',3,'遠くの景色をゆっくり動かす（多重スクロール）','奥行きを出したい',
+ 'おくゆき|奥行き|たじゅうすくろーる|多重スクロール|とおくのけしき|遠くの景色|くもがゆっくり|ぱららっくす',
+ 'はいけい|背景|すくろーる|スクロール|ゆっくり|そうち|そう|層',
+ [flag(),fore(
+   setx(mul(V('スクロールX'),-0.3)))],
+ '手前の地面は 1 倍、遠くの山や雲は 0.3 倍の速さで動かすと、遠近感が出ます。同じスクロールXにかける数を変えるだけです。',
+ '遠景も同じ速さで動かし、奥行きが出ない|かける数をマイナスにし忘れ、逆に流れる',
+ '雲は 0.1、山は 0.3、木は 0.6 のように層を分けると、ぐっと本格的になります。',{owner:'遠景'})
+);
+
+/* ===== マリオゲーム：敵 ===== */
+PATTERNS.push(
+_P('me-patrol','enemy',1,'敵が左右を行ったり来たりする','敵を歩かせたい',
+ 'てきがうごく|敵が動く|いったりきたり|行ったり来たり|おうふく|往復|うろうろ|てきをあるか|敵を歩か|ぱとろーる',
+ 'てき|敵|うごく|動く|さゆう|左右|あるく|歩く|くりかえ|繰り返',
+ [flag(),rotstyle('left-right'),point(90),fore(
+   rep(60,move(2)),
+   turnR(180))],
+ '決まった回数だけ進んで、向きを180度変えるだけで往復になります。回数と歩数をかけた長さが、動く範囲になります。',
+ '向きを変えるブロックを「ずっと」の外に置き、片道で終わる|回転方法を左右のみにせず、逆立ちして歩く',
+ '回数を乱数にすると、敵ごとに違う動きになります。',{owner:'敵'}),
+
+_P('me-edge','enemy',3,'床の端まで来たら引き返す敵','敵が床から落ちてしまう',
+ 'ゆかのはし|床の端|はしでひきかえ|端で引き返|おちてしまう|落ちてしまう|はしをみて|端を見て|かしこいてき',
+ 'てき|敵|ゆか|床|はし|端|むきをかえ|向きを変え|おちる|落ちる',
+ [flag(),fore(
+   move(2),
+   chy(-6),
+   ifel(tcol(GRASS),[chy(6)],[chy(6),turnR(180)]))],
+ '少し下を調べて、地面の色がなければ床の端だと判断し、向きを変えます。「1歩先の足元を確かめる」という考え方です。',
+ '下を調べたあと、y座標を元に戻し忘れて敵が沈んでいく|調べる距離が短すぎて、端に気づく前に落ちる',
+ '壁の色も調べれば、壁にぶつかっても引き返すようになります。',{owner:'敵'}),
+
+_P('me-chase','enemy',2,'プレイヤーを追いかけてくる敵','敵に追いかけさせたい',
+ 'おいかけ|追いかけ|ついてくる|ちぇいす|おってくる|追ってくる|こうげきてき|むかってくる|向かってくる',
+ 'てき|敵|うごく|動く|むける|向ける|きょり|距離|ちかづく|近づく',
+ [flag(),fore(
+   pointto('マリオ'),
+   move(1.5),
+   iff(lt(dist('マリオ'),20),bcast('ダメージ')))],
+ '「マリオへ向ける」→「少し進む」をくり返すだけで追いかけてきます。速さをプレイヤーより遅くしないと、逃げられなくなります。',
+ '速さがプレイヤーと同じかそれ以上で、絶対に逃げ切れない|向きを変えるので、回転方法を設定しないと敵が回ってしまう',
+ '距離が遠いときだけ追いかけると、「見つかったら追ってくる」表現になります。',{owner:'敵'}),
+
+_P('me-stomp','enemy',3,'★敵を上から踏んで倒す','マリオで敵を踏みたい',
+ 'ふんでたおす|踏んで倒す|ふんで|踏んで|ふむ|踏む|うえからたおす|上から倒す|てきをたおし|敵を倒し|たおしたい|倒したい|たおす|倒す|ふみつけ|踏みつけ',
+ 'てき|敵|たおす|倒す|じゃんぷ|ジャンプ|あたり|当たり|はんてい|判定|うえ|上',
+ [flag(),fore(
+   iff(touch('敵'),
+     ifel(lt(V('落ちる速さ'),0),
+       [bcast('敵をたおした'),setv('落ちる速さ',10),chv('得点',100)],
+       [bcast('ダメージ')])))],
+ 'マリオ側に書くのがコツです。敵に触れたとき「落ちる速さ」がマイナス（＝落下中）なら上から踏んだ、そうでなければ横から当たった、と判断できます。踏んだあと少し跳ね上がるのがマリオらしさです。',
+ '落下中かどうかを調べず、触れただけで倒せてしまう|踏んだあと跳ねる処理がなく、敵の上に立ったままになる|敵側とマリオ側の両方に処理を書き、二重に判定される',
+ '踏んだ回数で得点を増やす、連続で踏むと点が上がる、などに発展できます。',{owner:'マリオ'}),
+
+_P('me-hit','enemy',2,'敵に当たるとダメージを受ける','敵に当たったらミスにしたい',
+ 'だめーじ|ダメージ|てきにあたる|敵に当たる|てきにあたっ|敵に当たっ|あたったらみす|当たったらミス|あたったら|当たったら|やられる|みすになる|ミスになる|らいふがへる',
+ 'てき|敵|あたる|当たる|ふれる|触れる|ざんき|残機|らいふ|ライフ',
+ [onbcast('ダメージ'),
+  iff(eq(V('無敵'),0),
+    setv('無敵',1),
+    chv('残機',-1),
+    say('やられた！',1),
+    goxy(V('復活x'),V('復活y')),
+    rep(10,effect('GHOST',50),wait(0.1),effect('GHOST',-50)),
+    setv('無敵',0))],
+ 'ダメージのメッセージを受け取って残機を減らします。「無敵」という変数で二重にダメージを受けないようにするのが大切です。',
+ '無敵の判定がなく、1回触れただけで残機が一気に減る|無敵を 1 にしたまま 0 に戻し忘れ、以後ダメージを受けない',
+ '点滅している間は敵をすり抜けられるようにすると、本物に近づきます。',{owner:'マリオ'}),
+
+_P('me-invincible','enemy',3,'ダメージ後の無敵時間（点滅させる）','当たった直後に連続でやられてしまう',
+ 'むてき|無敵|てんめつ|点滅|ちかちか|れんぞくでやられ|連続でやられ|いっきにへる|一気に減る',
+ 'だめーじ|ダメージ|じかん|時間|まもる|守る|こうか|効果|ゆうれい|幽霊',
+ [onbcast('ダメージ'),
+  setv('無敵',1),
+  rep(8,seteffect('GHOST',50),wait(0.08),seteffect('GHOST',0),wait(0.08)),
+  setv('無敵',0)],
+ '幽霊の効果を交互にかけると点滅します。その間だけ「無敵」を 1 にしておき、ダメージの処理で無敵かどうかを調べます。',
+ '点滅が終わっても無敵を 0 に戻さない|効果をなくす処理を忘れ、半透明のままになる',
+ '無敵の間は敵に触れてもすり抜けるようにすると、理不尽さが減ります。',{owner:'マリオ'}),
+
+_P('me-defeat','enemy',2,'倒された敵が消える演出','敵が倒れるところを見せたい',
+ 'たおれる|倒れる|きえる|消える|えんしゅつ|演出|つぶれる|ぺちゃんこ|やられたてき',
+ 'てき|敵|たおす|倒す|あにめ|アニメ|くろーん|クローン|さくじょ|削除',
+ [onbcast('敵をたおした'),
+  iff(lt(dist('マリオ'),60),
+    cost('つぶれた'),
+    rep(6,chy(-3),effect('GHOST',15)),
+    delclone())],
+ '倒されたらコスチュームを変えて、少し沈みながら薄くして消します。クローンなら「このクローンを削除する」で消えます。',
+ '近くの敵だけを消す判定をせず、全部の敵が同時に消える|クローンではないのに「このクローンを削除」を使い、何も起きない',
+ '消える瞬間に得点の表示を出すと、気持ちよさが上がります。',{owner:'敵'}),
+
+_P('me-clone','enemy',2,'敵をクローンで何体も出す','敵をたくさん出したい',
+ 'てきをたくさん|敵をたくさん|なんたいも|何体も|くろーんでてき|クローンで敵|ふくすうのてき|複数の敵|ふやす',
+ 'てき|敵|くろーん|クローン|ふやす|増やす|だす|出す|らんすう|乱数',
+ [flag(),hide(),setv('敵の数',0),
+  rep(5,
+    goxy(rnd(-200,200),-60),
+    clone('_myself_'),
+    chv('敵の数',1)),
+  asclone(),show(),point(90)],
+ 'もとのスプライトを隠して位置を変えながらクローンを作ります。クローンは「クローンされたとき」から自分の動きを始めます。',
+ 'もとのスプライトを隠さず、動かない敵が1体残る|クローンを作りすぎて（300体まで）動きが重くなる',
+ '出す数をステージ番号に合わせると、だんだん難しくできます。',{owner:'敵'}),
+
+_P('me-respawn','enemy',2,'一定時間ごとに敵が出てくる','敵がどんどん出てくるようにしたい',
+ 'じかんごとにてき|時間ごとに敵|どんどんでてくる|次々に出|しゅつげん|出現|わいてくる|りぽっぷ',
+ 'てき|敵|くろーん|クローン|じかん|時間|まつ|待つ|くりかえ|繰り返',
+ [flag(),hide(),fore(
+   wait(3),
+   goxy(240,-60),
+   clone('_myself_')),
+  asclone(),show(),
+  untl(lt(X(),-240),chx(-3)),
+  delclone()],
+ '3秒ごとに画面右からクローンを出し、左端まで行ったら削除します。消す処理を入れないと、クローンがたまって動きが重くなります。',
+ '左端で削除せず、クローンが増え続ける|待つ時間が短すぎて、画面が敵だらけになる',
+ '待ち時間をステージ番号で短くすると、難しさが上がっていきます。',{owner:'敵'}),
+
+_P('me-fly','enemy',2,'空を飛ぶ敵（上下にゆれる）','飛ぶ敵を作りたい',
+ 'とぶてき|飛ぶ敵|そらをとぶ|空を飛ぶ|ゆれる|揺れる|じょうげにうごく|上下に動く|ぱたぱたとぶ',
+ 'てき|敵|とぶ|飛ぶ|うごき|動き|なみ|波|じょうげ|上下',
+ [flag(),goxy(150,60),fore(
+   rep(20,chy(3),chx(-2)),
+   rep(20,chy(-3),chx(-2)))],
+ '上下の動きと横の動きを組み合わせると、ふわふわ飛ぶ動きになります。上げる回数と下げる回数を同じにするのがポイントです。',
+ '上げる回数と下げる回数が違い、だんだん上（下）へずれていく|横移動を入れず、その場で上下するだけになる',
+ '上下の幅を乱数にすると、敵ごとに違う飛び方になります。',{owner:'敵'}),
+
+_P('me-shoot','enemy',3,'敵が弾を撃ってくる','敵の攻撃をよけるゲームにしたい',
+ 'てきのたま|敵の弾|たまをうつ|弾を撃つ|こうげきしてくる|攻撃してくる|よける|避ける|だんまく',
+ 'てき|敵|たま|弾|くろーん|クローン|とばす|飛ばす|あたる|当たる',
+ [flag(),hide(),fore(
+   wait(2),
+   goxy(X(),Y()),
+   clone('_myself_')),
+  asclone(),show(),
+  pointto('マリオ'),
+  untl(or2(touch('_edge_'),touch('マリオ')),move(6)),
+  iff(touch('マリオ'),bcast('ダメージ')),
+  delclone()],
+ '弾はクローンで作り、飛ばして、端かプレイヤーに当たったら削除します。「〜まで繰り返す」で飛ばすと、当たった瞬間に止められます。',
+ '端に着いたときに削除せず、クローンがたまる|弾の速さが速すぎて、当たり判定をすり抜ける',
+ '弾の速さを 6 より小さくすると、すり抜けにくくなります。',{owner:'敵'}),
+
+_P('me-shell','enemy',3,'こうらを蹴って転がす','踏んだ敵を蹴りたい',
+ 'こうら|甲羅|ける|蹴る|ころがす|転がす|とばす|飛ばす|のっくのっく',
+ 'てき|敵|ふむ|踏む|うごく|動く|はやく|速く|あたる|当たる',
+ [flag(),setv('こうらの状態','とまる'),fore(
+   iff(and(touch('マリオ'),eq(V('こうらの状態'),'とまる')),
+     setv('こうらの状態','ころがる'),
+     point(90)),
+   iff(eq(V('こうらの状態'),'ころがる'),
+     move(8),
+     bounce()))],
+ '状態を変数（文字）で持つと、「止まっている／転がっている」のように場面を分けられます。状態によって動きを変えるのは、ゲーム作りの重要な考え方です。',
+ '状態を数値と文字で混ぜてしまい、比較がうまくいかない|止める処理がなく、一度転がると永遠に止まらない',
+ '転がっているこうらが敵に当たったら、その敵も倒せるようにしてみよう。',{owner:'こうら'}),
+
+_P('me-boss','enemy',3,'ボスの体力（何回か攻撃すると倒せる）','ボスを作りたい',
+ 'ぼす|ボス|たいりょく|体力|hp|なんかいもこうげき|何回も攻撃|つよいてき|強い敵|らすぼす',
+ 'てき|敵|たおす|倒す|へんすう|変数|へらす|減らす|げーじ',
+ [flag(),setv('ボスの体力',5),show(),fore(
+   iff(touch('ファイアボール'),
+     chv('ボスの体力',-1),
+     seteffect('BRIGHTNESS',50),wait(0.1),seteffect('BRIGHTNESS',0),
+     iff(lt(V('ボスの体力'),1),
+       say('やられた〜',2),
+       bcast('ステージクリア'),
+       hide())))],
+ '体力を変数にして、攻撃が当たるたびに減らします。0以下になったら倒れる、という流れです。当たったときに一瞬光らせると分かりやすくなります。',
+ '当たっている間ずっと体力が減り、一瞬で倒れる（待つブロックを入れる）|体力が0になる判定を入れ忘れる',
+ '体力を横棒（大きさを変えたスプライト）で表すと、ゲームらしい表示になります。',{owner:'ボス'}),
+
+_P('me-boss-pattern','enemy',3,'ボスの攻撃を何種類か切りかえる','ボスに色々な攻撃をさせたい',
+ 'こうげきぱたーん|攻撃パターン|なんしゅるいも|何種類も|らんだむにこうげき|ランダムに攻撃|ぼすのうごき|ぎみっく',
+ 'ぼす|ボス|らんすう|乱数|えらぶ|選ぶ|ぶんき|分岐|こうげき|攻撃',
+ [flag(),fore(
+   setv('攻撃の種類',rnd(1,3)),
+   ifel(eq(V('攻撃の種類'),1),
+     [say('とつげき！',1),glide(1,-150,Y())],
+     [ifel(eq(V('攻撃の種類'),2),
+       [say('だんまく！',1),rep(5,clone('弾'),wait(0.3))],
+       [say('ジャンプ！',1),rep(10,chy(10)),rep(10,chy(-10))])]),
+   wait(1))],
+ '乱数で1〜3のどれかを選び、その番号によって違う攻撃をします。「もし〜なら・でなければ」を入れ子にすると、3つ以上に分けられます。',
+ '入れ子が深くなって、どの条件がどこで終わるか分からなくなる|待つ時間がなく、攻撃が重なって見えない',
+ '種類を変数で管理すると、体力が減ったら攻撃が激しくなる、といった演出もできます。',{owner:'ボス'})
+);
+
+/* ===== マリオゲーム：アイテム・得点・残機 ===== */
+PATTERNS.push(
+_P('mi-coin','item',1,'★コインを取ると得点が増えて消える','コインを集めるゲームにしたい',
+ 'こいん|コイン|あつめる|集める|とくてん|得点|とるときえる|取ると消える|あいてむをとる|アイテムを取る',
+ 'てん|点|すこあ|スコア|さわる|触る|ふれる|触れる|きえる|消える|へんすう|変数',
+ [flag(),show(),fore(
+   iff(touch('マリオ'),
+     chv('得点',10),
+     hide(),
+     wait(5),
+     show()))],
+ '触れたら得点を増やして隠す、というだけの単純な形です。少し待ってからまた表示すれば、何度でも取れるコインになります。',
+ '隠す処理を入れず、触れている間ずっと得点が増え続ける|得点の変数を最初に 0 にしていない',
+ 'クローンで並べるときは「隠す」ではなく「このクローンを削除する」を使います。',{owner:'コイン'}),
+
+_P('mi-coin-clone','item',2,'コインをクローンでたくさん並べる','コインをステージ中に置きたい',
+ 'こいんをならべ|コインを並べ|たくさんおく|たくさん置く|くろーんでこいん|クローンでコイン|いちれつに|一列に',
+ 'こいん|コイン|くろーん|クローン|ならべる|並べる|はいち|配置|くりかえ|繰り返',
+ [flag(),hide(),setv('置くx',-200),
+  rep(8,
+    goxy(V('置くx'),0),
+    clone('_myself_'),
+    chv('置くx',50)),
+  asclone(),show(),
+  fore(iff(touch('マリオ'),chv('得点',10),delclone()))],
+ 'x座標を50ずつずらしながら8個のクローンを作ります。クローン側では、触れたら得点を増やして自分を削除します。',
+ 'もとのスプライトを隠し忘れて、取れないコインが1つ残る|クローン側の処理を「クローンされたとき」の下に書いていない',
+ '置く位置をリストに入れておけば、ステージごとの配置を作り分けられます。',{owner:'コイン'}),
+
+_P('mi-score','item',1,'得点を画面に表示する','スコアを見えるようにしたい',
+ 'とくてんをひょうじ|得点を表示|すこあひょうじ|スコア表示|てんすうをみせ|点数を見せ|がめんにだす|画面に出す',
+ 'とくてん|得点|すこあ|スコア|へんすう|変数|ひょうじ|表示|かくす|隠す',
+ [flag(),setv('得点',0),showv('得点'),
+  fore(iff(gt(V('得点'),1000),say('ハイスコア達成！',2),stopall('this script')))],
+ '変数を作るとチェックボックスで画面に出せます。プログラムから出したり隠したりするときは「変数〈得点〉を表示する」を使います。',
+ '得点の初期化を忘れ、前回の続きから始まる|ゲームオーバー画面で変数を隠し忘れる',
+ '得点の表示位置は、画面上でドラッグして決められます。',{owner:'マリオ'}),
+
+_P('mi-life','item',1,'残機（ライフ）を作る','ミスできる回数を決めたい',
+ 'ざんき|残機|らいふ|ライフ|のこり|残り|みすできるかいすう|ミスできる回数|はーと|ハート',
+ 'へんすう|変数|へらす|減らす|みす|ミス|げーむおーばー|ゲームオーバー',
+ [flag(),setv('残機',3),showv('残機'),
+  onbcast('ミス'),
+  chv('残機',-1),
+  ifel(lt(V('残機'),1),
+    [bcast('ゲームオーバー')],
+    [goxy(-180,-60),say(join('残り ',V('残機')),1)])],
+ '残機を変数にして、ミスのメッセージを受け取るたびに1減らします。0より小さくなったらゲームオーバーのメッセージを送ります。',
+ '残機が0になっても止まらず、マイナスまで減っていく|残機を減らす処理を何か所にも書いてしまい、一度に何個も減る',
+ '残機をハートの絵で表すときは、残機の数だけクローンを作って並べます。',{owner:'マリオ'}),
+
+_P('mi-gameover','item',1,'ゲームオーバーの画面を出す','ゲームオーバーを作りたい',
+ 'げーむおーばー|ゲームオーバー|おわり|終わり|しゅうりょうがめん|終了画面|やられたらおわり|しっぱいがめん',
+ 'がめん|画面|はいけい|背景|めっせーじ|とめる|止める|ひょうじ|表示',
+ [onbcast('ゲームオーバー'),
+  bd('ゲームオーバー'),
+  hide(),
+  stopsnd(),
+  say('ゲームオーバー',3),
+  stopall('all')],
+ '背景を切りかえてマリオを隠し、音を止めてから「すべてを止める」を実行します。止めるのは最後にしないと、その先の処理が動きません。',
+ '「すべてを止める」を最初に書いて、画面の切りかえが行われない|音を止め忘れ、BGMが鳴り続ける',
+ '「もう一度あそぶ」ボタンを置くと、クリックでやり直せるようになります。',{owner:'マリオ'}),
+
+_P('mi-powerup','item',2,'キノコを取ると大きくなる（パワーアップ）','パワーアップさせたい',
+ 'ぱわーあっぷ|パワーアップ|おおきくなる|大きくなる|きのこ|キノコ|へんしん|変身|つよくなる|強くなる',
+ 'あいてむ|アイテム|おおきさ|大きさ|こすちゅーむ|コスチューム|じょうたい|状態',
+ [onbcast('パワーアップ'),
+  setv('パワー',1),
+  setsize(140),
+  cost('大きいマリオ'),
+  rep(6,seteffect('BRIGHTNESS',40),wait(0.05),seteffect('BRIGHTNESS',0),wait(0.05))],
+ 'パワーの状態を変数で覚えておき、大きさとコスチュームを変えます。状態を変数で持つと、ダメージを受けたときに元に戻す処理も書けます。',
+ '大きさだけ変えて、ダメージのときに戻し忘れる|初期化で大きさを100%に戻していないので、次の回も大きいまま',
+ 'ダメージを受けたとき「パワーが1なら小さくなるだけ、0ならミス」にすると本物と同じです。',{owner:'マリオ'}),
+
+_P('mi-fire','item',3,'ファイアボールを撃つ','弾を撃てるようにしたい',
+ 'ふぁいあ|ファイア|たまをうつ|弾を撃つ|はっしゃ|発射|こうげき|攻撃|しゅりけん|とばす|飛ばす',
+ 'たま|弾|くろーん|クローン|すぺーす|スペース|むき|向き|とぶ|飛ぶ',
+ [key('space'),
+  iff(eq(V('パワー'),1),clone('ファイアボール')),
+  asclone(),
+  goxy(X(),Y()),
+  show(),
+  untl(or2(touch('_edge_'),touch('敵')),move(10),turnR(15)),
+  delclone()],
+ '弾はクローンで作ります。作った瞬間にマリオの位置へ移動し、端か敵に当たるまで飛ばして、当たったら削除します。回しながら飛ばすと、転がる火の玉に見えます。',
+ 'クローンを削除せず、画面に弾がたまり続ける|パワーの条件を入れず、いつでも撃ててしまう',
+ '連射できないように、撃ったあと0.3秒待つ処理を入れるとバランスがとれます。',{owner:'マリオ'}),
+
+_P('mi-fire-hit','item',2,'弾が当たった敵を倒す','弾で敵を倒したい',
+ 'たまがあたる|弾が当たる|たまでたおす|弾で倒す|こうげきがあたる|攻撃が当たる|めいちゅう|命中',
+ 'たま|弾|てき|敵|たおす|倒す|あたり|当たり|はんてい|判定|とくてん|得点',
+ [flag(),fore(
+   iff(touch('ファイアボール'),
+     chv('得点',200),
+     cost('つぶれた'),
+     rep(5,effect('GHOST',20)),
+     delclone()))],
+ '敵の側に「弾に触れたら倒れる」処理を書きます。弾の側にも「敵に触れたら消える」を書いておくと、貫通しなくなります。',
+ '敵か弾のどちらかにしか処理を書かず、弾が貫通する|倒れたあとクローンを削除せず、透明な敵が残る',
+ '当たった場所に「＋200」と表示すると、手ごたえが出ます。',{owner:'敵'}),
+
+_P('mi-1up','item',1,'1UP（残機が増えるアイテム）','残機が増えるアイテムを作りたい',
+ '1あっぷ|1UP|1up|ざんきがふえる|残機が増える|らいふがふえる|ライフが増える|いっきんぐ',
+ 'あいてむ|アイテム|ざんき|残機|ふえる|増える|とる|取る',
+ [flag(),show(),fore(
+   iff(touch('マリオ'),
+     chv('残機',1),
+     say('1UP！',1),
+     delclone()))],
+ 'コインとほとんど同じ形です。増やす変数を「得点」から「残機」に変えるだけで、まったく違う意味のアイテムになります。',
+ '削除を忘れて、残機が無限に増える|残機の変数名が、ほかのスプライトで使っている名前と違う',
+ '100枚コインを集めたら1UP、という仕組みも作れます（余りの計算を使います）。',{owner:'1UPキノコ'}),
+
+_P('mi-star','item',3,'スターを取ると一定時間無敵になる','無敵アイテムを作りたい',
+ 'すたー|スター|むてきになる|無敵になる|いっていじかん|一定時間|ときかんげんてい|むてきじょうたい',
+ 'あいてむ|アイテム|むてき|無敵|じかん|時間|てんめつ|点滅|こうか|効果',
+ [onbcast('スターを取った'),
+  setv('無敵',1),
+  rep(30,
+    effect('COLOR',25),
+    wait(0.1)),
+  cleareff(),
+  setv('無敵',0)],
+ '無敵の変数を1にして、色の効果を変えながら30回くり返します（およそ3秒）。終わったら効果を消して、無敵を0に戻します。',
+ '無敵を0に戻し忘れ、ずっと無敵のまま|画像効果を消さず、色が変わったままになる',
+ '無敵の間に敵に触れたら、逆に敵を倒せるようにしてみよう。',{owner:'マリオ'}),
+
+_P('mi-timelimit','item',2,'制限時間をつける（カウントダウン）','時間制限を作りたい',
+ 'せいげんじかん|制限時間|かうんとだうん|カウントダウン|のこりじかん|残り時間|じかんぎれ|時間切れ|たいむ',
+ 'じかん|時間|へんすう|変数|へらす|減らす|まつ|待つ|たいまー|タイマー',
+ [flag(),setv('残り時間',60),showv('残り時間'),
+  untl(lt(V('残り時間'),1),
+    wait(1),
+    chv('残り時間',-1)),
+  bcast('時間切れ')],
+ '1秒待って1減らす、をくり返すだけのカウントダウンです。0になったらメッセージを送って、ミスやゲームオーバーにつなげます。',
+ '待つブロックを入れず、一瞬で0になる|「〜まで繰り返す」の条件を間違え、マイナスまで進む',
+ '残り時間が10を切ったら数字を赤くする、音を鳴らす、などの演出ができます。',{owner:'マリオ'}),
+
+_P('mi-timeup','item',2,'時間切れでミスにする','時間が来たら終わりにしたい',
+ 'じかんぎれ|時間切れ|たいむあっぷ|タイムアップ|じかんがきたらおわり|時間が来たら終わり|たいむおーばー',
+ 'じかん|時間|おわり|終わり|みす|ミス|めっせーじ|しゅうりょう|終了',
+ [onbcast('時間切れ'),
+  say('タイムアップ！',2),
+  bcast('ミス')],
+ 'メッセージを受け取ってから、さらに別のメッセージを送ることもできます。処理を小さく分けておくと、あとで直しやすくなります。',
+ 'ミスの処理を全部ここに書いてしまい、同じコードがあちこちにできる',
+ '「時間切れ→ミス→残機を減らす」のように、役割ごとに分けるのがコツです。',{owner:'マリオ'}),
+
+_P('mi-highscore','item',3,'ハイスコアを記録する（リスト）','最高得点を残したい',
+ 'はいすこあ|ハイスコア|さいこうとくてん|最高得点|きろくをのこ|記録を残|らんきんぐ|ランキング|りすと|リスト',
+ 'とくてん|得点|すこあ|スコア|きろく|記録|ほぞん|保存|くらべる|比べる',
+ [onbcast('ゲームオーバー'),
+  addlist(V('得点'),'記録'),
+  ifel(gt(V('得点'),V('ハイスコア')),
+    [setv('ハイスコア',V('得点')),say('新記録！',2)],
+    [say(join('今回の得点 ',V('得点')),2)])],
+ 'リストは「変数をたくさん並べたもの」です。毎回の得点をリストに追加していけば、記録が残ります。最高得点は変数で比べて更新します。',
+ 'リストを作らずにリストのブロックを使おうとしている|ハイスコアの初期値を毎回0にしてしまい、記録が残らない',
+ 'リストの内容は画面に表示できます。班ごとの記録を比べてみよう。',{owner:'マリオ'}),
+
+_P('mi-random-item','item',2,'ランダムなアイテムが出る','どのアイテムが出るか分からなくしたい',
+ 'らんだむなあいてむ|ランダムなアイテム|らんすうであいてむ|どれがでるか|運|うん|がちゃ',
+ 'らんすう|乱数|あいてむ|アイテム|えらぶ|選ぶ|こすちゅーむ|コスチューム|ぶんき|分岐',
+ [asclone(),
+  setv('中身の種類',rnd(1,3)),
+  ifel(eq(V('中身の種類'),1),
+    [cost('コイン'),setv('効果','得点')],
+    [ifel(eq(V('中身の種類'),2),
+      [cost('キノコ'),setv('効果','パワーアップ')],
+      [cost('スター'),setv('効果','無敵')])]),
+  show()],
+ '乱数で種類を決めて、その番号に合わせてコスチュームと効果を変えます。「番号で分ける」考え方は、ゲームのいろいろな場面で使えます。',
+ '乱数の範囲と、条件の数が合っていない（1〜3なのに2つしか分けていない）|コスチューム名がプログラムと違う',
+ '出る確率を変えたいときは、乱数の範囲を広げて「1〜7ならコイン」のように分けます。',{owner:'ハテナブロック'}),
+
+_P('mi-key-door','item',2,'カギを取るとドアが開く','カギと扉のしかけを作りたい',
+ 'かぎ|カギ|鍵|どあ|ドア|とびら|扉|あく|開く|じょうけんではいれ|条件で入れ',
+ 'あいてむ|アイテム|へんすう|変数|じょうけん|条件|とる|取る|すすむ|進む',
+ [flag(),setv('カギ',0),fore(
+   iff(touch('カギ'),setv('カギ',1),say('カギを手に入れた！',1)),
+   iff(touch('ドア'),
+     ifel(eq(V('カギ'),1),
+       [bcast('ドアを開ける'),goxy(-180,-60)],
+       [say('カギがかかっている…',1)])))],
+ '「持っているかどうか」を0と1の変数で表します（フラグといいます）。条件によって通れたり通れなかったりする仕掛けの基本形です。',
+ 'カギを取ったあと変数を1にし忘れる|カギの変数を初期化せず、前回の状態が残っている',
+ 'カギを複数にするなら、変数ではなくリストで持つと管理しやすくなります。',{owner:'マリオ'})
+);
+
+/* ===== 画面・シーン管理／音 ===== */
+PATTERNS.push(
+_P('sn-title','scene',2,'★タイトル画面を作る','ゲームの最初にタイトルを出したい',
+ 'たいとるがめん|タイトル画面|たいとる|タイトル|さいしょのがめん|最初の画面|すたーとがめん|おーぷにんぐ',
+ 'はいけい|背景|めっせーじ|かくす|隠す|ひょうじ|表示|すたーと|スタート',
+ [flag(),bd('タイトル'),hide(),
+  hidev('得点'),hidev('残機'),
+  waituntil(kp('space')),
+  bcast('ゲーム開始')],
+ 'まずタイトルの背景にして、ゲーム用のスプライトや変数を隠します。キーが押されるまで待って、メッセージを送るとゲームが始まります。',
+ 'タイトルでスプライトを隠し忘れ、最初から主人公が映っている|「〜まで待つ」を使わず、ずっとの中で何度も開始メッセージを送る',
+ 'タイトルでBGMを流し、開始と同時に曲を変えると本格的になります。',{owner:'マリオ'}),
+
+_P('sn-startbutton','scene',1,'スタートボタンを押したら始まる','ボタンをクリックしてスタートしたい',
+ 'すたーとぼたん|スタートボタン|ぼたんをおしたら|ボタンを押したら|くりっくではじめ|クリックで始め|ぼたんをつく',
+ 'ぼたん|ボタン|くりっく|クリック|はじめる|始める|めっせーじ|かくす',
+ [onclick(),
+  bcast('ゲーム開始'),
+  hide()],
+ '「このスプライトが押されたとき」を使うと、クリックで動くボタンになります。押したらメッセージを送って、自分は隠れます。',
+ 'ボタンを隠さず、ゲーム中も画面に残る|旗を押したときにボタンを表示する処理を書き忘れ、2回目に出てこない',
+ 'マウスが乗ったら少し大きくすると、押せることが伝わりやすくなります。',{owner:'スタートボタン'}),
+
+_P('sn-broadcast','scene',2,'★メッセージで場面を切りかえる','スプライト同士で合図を送りたい',
+ 'めっせーじ|メッセージ|あいず|合図|ばめんてんかん|場面転換|ほかのすぷらいとにつたえ|他のスプライトに伝え|ぶろーどきゃすと|しんごうをおく',
+ 'おくる|送る|うけとる|受け取る|きりかえ|切りかえ|しーん|シーン|れんけい|連携',
+ [flag(),bcast('ゲーム開始'),
+  onbcast('ゲーム開始'),
+  show(),
+  goxy(-180,-60),
+  setv('得点',0)],
+ 'メッセージは、全部のスプライトに同時に届く合図です。「送る」側と「受け取ったとき」側をセットで作ります。これを使うと、たくさんのスプライトをきれいにそろえて動かせます。',
+ 'メッセージの名前を新しく作らず、別の名前のものを受け取ろうとしている|送るだけで、受け取る側を作っていない',
+ '場面ごとにメッセージを決める（タイトル／ゲーム開始／ミス／クリア）と、全体の設計が分かりやすくなります。',{owner:'マリオ'}),
+
+_P('sn-backdrop','scene',2,'背景が変わったときに動き出す','背景に合わせて動かしたい',
+ 'はいけいがかわったとき|背景が変わったとき|はいけいできりかえ|背景で切りかえ|すてーじにあわせ|ばめんごとに',
+ 'はいけい|背景|きりかえ|切りかえ|しーん|シーン|はじまる|始まる',
+ [{op:'event_whenbackdropswitchesto',fl:{BACKDROP:'ステージ1'}},
+  show(),
+  goxy(-180,-60),
+  setv('落ちる速さ',0)],
+ 'メッセージのかわりに、背景の切りかえを合図にすることもできます。ステージごとに背景を用意しておくと、管理が分かりやすくなります。',
+ '背景の名前とブロックで選んだ名前が違う|背景を変えるブロックを書かず、いつまでも始まらない',
+ 'ステージ1・2・3と背景を作り、それぞれに合わせた敵を出すと、ステージらしくなります。',{owner:'マリオ'}),
+
+_P('sn-hideshow','scene',1,'場面によって表示したり隠したりする','タイトルのときだけ隠したい',
+ 'ばめんでかくす|場面で隠す|たいとるではかくす|ゲームちゅうだけひょうじ|ゲーム中だけ表示|でたりきえたり',
+ 'かくす|隠す|ひょうじ|表示|しーん|シーン|めっせーじ|きりかえ',
+ [onbcast('ゲーム開始'),show(),
+  onbcast('ゲームオーバー'),hide()],
+ '同じスプライトに、メッセージごとの小さな塊をいくつも作れます。1つの長いプログラムにするより、場面ごとに分けたほうが分かりやすくなります。',
+ '隠したまま表示に戻す処理を書き忘れ、2回目から出てこない|旗を押したときの初期状態を決めていない',
+ '場面の数だけ「〜を受け取ったとき」を並べると、全体が見通しやすくなります。',{owner:'マリオ'}),
+
+_P('sn-clear','scene',2,'クリア画面を出す','ステージクリアの演出をしたい',
+ 'くりあがめん|クリア画面|くりあえんしゅつ|クリア演出|おめでとう|クリアしたら|ごーるしたあと|かんせい',
+ 'くりあ|クリア|がめん|画面|はいけい|背景|めっせーじ|ひょうじ|表示',
+ [onbcast('ステージクリア'),
+  stopsnd(),
+  bd('クリア'),
+  say('ステージクリア！',2),
+  rep(10,chy(6)),
+  wait(1),
+  bcast('次のステージへ')],
+ 'クリアのメッセージを受け取って、背景・音・演出を順番に実行します。最後に次の場面へ進むメッセージを送ります。',
+ '演出の途中で「すべてを止める」を使い、最後まで再生されない|次へ進むメッセージを送り忘れ、そこで止まる',
+ '得点の集計やボーナス計算を、この間に入れるとゲームらしくなります。',{owner:'マリオ'}),
+
+_P('sn-pause','scene',3,'一時停止（ポーズ）','ゲームを一時停止したい',
+ 'いちじていし|一時停止|ぽーず|ポーズ|とめる|止める|ちゅうだん|中断|いったんとめ',
+ 'きー|キー|へんすう|変数|まつ|待つ|さいかい|再開|とまる',
+ [key('p'),
+  ifel(eq(V('ポーズ'),0),
+    [setv('ポーズ',1),say('ポーズ中',0)],
+    [setv('ポーズ',0),say('',0)]),
+  flag(),fore(
+    waituntil(eq(V('ポーズ'),0)),
+    chx(V('よこの速さ')))],
+ 'ポーズという変数を0と1で切りかえ、動きの処理の前に「ポーズが0になるまで待つ」を入れます。すべてのスプライトで同じ待ち方をすると、きれいに止まります。',
+ '一部のスプライトだけ待たせ、敵だけ動き続ける|押すたびに切りかわらず、押しっぱなしで高速に切りかわる（待つブロックを入れる）',
+ 'ポーズ中に半透明の黒いスプライトを出すと、本物のポーズ画面らしくなります。',{owner:'マリオ'}),
+
+_P('sn-restart','scene',1,'もう一度やり直す','リトライできるようにしたい',
+ 'やりなおし|やり直し|りとらい|リトライ|もういちど|もう一度|さいちょうせん|再挑戦|りすたーと',
+ 'はじめから|初めから|すたーと|スタート|しょきか|初期化|めっせーじ',
+ [onclick(),
+  bcast('ゲーム開始'),
+  setv('得点',0),
+  setv('残機',3),
+  bd('ステージ1'),
+  hide()],
+ 'やり直しは「初期化をもう一度やること」です。旗を押したときと同じ処理をメッセージにまとめておくと、両方から呼び出せます。',
+ '得点や残機を戻さず、前回の続きから始まってしまう|クローンが残ったまま始まり、敵が二重に出る',
+ '「クローンを全部消してからやり直す」とセットにすると、きれいにリセットできます。',{owner:'もう一度ボタン'}),
+
+_P('sn-countdown','scene',1,'3・2・1のカウントダウンで始める','始まる前に合図を出したい',
+ 'かうんとだうん|カウントダウン|さんにーいち|3 2 1|すたーとのあいず|スタートの合図|よーいどん|はじまるまえ',
+ 'かず|数|ひょうじ|表示|まつ|待つ|くりかえ|繰り返|はじめ|始め',
+ [onbcast('ゲーム開始'),
+  show(),
+  setv('カウント',3),
+  rep(3,
+    say(V('カウント'),0),
+    wait(1),
+    chv('カウント',-1)),
+  say('スタート！',1),
+  hide(),
+  bcast('操作開始')],
+ '数を3から1つずつ減らしながら表示します。カウントが終わってから操作開始のメッセージを送ると、フライングを防げます。',
+ '待つブロックがなく、一瞬で終わる|カウント中も操作できてしまう（操作開始のメッセージを使っていない）',
+ 'カウントに合わせて音を鳴らすと、ぐっと本格的になります。',{owner:'カウント表示'}),
+
+_P('sn-layer','scene',1,'前に出す・後ろにやる（重なり順）','スプライトが背景や他のものに隠れてしまう',
+ 'かさなり|重なり|まえにだす|前に出す|うしろ|後ろ|れいやー|レイヤー|かくれてしまう|隠れてしまう|まえにこない',
+ 'ひょうじ|表示|じゅんばん|順番|うえ|上|した|下|みえない|見えない',
+ [flag(),front(),show()],
+ 'あとから作ったスプライトが前に出ます。順番を決めたいときは「最前面へ出す」を旗の下に入れます。文字やHUDは必ず最前面にします。',
+ '得点表示が背景スプライトに隠れている|前後関係を「ずっと」の中で毎回変え、ちらつく',
+ '背景用スプライトは最背面へ、プレイヤーやHUDは最前面へ、と決めておきましょう。',{owner:'得点表示'}),
+
+_P('sn-cloneclear','scene',2,'クローンを全部消してやり直す','やり直すと敵が二重に出る',
+ 'くろーんがのこる|クローンが残る|にじゅうにでる|二重に出る|ぜんぶけす|全部消す|くろーんをけす|クローンを消す|ふえつづけ',
+ 'くろーん|クローン|さくじょ|削除|やりなおし|やり直し|しょきか|初期化|でてくる',
+ [onbcast('やり直し'),
+  bcast('クローン削除'),
+  wait(0.2),
+  bcast('ステージ作成'),
+  asclone(),
+  onbcast('クローン削除'),
+  delclone()],
+ 'クローン自身に「クローン削除のメッセージを受け取ったら自分を消す」を書いておきます。作り直す前に一度全部消すのが、やり直しのコツです。',
+ '削除のメッセージを送る前に作り直し、敵が二重になる|もとのスプライトまで消そうとしてエラーになる',
+ '削除のあと少し待ってから作り直すと、確実にきれいになります。',{owner:'敵'}),
+
+_P('sn-hud','scene',2,'得点や残機を画面の決まった場所に出す','情報表示を整えたい',
+ 'ひょうじをととのえ|表示を整え|がめんのすみ|画面の隅|えいちゆーでぃ|HUD|じょうほうひょうじ|情報表示|もじをだす|文字を出す',
+ 'とくてん|得点|ざんき|残機|ひょうじ|表示|もじ|文字|いち|位置',
+ [flag(),
+  goxy(-190,160),
+  front(),
+  fore(say(join('スコア ',V('得点')),0))],
+ 'スプライトに「〜と言う」で表示させると、変数の表示より自由に見た目を決められます。位置を決めて最前面に置くのがポイントです。',
+ '「ずっと」の中で言い続けないと、得点が変わっても表示が古いまま|位置を決めておらず、毎回違う場所に出る',
+ '文字をつなぐブロックを使えば、「スコア 120 / 残り 2」のようにまとめて表示できます。',{owner:'得点表示'}),
+
+_P('so-bgm','sound',1,'BGMをずっと鳴らす','音楽を流し続けたい',
+ 'びーじーえむ|BGM|bgm|おんがく|音楽|ずっとながす|ずっと流す|きょくをながす|曲を流す|ばっくぐらうんど',
+ 'おと|音|ならす|鳴らす|くりかえ|繰り返|きょく|曲|さうんど',
+ [flag(),fore(sndwait('ゲームBGM'))],
+ '「終わるまで鳴らす」を「ずっと」で囲むと、曲が終わるたびに最初から鳴り直します。ふつうの「鳴らす」だと重なってしまいます。',
+ '「終わるまで鳴らす」ではなく「鳴らす」を使い、音が何重にも重なる|音を追加していないので、ブロックの中身が空になっている',
+ '音は「音」タブから追加します。ステージ（背景）側に置くと、場面が変わっても鳴り続けます。',{owner:'ステージ'}),
+
+_P('so-se','sound',1,'効果音を鳴らす（ジャンプ・コイン）','動きに合わせて音を出したい',
+ 'こうかおん|効果音|じゃんぷおん|ジャンプ音|じゃんぷのおと|ジャンプの音|こいんのおと|コインの音|おとをだす|音を出す|おとをならし|音を鳴らし|おとをつけ|音をつけ',
+ 'おと|音|ならす|鳴らす|じゃんぷ|ジャンプ|こいん|コイン|たいみんぐ',
+ [key('space'),
+  snd('ジャンプ'),
+  rep(10,chy(12)),
+  rep(10,chy(-12))],
+ '効果音は「終わるまで待たない鳴らす」を使います。待ってしまうと、音が鳴り終わるまで動きが止まってしまいます。',
+ '「終わるまで鳴らす」を使い、音の長さだけ操作が止まる|音を鳴らす場所が動きの後ろにあり、ずれて聞こえる',
+ '同じ動きでも、音があるだけで手ごたえが大きく変わります。必ず入れてみよう。',{owner:'マリオ'}),
+
+_P('so-stop','sound',1,'音を止める','ゲームオーバーで音を止めたい',
+ 'おとをとめる|音を止める|びーじーえむをとめ|BGMを止め|しずかに|静かに|むおん|無音|きえない',
+ 'おと|音|とめる|止める|げーむおーばー|ゲームオーバー|くりあ|クリア',
+ [onbcast('ゲームオーバー'),
+  stopsnd(),
+  sndwait('ゲームオーバー音')],
+ '「すべての音を止める」で鳴っている音を消してから、専用の音を鳴らします。順番を逆にすると、鳴らした音まで止まってしまいます。',
+ '音を止める前に新しい音を鳴らし、すぐ消えてしまう|BGMの「ずっと」が別のスプライトで動き続けている',
+ 'BGMをステージ側にまとめておくと、止める場所が1か所で済みます。',{owner:'ステージ'}),
+
+_P('so-volume','sound',2,'音の大きさを変える','音が大きすぎる・小さすぎる',
+ 'おんりょう|音量|おとのおおきさ|音の大きさ|ぼりゅーむ|ボリューム|うるさい|ちいさくする|小さくする',
+ 'おと|音|ちょうせつ|調節|ぱーせんと|％|bgm|こうかおん',
+ [flag(),
+  {op:'sound_setvolumeto',in:{VOLUME:60}},
+  fore(sndwait('ゲームBGM'))],
+ 'BGMは小さめ（50〜70%）、効果音は大きめにすると聞きやすくなります。音量はスプライトごとに設定できます。',
+ 'BGMと効果音を同じ音量にして、効果音が聞こえない|教室でヘッドホンなしに大音量で再生してしまう',
+ '教室で使うときは、まず全員で音量を決めてから作業を始めましょう。',{owner:'ステージ'})
+);
+
+/* ===== 基本のしくみ・演算・調べる ===== */
+PATTERNS.push(
+_P('b-clone','basic',2,'★クローンのしくみ（作る・動かす・消す）','同じものをたくさん出したい',
+ 'くろーん|クローン|おなじものをたくさん|同じものをたくさん|ふくせい|複製|こぴー|コピー|ぶんしん',
+ 'ふやす|増やす|つくる|作る|けす|消す|さくじょ|削除|てき|敵|たま|弾',
+ [flag(),hide(),
+  rep(10,clone('_myself_'),wait(0.2)),
+  asclone(),
+  goxy(rnd(-200,200),150),
+  show(),
+  untl(lt(Y(),-160),chy(-5)),
+  delclone()],
+ 'クローンは3つの部品でできています。①「自分自身のクローンを作る」②「クローンされたとき」から動き出す ③役目が終わったら「このクローンを削除する」。③を忘れると、クローンがたまって動きが重くなります（最大300個）。',
+ 'クローンを削除せず、だんだん重くなる|もとのスプライトを隠さず、動かないものが1つ残る|クローンの動きを「クローンされたとき」の下に書いていない',
+ '敵・弾・コイン・足場…ゲームに出てくる「たくさんあるもの」は、ほとんどクローンで作ります。',{owner:'敵'}),
+
+_P('b-varscope','data',2,'変数の2つの種類（全体で1つ／クローンごと）','クローンが全部同じ動きになってしまう',
+ 'すべてのすぷらいとよう|すべてのスプライト用|このすぷらいとのみ|このスプライトのみ|へんすうのしゅるい|変数の種類|くろーんがおなじうごき|ぜんぶおなじ',
+ 'へんすう|変数|くろーん|クローン|べつべつ|別々|きょうゆう|共有|こべつ|個別',
+ [asclone(),
+  setv('わたしの速さ',rnd(1,5)),
+  fore(chx(V('わたしの速さ')))],
+ '変数を作るとき「すべてのスプライト用」だと全員で1つの値を共有します。「このスプライトのみ」を選ぶと、クローン1体ごとに別の値を持てます。敵ごとに速さを変えたいときは、後者を使います。',
+ '「すべてのスプライト用」で作ってしまい、クローン全部が同じ速さになる|得点のように全体で1つにしたい変数を、このスプライトのみで作ってしまう',
+ '得点・残機・スクロール量＝すべてのスプライト用。個々の速さ・元の位置・体力＝このスプライトのみ、が目安です。',{owner:'敵'}),
+
+_P('b-list','data',3,'リストを使う（たくさんの数をまとめて持つ）','データをたくさん覚えさせたい',
+ 'りすと|リスト|はいれつ|配列|たくさんのでーた|たくさんのデータ|きろくをためる|一覧|いちらん',
+ 'へんすう|変数|きろく|記録|ついか|追加|ばんめ|番目|ながさ|長さ',
+ [flag(),dellist('てきの位置'),
+  addlist(-150,'てきの位置'),
+  addlist(0,'てきの位置'),
+  addlist(150,'てきの位置'),
+  setv('番号',1),
+  untl(gt(V('番号'),lenlist('てきの位置')),
+    goxy(itemof(V('番号'),'てきの位置'),-60),
+    clone('_myself_'),
+    chv('番号',1))],
+ 'リストは「番号のついた変数の集まり」です。ステージの敵やコインの位置をリストに入れておけば、並べる処理は1つで済み、配置を変えるのも簡単になります。',
+ '最初にリストの中身を消さず、遊ぶたびにデータが増えていく|番号が1から始まることを忘れ、0番目を取り出そうとする',
+ 'ステージごとにリストを分ければ、1つのスプライトで何ステージでも作れます。',{owner:'敵'}),
+
+_P('b-random','basic',1,'乱数で位置や動きを決める','毎回ちがう場所に出したい',
+ 'らんすう|乱数|らんだむ|ランダム|まいかいちがう|毎回違う|てきとうなばしょ|適当な場所|うんだめし',
+ 'いち|位置|ばしょ|場所|きめる|決める|さいころ|サイコロ|かくりつ|確率',
+ [flag(),fore(
+   goxy(rnd(-200,200),rnd(-100,100)),
+   wait(1))],
+ '「1から10までの乱数」は、実行するたびに違う数になります。位置・速さ・待ち時間・アイテムの種類など、いろいろなところに使えます。',
+ '乱数の範囲が画面の外まで入っていて、見えない場所に出る|乱数を「ずっと」の外で1回だけ使い、毎回同じ場所になる',
+ 'ステージの端は x が ±240、y が ±180 です。少し内側の範囲にすると安全です。',{owner:'コイン'}),
+
+_P('b-mouse','basic',1,'マウスについてくる','マウスで動かしたい',
+ 'まうす|マウス|ついてくる|かーそる|カーソル|まうすでうごか|マウスで動か|ぽいんたー|ポインター',
+ 'うごかす|動かす|そうさ|操作|いち|位置|くりっく|クリック',
+ [flag(),fore(
+   {op:'motion_goto',fl:{TO:'_mouse_'}})],
+ 'マウスのポインターへ行き続けると、マウスについてきます。ドラッグと違って、押していなくても動きます。',
+ '「ずっと」の外に置いて、1回しか動かない|マウスの位置に完全に一致させるため、動きが機械的になる',
+ '「1秒でマウスのポインターへ行く」にすると、少し遅れてついてくる柔らかい動きになります。',{owner:'マリオ'}),
+
+_P('b-distance','sensing',2,'距離で判定する（近づいたら反応）','近づいたときだけ反応させたい',
+ 'きょり|距離|ちかづいたら|近づいたら|はなれたら|離れたら|せっきん|接近|までのきょり',
+ 'はんてい|判定|さわる|触る|ちかく|近く|とおく|遠く|てき|敵',
+ [flag(),fore(
+   ifel(lt(dist('マリオ'),80),
+     [pointto('マリオ'),move(2),cost('怒り')],
+     [cost('ふつう')]))],
+ '「〜までの距離」は触れていなくても使えます。近づいたら追いかけ、離れたら元に戻る、という賢い敵が作れます。',
+ '距離の数値が大きすぎて、いつも追いかけてくる|離れたときに元の状態へ戻す処理がない',
+ '距離の数値を変えて、「気づく範囲」を調整してみよう。',{owner:'敵'}),
+
+_P('b-color','sensing',2,'色に触れたかを調べる（スポイトの使い方）','色で当たり判定をしたい',
+ 'いろにふれた|色に触れた|すぽいと|スポイト|いろではんてい|色で判定|おなじいろ|同じ色|いろをとる',
+ 'いろ|色|はんてい|判定|じめん|地面|かべ|壁|あたり|当たり',
+ [flag(),fore(
+   ifel(tcol(GRASS),
+     [say('地面の上',0)],
+     [say('空中',0),chy(-4)]))],
+ '色の四角をクリックしてから「スポイト」を選び、画面上の色をクリックすると、その色ぴったりを指定できます。手で色を選ぶと、わずかな違いで反応しません。',
+ 'スポイトを使わず、似た色を手で選んでいる|背景に描いた色と、スプライトに描いた色を取りちがえている',
+ '地面＝緑、壁＝茶、はしご＝黄、水＝青、と決めておくと、判定が一気に作りやすくなります。',{owner:'マリオ'}),
+
+_P('b-mod','basic',3,'余りを使って一定の間隔で処理する','数回に1回だけ動かしたい',
+ 'あまり|余り|わったあまり|割った余り|すうかいにいっかい|数回に1回|いっていかんかく|一定間隔|ぐうすうきすう|偶数奇数',
+ 'けいさん|計算|わりざん|割り算|かんかく|間隔|たいみんぐ|くりかえ',
+ [flag(),setv('カウント',0),fore(
+   chv('カウント',1),
+   iff(eq(modop(V('カウント'),30),0),
+     clone('敵'),
+     say('敵が出た！',0.5)))],
+ '「カウントを30で割った余りが0」は、30回に1回だけ成り立ちます。タイマーを使わずに、決まった間隔で処理したいときの定番です。',
+ '割る数と、実際の間隔の関係を勘違いしている|カウントを増やす場所が「ずっと」の外にある',
+ '割る数をだんだん小さくすると、時間がたつほど敵が増えるゲームになります。',{owner:'敵'}),
+
+_P('b-round','basic',2,'四捨五入する','小数がたくさん表示されて見にくい',
+ 'ししゃごにゅう|四捨五入|しょうすう|小数|まるめ|きりのいいかず|きりのいい数|こまかいすうじ|細かい数字',
+ 'けいさん|計算|ひょうじ|表示|かず|数|せいすう|整数',
+ [flag(),fore(
+   say(join('スコア ',{op:'operator_round',in:{NUM:V('得点')}}),0))],
+ '速さに小数を使うと、座標や得点に細かい数字が並びます。表示するときだけ四捨五入すると、見た目がすっきりします。',
+ '計算そのものを四捨五入してしまい、動きがカクカクになる（表示だけ丸めるのがコツ）',
+ '切り下げ・切り上げは「絶対値」のブロックのドロップダウンから選べます。',{owner:'得点表示'}),
+
+_P('b-abs','basic',3,'速さの大きさ（絶対値）で判定する','右でも左でも同じ判定にしたい',
+ 'ぜったいち|絶対値|ぷらすまいなす|プラスマイナス|むきにかんけいなく|向きに関係なく|はやさのおおきさ|速さの大きさ',
+ 'けいさん|計算|はやさ|速さ|はんてい|判定|うごいている',
+ [flag(),fore(
+   ifel(gt(absop(V('よこの速さ')),0.5),
+     [nextcost(),wait(0.1)],
+     [cost('立つ')]))],
+ '絶対値はマイナスを取り除いた大きさです。速さが 3 でも -3 でも「動いている」と判定できるので、歩くアニメーションの切りかえに便利です。',
+ '速さが 0 かどうかだけで判定し、小数のせいで止まらない|マイナスの速さを見落として、左に歩くとアニメが止まる',
+ '0.5 の部分を変えると、「どのくらいから歩いていると見なすか」を調整できます。',{owner:'マリオ'}),
+
+_P('b-join','basic',1,'文字と数をつないで表示する','「スコア: 100」のように表示したい',
+ 'もじをつなぐ|文字をつなぐ|つなげる|繋げる|もじとかず|文字と数|ひょうじをくふう|表示を工夫|れんけつ',
+ 'ひょうじ|表示|もじ|文字|いう|言う|とくてん|得点|なまえ|名前',
+ [flag(),fore(
+   say(join(join('スコア ',V('得点')),join('  残り ',V('残機'))),0))],
+ '「〈 〉と〈 〉」のブロックで、文字と変数をつなげます。入れ子にすれば、いくつでもつなげられます。',
+ '数と文字をつなぐと足し算になると思っている（つなぐブロックを使います）|つなぐブロックの入れ子が深くなり、どこが対応しているか分からなくなる',
+ 'スペースを入れると読みやすくなります。「スコア 」のうしろの空白がポイントです。',{owner:'得点表示'}),
+
+_P('b-anykey','sensing',1,'どれかのキーが押されたら','なんでもいいからキーを押したら進めたい',
+ 'どれかのきー|どれかのキー|なんでもいいからきー|なにかおしたら|何か押したら|えにーきー|おしてすすむ',
+ 'きー|キー|おす|押す|まつ|待つ|すすむ|進む|たいとる|タイトル',
+ [flag(),
+  say('なにかキーを押してね',0),
+  waituntil(kp('any')),
+  say('',0),
+  bcast('ゲーム開始')],
+ 'キーのドロップダウンから「どれかの」を選べます。タイトル画面やメッセージ送りでよく使います。',
+ '「ずっと」の中で調べてしまい、押しっぱなしで何度も反応する（「〜まで待つ」を使う）',
+ '「〜まで待つ」は、条件が成り立つまでそこで止まってくれる便利なブロックです。',{owner:'マリオ'}),
+
+_P('b-loudness','sensing',2,'声の大きさで動かす','マイクの音で動かしたい',
+ 'こえのおおきさ|声の大きさ|まいく|マイク|おんりょうではんてい|音量で判定|こえでうごか|声で動か|おおきなこえ',
+ 'おと|音|おんりょう|音量|せんさ|センサ|うごく|動く|はんのう|反応',
+ [flag(),fore(
+   iff(gt(loud(),40),
+     setv('落ちる速さ',12),
+     wait(0.3)))],
+ 'パソコンのマイクで音の大きさを測れます。これも立派なセンサです。声でジャンプするゲームが作れます。',
+ 'しきい値を測らずに決めている（まず「音量」を表示して、教室の静かなときの値を確かめる）|教室がうるさくて常に反応する',
+ 'micro:bit の明るさや温度で制御するのと、まったく同じ考え方です。',{owner:'マリオ'}),
+
+_P('b-timer-event','sensing',2,'タイマーが〇を超えたときに動かす','決まった時間になったら動かしたい',
+ 'たいまーがこえたとき|タイマーが超えたとき|じかんになったら|時間になったら|びょうご|秒後|じどうではじま',
+ 'たいまー|タイマー|じかん|時間|いべんと|イベント|はじまる|始まる',
+ [{op:'event_whengreaterthan',fl:{WHENGREATERTHANMENU:'TIMER'},in:{VALUE:30}},
+  say('30秒経過！敵が増えるぞ',2),
+  bcast('敵を増やす')],
+ '「タイマー > 30 のとき」は、タイマーがその数を超えた瞬間に1回だけ動きます。時間で難しさを変える仕掛けに使えます。',
+ 'タイマーをリセットしていないので、アプリを開いてからの時間で動いてしまう|1回しか動かないことを忘れ、くり返し処理を期待する',
+ '旗を押したときに「タイマーをリセット」を入れるのを忘れずに。',{owner:'マリオ'}),
+
+_P('b-glide','basic',1,'なめらかに移動する（〜秒でx yへ）','スーッと移動させたい',
+ 'なめらかにいどう|なめらかに移動|すーっと|ぐらいど|グライド|びょうでいく|秒で行く|ゆっくりうごく',
+ 'いどう|移動|ざひょう|座標|うごく|動く|えんしゅつ|演出|なめらか',
+ [flag(),goxy(-200,0),
+  glide(1,0,0),
+  glide(0.5,150,80),
+  say('とうちゃく！',1)],
+ '「〜秒でx座標を…に変える」は、決めた時間をかけてなめらかに移動します。カットシーンや演出にぴったりです。',
+ '操作するキャラクターに使い、キー入力が効かなくなる（移動が終わるまで次に進まないため）',
+ '演出やカメラワークに使い、プレイヤーの操作には座標を少しずつ変える方法を使い分けましょう。',{owner:'マリオ'}),
+
+_P('b-costume-num','looks',2,'コスチュームの番号で処理を分ける','今の見た目によって動きを変えたい',
+ 'こすちゅーむのばんごう|コスチュームの番号|みためでわける|見た目で分ける|いまのすがた|今の姿|じょうたいでわけ',
+ 'こすちゅーむ|コスチューム|ばんごう|番号|じょうけん|条件|ぶんき|分岐',
+ [flag(),fore(
+   iff(eq({op:'looks_costumenumbername',fl:{NUMBER_NAME:'number'}},3),
+     say('ジャンプ中！',0)))],
+ '「コスチュームの番号」で今の見た目が分かります。状態を変数で持たなくても、見た目で場合分けできることがあります。',
+ 'コスチュームの順番を入れかえて、番号がずれる（名前で判定するほうが安全です）',
+ 'ドロップダウンを「名前」に変えると、コスチューム名で判定できます。',{owner:'マリオ'}),
+
+_P('b-waituntil','basic',2,'〜になるまで待つ','条件がそろうまで止めておきたい',
+ 'までまつ|まで待つ|じょうけんがそろうまで|条件がそろうまで|まちうけ|とまっていてほしい|たいき|待機',
+ 'まつ|待つ|じょうけん|条件|とまる|止まる|すすむ|進む',
+ [onbcast('ゲーム開始'),
+  waituntil(touch('地面')),
+  say('着地！',1),
+  bcast('操作開始')],
+ '「〜まで待つ」は、条件が成り立つまでその場で止まります。「ずっと＋もし」で書くよりすっきりする場面がよくあります。',
+ '絶対に成り立たない条件を書き、そこから先へ進まなくなる|待っている間はほかの処理も止まることを忘れている',
+ '別々の塊（スクリプト）に分けておけば、片方が待っていても、もう片方は動き続けます。',{owner:'マリオ'}),
+
+_P('b-drag','basic',1,'ドラッグして動かせるようにする','マウスでつかんで動かしたい',
+ 'どらっぐ|ドラッグ|つかむ|掴む|まうすでつまむ|ひっぱる|引っ張る|うごかせるように',
+ 'まうす|マウス|うごかす|動かす|くりっく|クリック|そうさ|操作',
+ [flag(),fore(
+   iff(and(mousedown(),touch('_mouse_')),
+     {op:'motion_goto',fl:{TO:'_mouse_'}}))],
+ 'マウスが押されていて、かつマウスのポインターに触れているときだけ、マウスへ移動させます。これで「つかんで動かす」になります。',
+ '「かつ」を使わず、クリックしただけで飛んでくる|作品を共有したときの「ドラッグできるようにする」設定と混同している',
+ 'パズルや、ステージエディタを作るときに使えます。',{owner:'ブロック'})
+);
+
+/* ===== micro:bit（ゲーム連携・計測制御の追加） ===== */
+PATTERNS.push(
+_P('mbg-controller','microbit',2,'micro:bit をゲームのコントローラにする','マイクロビットでマリオを動かしたい',
+ 'こんとろーら|コントローラ|まいくろびっとでうごか|マイクロビットで動か|ぼたんでまりお|ボタンでマリオ|まりおをうごか|マリオを動か|microbitでまりお|micro:bitでまりお|げーむぱっど|げーむのそうさ',
+ 'ぼたん|ボタン|まいくろびっと|マイクロビット|microbit|うごかす|動かす|そうさ|操作|げーむ|ゲーム',
+ [flag(),rotstyle('left-right'),fore(
+   iff({op:'microbit_isbuttonpressed',fl:{BTN:'A'}},point(-90),chx(-5)),
+   iff({op:'microbit_isbuttonpressed',fl:{BTN:'B'}},point(90),chx(5)))],
+ 'スクラッチの拡張機能「micro:bit」を追加すると、ボタンの状態を「ずっと」の中で調べられます。押しっぱなしで動かしたいときは、帽子ブロックではなく「ボタンAが押された」の判定を使います。',
+ '帽子ブロック（ボタンAが押されたとき）を使い、押しっぱなしでカクカクする|Scratch Link が起動していない／ペアリングが切れている',
+ 'A+Bの同時押しでジャンプ、という操作も作れます。',{owner:'マリオ'}),
+
+_P('mbg-tilt-move','microbit',2,'micro:bit を傾けてキャラクターを動かす','傾けて操作するゲームにしたい',
+ 'かたむけてそうさ|傾けて操作|かたむきでうごか|傾きで動か|はんどるそうさ|ハンドル操作|かたむけてげーむ|たおして',
+ 'かたむき|傾き|せんさ|センサ|うごかす|動かす|そうさ|操作|かそくど|加速度',
+ [flag(),fore(
+   iff({op:'microbit_istilted',fl:{DIRECTION:'右'}},chx(6)),
+   iff({op:'microbit_istilted',fl:{DIRECTION:'左'}},chx(-6)))],
+ '傾きセンサ（加速度センサ）は、ボタンより直感的に操作できます。ハンドルのように持って遊べるので、ゲームの幅が広がります。',
+ '「ずっと」の中で調べていないので、一瞬しか動かない|micro:bit の向き（LEDのある面が上か）を決めていないため、左右が逆になる',
+ '「〈右〉の傾き」という角度の数値を使えば、傾けた分だけ速くする操作ができます。',{owner:'マリオ'}),
+
+_P('mbg-jump','microbit',1,'micro:bit のボタンでジャンプさせる','ボタンでジャンプしたい',
+ 'ぼたんでじゃんぷ|ボタンでジャンプ|まいくろびっとでじゃんぷ|ゆさぶってじゃんぷ|ふってじゃんぷ|振ってジャンプ',
+ 'じゃんぷ|ジャンプ|ぼたん|ボタン|まいくろびっと|ゆさぶ|とぶ|跳ぶ',
+ [{op:'microbit_whengesture',fl:{GESTURE:'ゆさぶられた'}},
+  setv('落ちる速さ',12),
+  say('ジャンプ！',0.5)],
+ 'ゆさぶる動作をジャンプに割り当てると、体を使った操作になります。ジェスチャーは「ゆさぶられた・落とした・跳ねた」などから選べます。',
+ '小さく振りすぎて反応しない|重力の処理を書いていないので、上がったまま落ちてこない',
+ 'ボタンAで左、Bで右、ゆさぶりでジャンプ、と割り当てると完全な操作になります。',{owner:'マリオ'}),
+
+_P('mc-blink','microbit',1,'【MakeCode】LEDを点けたり消したりする（Lチカ）','まず出力を確かめたい',
+ 'えるちか|Lチカ|ledをてんめつ|LEDを点滅|てんとうさせる|点灯させる|ひからせる|光らせる|しゅつりょくのかくにん|出力の確認',
+ 'led|でんき|電気|てんめつ|点滅|たんし|端子|p0|しゅつりょく|出力',
+ null,
+ '制御の実習でいちばん最初にやることです。出力そのものが出ているかを確かめられるので、動かないときの切り分けにも使います。',
+ '一時停止を入れず、速すぎて点きっぱなしに見える|GND（0V）をつないでいない|LEDの向き（足の長さ）が逆になっている',
+ 'ここが確かめられたら、点滅の間隔をセンサの値で変えてみましょう。',
+ {plat:'microbit',
+  mc:{code:'basic.forever(function () {\n    pins.digitalWritePin(DigitalPin.P0, 1)\n    basic.pause(500)\n    pins.digitalWritePin(DigitalPin.P0, 0)\n    basic.pause(500)\n})',
+      blocks:[['basic','ずっと',[['pins','デジタルで出力 端子 P0 に 1'],['basic','一時停止 500 ミリ秒'],
+        ['pins','デジタルで出力 端子 P0 に 0'],['basic','一時停止 500 ミリ秒']]]]}}),
+
+_P('mc-traffic','microbit',2,'【MakeCode】信号機をつくる（順番に制御する）','信号機を作りたい',
+ 'しんごうき|信号機|しんごう|信号|あおきいろあか|青黄赤|じゅんばんにひからせ|順番に光らせ|こうつう|交通',
+ 'led|てんとう|点灯|じゅんじ|順次|じかん|時間|たんし|端子|せいぎょ|制御',
+ null,
+ '順次処理（上から順に実行する）のいちばん分かりやすい例です。青→黄→赤を決まった時間で切りかえます。実際の信号機も同じ考え方で動いています。',
+ '前の色を消さずに次を点け、全部光ったままになる|待ち時間が短すぎて、信号として成り立たない',
+ '押しボタン式にするなら、ボタンが押されたときだけ歩行者用を青にします。',
+ {plat:'microbit',
+  mc:{code:'basic.forever(function () {\n    pins.digitalWritePin(DigitalPin.P0, 1)\n    basic.pause(5000)\n    pins.digitalWritePin(DigitalPin.P0, 0)\n    pins.digitalWritePin(DigitalPin.P1, 1)\n    basic.pause(2000)\n    pins.digitalWritePin(DigitalPin.P1, 0)\n    pins.digitalWritePin(DigitalPin.P2, 1)\n    basic.pause(5000)\n    pins.digitalWritePin(DigitalPin.P2, 0)\n})',
+      blocks:[['basic','ずっと',[['pins','青 P0 を 1（点灯）'],['basic','一時停止 5000 ミリ秒'],
+        ['pins','青 P0 を 0（消灯）'],['pins','黄 P1 を 1'],['basic','一時停止 2000 ミリ秒'],
+        ['pins','黄 P1 を 0'],['pins','赤 P2 を 1'],['basic','一時停止 5000 ミリ秒'],['pins','赤 P2 を 0']]]]}}),
+
+_P('mc-autodoor','microbit',2,'【MakeCode】自動ドア（近づいたら開く）','自動ドアを作りたい',
+ 'じどうどあ|自動ドア|ちかづいたらひらく|近づいたら開く|じんかん|人感|せんさでひらく|センサで開く|どあをつくり|ドアを作り|かんち|感知',
+ 'せんさ|センサ|さーぼ|サーボ|どあ|ドア|とびら|扉|ひらく|開く|しめる|閉める|じどう|自動|せいぎょ|制御',
+ null,
+ '計測（明るさや距離の変化で人を感知）→判断（しきい値）→制御（サーボでドアを開く）という、計測・制御の完成形です。開けたら閉める処理まで書くのが大切です。',
+ '開ける処理だけ書いて、閉める処理を忘れる|しきい値を測らずに決めたため、いつも開いている',
+ '人が通り終わるまで開けておくには、閉じる前に少し待ち時間を入れます。',
+ {plat:'microbit',
+  mc:{code:'basic.forever(function () {\n    if (input.lightLevel() < 60) {\n        pins.servoWritePin(AnalogPin.P0, 90)\n        basic.showIcon(IconNames.Yes)\n        basic.pause(3000)\n    } else {\n        pins.servoWritePin(AnalogPin.P0, 0)\n        basic.clearScreen()\n    }\n})',
+      blocks:[['basic','ずっと',[['logic','もし 明るさ < 60 なら',[['pins','サーボ 出力する 端子 P0 に 90（開く）'],
+        ['basic','アイコンを表示 ✓'],['basic','一時停止 3000 ミリ秒']]],
+        ['logic','でなければ',[['pins','サーボ 出力する 端子 P0 に 0（閉じる）'],['basic','画面を消す']]]]]]}}),
+
+_P('mc-alarm','microbit',2,'【MakeCode】防犯ブザー（動かされたら鳴る）','防犯装置を作りたい',
+ 'ぼうはん|防犯|ぶざー|ブザー|あらーむ|アラーム|うごかされたらなる|動かされたら鳴る|とうなん|盗難|けいほう|警報',
+ 'おと|音|ゆさぶ|ふる|振る|かそくど|加速度|せんさ|センサ|ならす|鳴らす',
+ null,
+ '加速度センサで「動かされた」ことを検知して音を鳴らします。スイッチ（ボタン）で警戒モードを切りかえられるようにすると、実用的になります。',
+ '警戒モードの切りかえがなく、置いただけで鳴り続ける|音を止める方法を用意していない',
+ '鳴ったら無線で別の micro:bit に知らせる、という発展もできます。',
+ {plat:'microbit',
+  mc:{code:'let keikai = false\ninput.onButtonPressed(Button.A, function () {\n    keikai = !keikai\n    basic.showString(keikai ? "ON" : "OFF")\n})\ninput.onGesture(Gesture.Shake, function () {\n    if (keikai) {\n        for (let i = 0; i < 5; i++) {\n            music.playTone(Note.C5, music.beat(BeatFraction.Half))\n        }\n    }\n})',
+      blocks:[['input','ボタン A が押されたとき',[['variables','警戒 を 反対にする'],['basic','文字列を表示 ON / OFF']]],
+        ['input','ゆさぶられた とき',[['logic','もし 警戒 なら',[['loops','くりかえし 5 回',[['music','音を鳴らす 高さ ド']]]]]]]]}}),
+
+_P('mc-motor-speed','microbit',3,'【MakeCode】モーターの速さを変える（アナログ出力）','モーターの回転を調節したい',
+ 'もーたーのはやさ|モーターの速さ|かいてんすう|回転数|あなろぐしゅつりょく|アナログ出力|そくどちょうせい|速度調整|つよさをかえ|強さを変え',
+ 'もーた|モータ|はやさ|速さ|あなろぐ|アナログ|しゅつりょく|出力|せいぎょ|制御|でんあつ',
+ null,
+ 'デジタル出力は ON か OFF の2つだけですが、アナログ出力（0〜1023）なら強さを細かく変えられます。明るさの値をそのまま速さに変換すると、明るいほど速く回る装置になります。',
+ 'digitalWritePin のままで速さが変わらない|0〜1023 の範囲を超えた値を入れている|モーターを端子から直接つないで、電流不足で回らない',
+ 'map（値の変換）を使うと、センサの範囲を出力の範囲にきれいに合わせられます。',
+ {plat:'microbit',
+  mc:{code:'basic.forever(function () {\n    let light = input.lightLevel()\n    let speed = Math.map(light, 0, 255, 0, 1023)\n    pins.analogWritePin(AnalogPin.P0, speed)\n    serial.writeValue("speed", speed)\n    basic.pause(200)\n})',
+      blocks:[['basic','ずっと',[['variables','変数 light を 明るさ にする'],
+        ['math','変数 speed を light を 0〜255 から 0〜1023 に変換 にする'],
+        ['pins','アナログで出力 端子 P0 に speed'],['serial','シリアル通信 "speed" の値 speed を書き出す'],
+        ['basic','一時停止 200 ミリ秒']]]]}}),
+
+_P('mc-count','microbit',2,'【MakeCode】通った回数を数える（計測）','通過した数を数えたい',
+ 'かいすうをかぞえ|回数を数え|つうか|通過|かうんと|カウント|なんかいとおった|何回通った|けいそくする|計測する',
+ 'かぞえる|数える|へんすう|変数|せんさ|センサ|きろく|記録|けいそく|計測',
+ null,
+ '光がさえぎられた回数を数えます。「今さえぎられているか」ではなく「さえぎられた瞬間」を数えるために、前の状態を覚えておくのがポイントです。',
+ '「ずっと」の中でそのまま数え、さえぎられている間ずっと増え続ける|前の状態を覚えておく変数を用意していない',
+ '数えた値を無線で送れば、離れた場所から見られる計測装置になります。',
+ {plat:'microbit',
+  mc:{code:'let count = 0\nlet blocked = false\nbasic.forever(function () {\n    if (input.lightLevel() < 40 && !blocked) {\n        blocked = true\n        count += 1\n        basic.showNumber(count)\n    }\n    if (input.lightLevel() >= 40) {\n        blocked = false\n    }\n    basic.pause(50)\n})',
+      blocks:[['basic','最初だけ',[['variables','count を 0 に'],['variables','blocked を false に']]],
+        ['basic','ずっと',[['logic','もし 明るさ < 40 かつ blocked でない なら',
+          [['variables','blocked を true に'],['variables','count を 1 増やす'],['basic','数を表示 count']]],
+          ['logic','もし 明るさ ≧ 40 なら',[['variables','blocked を false に']]],
+          ['basic','一時停止 50 ミリ秒']]]]}}),
+
+_P('mc-thermo','microbit',1,'【MakeCode】温度を測って記録する（計測の基本）','温度を調べたい',
+ 'おんどをはかる|温度を測る|おんどけい|温度計|きろくする|記録する|でーたをとる|データを取る|そくてい|測定',
+ 'おんど|温度|けいそく|計測|ひょうじ|表示|ぐらふ|グラフ|きろく|記録|せんさ|センサ',
+ null,
+ '制御を作る前に、まず測ることから始めます。画面に数字を出し、serial で記録すればグラフとCSVになります。しきい値はこのデータを見てから決めます。',
+ '測る前にしきい値を決めてしまう|一時停止がなく、データが多すぎて読めない|手で持つと体温で値が上がることに気づいていない',
+ '教室の場所ごとに測って表にすると、そのまま理科や探究の学習にもつながります。',
+ {plat:'microbit',
+  mc:{code:'basic.forever(function () {\n    basic.showNumber(input.temperature())\n    serial.writeValue("temp", input.temperature())\n    basic.pause(1000)\n})',
+      blocks:[['basic','ずっと',[['basic','数を表示 温度'],
+        ['serial','シリアル通信 "temp" の値 温度 を書き出す'],['basic','一時停止 1000 ミリ秒']]]]}})
+);
+
+/* 最初から入っているパターンにも分類をつける */
+(function(){
+  const OLD={'p-forever-move':'move','p-bounce':'move','p-arrow':'move','p-key-action':'basic',
+   'p-touch':'sensing','p-repeat-n':'basic','p-wait':'basic','p-if-else':'basic','p-variable':'data',
+   'p-until':'basic','p-sensor-loop':'microbit','p-and-or':'sensing','p-timer':'sensing','p-ask':'basic',
+   'mb-button-sc':'microbit','mb-tilt-sc':'microbit','mb-shake-sc':'microbit','mb-display-sc':'microbit',
+   'mc-basic':'microbit','mc-button-out':'microbit','mc-temp':'microbit','mc-analog':'microbit',
+   'mc-servo':'microbit','mc-radio':'microbit','mc-hyst':'microbit'};
+  PATTERNS.forEach(p=>{ if(!p.cat) p.cat = OLD[p.id] || 'basic'; });
+})();
+
 /* =======================================================================
    5. つまずき診断ライブラリ（症状 → 原因 → 直し方）
    ======================================================================= */
@@ -903,7 +2458,7 @@ const SYMPTOMS = [
   {t:'「ずっと」には終わりがない',
    fix:'終わらせたいときは「〈条件〉まで繰り返す」に変えるか、「もし〜なら → すべてを止める」を中に入れます。',
    bad:[F('control_forever',{mark:1,sub:[F('motion_movesteps',{in:{STEPS:5}})]})],
-   good:[F('control_repeat_until',{in:{CONDITION:F('sensing_touchingobject',{fl:{TOUCHINGOBJECTMENU:'端'}})},
+   good:[F('control_repeat_until',{in:{CONDITION:F('sensing_touchingobject',{fl:{TOUCHINGOBJECTMENU:'_edge_'}})},
          sub:[F('motion_movesteps',{in:{STEPS:5}})]}),F('looks_sayforsecs',{in:{MESSAGE:'ゴール！',SECS:2}})]},
   {t:'終了の条件が絶対に成り立たない',
    fix:'条件に使っている値を画面に表示して、本当にその値になるのか確かめます。'}]},
@@ -913,10 +2468,10 @@ const SYMPTOMS = [
  causes:[
   {t:'「もし〜なら」が「ずっと」の外にある',
    fix:'条件の判定は、一瞬で通り過ぎてしまいます。「ずっと」の中に入れて、くり返し調べさせます。',
-   bad:[F('event_whenflagclicked'),F('control_if',{mark:1,in:{CONDITION:F('sensing_keypressed',{fl:{KEY_OPTION:'スペース'}})},
+   bad:[F('event_whenflagclicked'),F('control_if',{mark:1,in:{CONDITION:F('sensing_keypressed',{fl:{KEY_OPTION:'space'}})},
         sub:[F('looks_say',{in:{MESSAGE:'押された'}})]})],
    good:[F('event_whenflagclicked'),F('control_forever',{sub:[
-        F('control_if',{in:{CONDITION:F('sensing_keypressed',{fl:{KEY_OPTION:'スペース'}})},
+        F('control_if',{in:{CONDITION:F('sensing_keypressed',{fl:{KEY_OPTION:'space'}})},
         sub:[F('looks_say',{in:{MESSAGE:'押された'}})]})]})]},
   {t:'不等号の向きが逆、またはしきい値が実際の値と合っていない',
    fix:'まず値そのものを表示して、どのくらいの数になるのか確かめてから、しきい値を決めます。'},
@@ -930,7 +2485,7 @@ const SYMPTOMS = [
    fix:'旗の下に「〈変数〉を 0 にする」を入れます。前回の値が残らないようにするためです。',
    bad:[F('event_whenflagclicked'),F('control_forever',{sub:[F('data_changevariableby',{fl:{VARIABLE:'得点'},in:{VALUE:1},mark:1})]})],
    good:[F('event_whenflagclicked'),F('data_setvariableto',{fl:{VARIABLE:'得点'},in:{VALUE:0}}),
-         F('control_forever',{sub:[F('control_if',{in:{CONDITION:F('sensing_touchingobject',{fl:{TOUCHINGOBJECTMENU:'端'}})},
+         F('control_forever',{sub:[F('control_if',{in:{CONDITION:F('sensing_touchingobject',{fl:{TOUCHINGOBJECTMENU:'_edge_'}})},
            sub:[F('data_changevariableby',{fl:{VARIABLE:'得点'},in:{VALUE:1}}),F('control_wait',{in:{DURATION:0.5}})]})]})]},
   {t:'「〜にする」と「〜ずつ変える」を取りちがえている',
    fix:'「にする」＝その値に置きかえる。「ずつ変える」＝今の値に足す。目的に合うほうを選びます。'},
@@ -952,7 +2507,7 @@ const SYMPTOMS = [
  causes:[
   {t:'回転方法が「自由に回転」になっている',
    fix:'旗の下に「回転方法を〈左右のみ〉にする」を入れます。',
-   good:[F('event_whenflagclicked'),F('motion_setrotationstyle',{fl:{STYLE:'左右のみ'}}),
+   good:[F('event_whenflagclicked'),F('motion_setrotationstyle',{fl:{STYLE:'left-right'}}),
          F('control_forever',{sub:[F('motion_movesteps',{in:{STEPS:10}}),F('motion_ifonedgebounce')]})]}]},
 
 {id:'s-conflict', label:'2つのプログラムが取り合って、変な動きになる', look:'events',
@@ -993,7 +2548,7 @@ const SYMPTOMS = [
    fix:'ONにする値とOFFにする値に差をつけます（例：40未満でON、60以上でOFF）。「なおす」の発展パターンを参照。'}]},
 
 {id:'s-motor', label:'モーター（LED）が動かない・光らない', look:null, hw:1,
- kw:['もーた','モータ','まわらない','回らない','ひからない','光らない','うごかない','でんげん','電源','はいせん','配線','らいと'],
+ kw:['もーた','モータ','まわらない','回らない','ひからない','光らない','うごかない','でんげん','電源','はいせん','配線','らいとがつかない','ライトがつかない'],
  causes:[
   {t:'GND（0V）を共通につないでいない',
    fix:'micro:bit の GND と、外部回路の GND を必ずつなぎます。これを忘れると信号が伝わりません。'},
@@ -1004,6 +2559,88 @@ const SYMPTOMS = [
   {t:'digital と analog を取りちがえている',
    fix:'ON/OFF は digitalWritePin（0か1）、強さを変えるのは analogWritePin（0〜1023）です。'}]}
 ];
+
+/* --- マリオゲームづくりでよくあるつまずき --- */
+SYMPTOMS.push(
+{id:'g-jump-stuck', label:'ジャンプしたまま落ちてこない／飛びすぎる', look:'control',
+ kw:['おちてこない','落ちてこない','とんだまま','飛んだまま','うかんだまま','浮いたまま','とびすぎ','飛びすぎ','たかくとびすぎ','じゃんぷがおかしい'],
+ kw1:['じゃんぷ','ジャンプ','じゅうりょく','重力','おちる'],
+ causes:[
+  {t:'重力（落ちる速さを減らす処理）を書いていない',
+   fix:'「ずっと」の中で、毎回「落ちる速さ」を -1 ずつ変えます。これが重力です。上げる処理だけだと、永遠に上がり続けます。',
+   bad:[fore(chy(V('落ちる速さ')))],
+   good:[fore(chy(V('落ちる速さ')),chv('落ちる速さ',-1))]},
+  {t:'ジャンプの力が大きすぎる',
+   fix:'ジャンプのときに入れる値（12くらい）と、重力（-1）のバランスで高さが決まります。まず 12 と -1 で試し、そこから調整します。'},
+  {t:'地面に着いたときに「落ちる速さ」を 0 に戻していない',
+   fix:'着地したら必ず 0 に戻します。戻さないと、次のジャンプの高さがおかしくなります。'}]},
+
+{id:'g-through-floor', label:'床やブロックをすり抜けてしまう', look:'motion',
+ kw:['すりぬけ','すり抜け','つきぬけ','突き抜け','ゆかをとおりぬけ','床を通り抜け','めりこむ','めり込む','ぶろっくをとおる','かべをとおる'],
+ kw1:['ゆか','床','ぶろっく','ブロック','かべ','壁','あたり','判定'],
+ causes:[
+  {t:'1回に動かす量が、床の厚みより大きい',
+   fix:'落ちる速さに下限（-15 くらい）をつけ、床は厚めに描きます。1回で床を飛びこえると、触れた判定が働きません。',
+   good:[fore(chv('落ちる速さ',-1),iff(lt(V('落ちる速さ'),-15),setv('落ちる速さ',-15)),chy(V('落ちる速さ')))]},
+  {t:'色の判定が、実際に描いた色と合っていない',
+   fix:'色の四角をクリック →「スポイト」で、ステージに描いた地面の色をそのままクリックして取り直します。'},
+  {t:'めり込んだあとに押し戻す処理がない',
+   fix:'「色に触れていない状態になるまで、y座標を1ずつ変える」を入れて、床の上に押し戻します。',
+   good:[iff(tcol(GRASS),untl(not(tcol(GRASS)),chy(1)),setv('落ちる速さ',0))]}]},
+
+{id:'g-stomp-fail', label:'敵を踏んでも倒せない／踏んだのにダメージになる', look:'sensing',
+ kw:['ふんでもたおせ','踏んでも倒せ','ふんだのにだめーじ','踏んだのにダメージ','うえからふんでも','てきがたおせない','敵が倒せない'],
+ kw1:['てき','敵','ふむ','踏む','だめーじ','ダメージ','はんてい'],
+ causes:[
+  {t:'「上から踏んだか」を判定していない',
+   fix:'触れただけでは、上から踏んだのか横から当たったのか区別できません。「落ちる速さ」がマイナス（落下中）かどうかで分けます。',
+   bad:[iff(touch('敵'),bcast('ダメージ'))],
+   good:[iff(touch('敵'),ifel(lt(V('落ちる速さ'),0),
+     [bcast('敵をたおした'),setv('落ちる速さ',10)],
+     [bcast('ダメージ')]))]},
+  {t:'敵の側とマリオの側の両方に判定を書いている',
+   fix:'判定はどちらか一方（マリオ側がおすすめ）にまとめます。両方に書くと、同時に反対の結果が起きます。'},
+  {t:'当たり判定のある場所（コスチュームの絵）が思ったより広い',
+   fix:'コスチュームの余白（透明部分）も判定に含まれます。絵を描き直して余白を減らすと、判定が正確になります。'}]},
+
+{id:'g-clone-heavy', label:'だんだん動きが重くなる／クローンが増え続ける', look:'control',
+ kw:['おもくなる','重くなる','かくかく','カクカク','くろーんがふえ','クローンが増え','うごきがにぶ','動きが鈍','とまりそう','ふえつづけ','増え続け'],
+ kw1:['くろーん','クローン','たま','弾','てき','敵','さくじょ','削除'],
+ causes:[
+  {t:'クローンを削除していない',
+   fix:'役目が終わったクローンは「このクローンを削除する」で必ず消します。弾は端に着いたとき、敵は倒されたときが削除のタイミングです。',
+   bad:[asclone(),fore(move(6))],
+   good:[asclone(),untl(touch('_edge_'),move(6)),delclone()]},
+  {t:'クローンを作る間隔が短すぎる',
+   fix:'クローンを作る処理に「0.2秒待つ」などを入れます。「ずっと」の中でそのまま作ると、1秒間に何十個も作られます。'},
+  {t:'クローンは300個までという上限に達している',
+   fix:'それ以上は作られません。増え続けていないか、変数でクローンの数を数えて確かめましょう。'}]},
+
+{id:'g-scroll-gap', label:'スクロールすると地面や敵の位置がずれる', look:'motion',
+ kw:['すくろーるするとずれ','スクロールするとずれ','いちがずれ','位置がずれ','じめんだけうごく','地面だけ動く','てきだけうごかない','がたがたする','ばらばらにうごく'],
+ kw1:['すくろーる','スクロール','いち','位置','じめん','地面','てき','敵'],
+ causes:[
+  {t:'スクロールの計算を、ものによって変えてしまっている',
+   fix:'ステージに置くものは全部「本当の位置 − スクロールX」で x座標を決めます。式をそろえるのがいちばん大事です。',
+   good:[asclone(),fore(setx(sub(V('元のx'),V('スクロールX'))))]},
+  {t:'クローンごとの「元のx」を、すべてのスプライト用の変数で作っている',
+   fix:'「このスプライトのみ」で作り直します。全体で1つの変数だと、全部のクローンが同じ場所に重なります。'},
+  {t:'マリオの移動量と、スクロールXを増やす量が違う',
+   fix:'同じ数（たとえば 5）にそろえます。数がちがうと、進むたびに地面とのズレがたまっていきます。'}]},
+
+{id:'g-score-jump', label:'得点が一気に増える／残機が一度にたくさん減る', look:'variables',
+ kw:['とくてんがいっきに','得点が一気に','いっきにふえる','一気に増える','ざんきがいちどに','残機が一度に','すごいはやさでふえ','かってにふえ'],
+ kw1:['とくてん','得点','ざんき','残機','へんすう','変数','ふえる','へる'],
+ causes:[
+  {t:'触れている間ずっと処理が続いている',
+   fix:'「ずっと」の中の判定は1秒間に何十回も実行されます。増やしたあとに「隠す」「クローンを削除する」「0.5秒待つ」のどれかを入れて、1回だけにします。',
+   bad:[fore(iff(touch('コイン'),chv('得点',10)))],
+   good:[fore(iff(touch('コイン'),chv('得点',10),wait(0.5)))]},
+  {t:'同じ処理を複数のスプライトに書いている',
+   fix:'コイン側とマリオ側の両方に「得点を増やす」を書くと、2倍になります。どちらか一方にまとめます。'},
+  {t:'メッセージを受け取る塊が複数ある',
+   fix:'同じメッセージを受け取る塊が同じスプライトに2つあると、両方動きます。使っていない塊は削除しましょう。'}]}
+);
 
 /* =======================================================================
    6. 文章から意図を読み取るエンジン
@@ -1025,8 +2662,11 @@ function nset(arr){
   (arr||[]).forEach(k=>{ const n=norm(k); if(n.length>=2) st.add(n); });
   return Array.from(st);
 }
+let _maxHit=0;
 function hitCount(list,t,hits){
-  let c=0; list.forEach(n=>{ if(t.indexOf(n)>=0){ c++; hits.push(n); } }); return c;
+  let c=0;
+  list.forEach(n=>{ if(t.indexOf(n)>=0){ c++; hits.push(n); if(n.length>_maxHit) _maxHit=n.length; } });
+  return c;
 }
 function matchPatterns(text){
   const t=norm(text);
@@ -1034,20 +2674,22 @@ function matchPatterns(text){
   const mbHint = /まいくろびっと|microbit|micro:bit|めいくこーど|makecode|ぼたんa|えるいーでぃー|むせん|さーぼ|たんし|せんさ/.test(t);
   return PATTERNS.map(p=>{
     if(!p._k2){ p._k2=nset(p.kw2); p._k1=nset(p.kw); }
-    const hits=[];
+    const hits=[]; _maxHit=0;
     let s = hitCount(p._k2,t,hits)*3 + hitCount(p._k1,t,hits);
+    if(s>0) s += Math.min(2,_maxHit*0.12);
     if(t.indexOf(norm(p.title))>=0) s+=5;
     if(mbHint && (p.plat==='microbit'||p.plat==='both')) s+=2;
     if(!mbHint && p.plat==='microbit') s-=1;
     return {p:p,s:s,hits:Array.from(new Set(hits))};
-  }).filter(r=>r.s>0).sort((a,b)=>b.s-a.s);
+  }).filter(r=>r.s>=1.2).sort((a,b)=>b.s-a.s);
 }
 function matchSymptoms(text){
   const t=norm(text); if(!t) return [];
   return SYMPTOMS.map(sy=>{
     if(!sy._k2){ sy._k2=nset(sy.kw); sy._k1=nset(sy.kw1); }
-    const hits=[];
+    const hits=[]; _maxHit=0;
     let s = hitCount(sy._k2,t,hits)*3 + hitCount(sy._k1,t,hits);
+    if(s>0) s += Math.min(2,_maxHit*0.12);
     if(t.indexOf(norm(sy.label))>=0) s+=5;
     return {sy:sy,s:s,hits:hits};
   }).filter(r=>r.s>0).sort((a,b)=>b.s-a.s);
@@ -1060,21 +2702,24 @@ function plainLabel(b){
   return d.t.replace(/\{([A-Z_0-9]+)\}/g,(m,k)=>{
     const v=vals[k];
     if(v&&typeof v==='object'&&v.op) return '〈'+plainLabel(v)+'〉';
-    return '［'+(v==null?'　':v)+'］';
+    return '［'+(v==null?'　':dispVal(k,v))+'］';
   });
 }
 function stepsFor(list){
-  const out=[];
-  const walk=(l,where)=>{
-    (l||[]).forEach((b,i)=>{
-      const d=OPS[b.op]||{};
-      const pos = where ? where+'の中に' : (i===0?'コードエリアに':'その下に');
-      out.push(pos+'「'+plainLabel(b)+'」を'+(where?'入れる':'つなげる'));
-      if(d.sub) walk(b.sub,'「'+plainLabel(b)+'」');
-      if(d.sub2) walk(b.sub2,'「でなければ」');
-    });
-  };
-  walk(list,null);
+  const out=[], gs=splitScripts(list);
+  gs.forEach((g,gi)=>{
+    if(gs.length>1) out.push('【'+(gi+1)+'つめのかたまり】ここからは、前のかたまりとは離れた場所に置きます');
+    const walk=(l,where)=>{
+      (l||[]).forEach((b,i)=>{
+        const d=OPS[b.op]||{};
+        const pos = where ? where+'の中に' : (i===0?'コードエリアに':'その下に');
+        out.push(pos+'「'+plainLabel(b)+'」を'+(where?'入れる':'つなげる'));
+        if(d.sub) walk(b.sub,'「'+plainLabel(b)+'」');
+        if(d.sub2) walk(b.sub2,'「でなければ」');
+      });
+    };
+    walk(g,null);
+  });
   return out;
 }
 
@@ -1090,7 +2735,7 @@ function lvTag(lv){ return '<span class="tag lv">'+['','きほん','ふつう','
 
 function patternCard(p, score, hits, open){
   let h='<div class="card" data-pid="'+p.id+'">';
-  h+='<h4>🧩 '+esc(p.title)+' '+platTag(p)+lvTag(p.lv);
+  h+='<h4>🧩 '+esc(p.title)+' <span class="tag">'+esc(catName(p.cat))+'</span>'+platTag(p)+lvTag(p.lv);
   if(score!=null) h+='<span class="score" title="あてはまり度"><i style="width:'+Math.min(100,score*14)+'%"></i></span>';
   h+='</h4>';
   h+='<p class="muted" style="margin:.1rem 0 .5rem">ねらい：'+esc(p.goal)+
@@ -1099,7 +2744,8 @@ function patternCard(p, score, hits, open){
   if(p.sc){
     h+='<h3 style="margin-top:.4rem">スクラッチのコード</h3>'+renderScript(p.sc);
     h+='<div class="btnrow noprint">';
-    if(canExport(p.sc)) h+='<button class="btn green mini" data-sb3="'+p.id+'">⬇ .sb3 で書き出す（スクラッチで開ける）</button>';
+    if(canExport(p.sc)) h+='<button class="btn green mini" data-sb3="'+p.id+'">⬇ .sb3 で書き出す（スクラッチで開ける）</button>'+
+      '<span class="muted">コードの中に出てくるスプライト・コスチューム・背景は、名前だけの空の状態で一緒に作られます。絵は自分で描いてください。</span>';
     else h+='<span class="muted">※拡張機能のブロックを含むため、書き出しはできません。図を見ながら組み立てましょう。</span>';
     h+='<button class="btn sub mini" data-steps="'+p.id+'">📋 組み立て手順を見る</button></div>';
     h+='<div class="hidden" id="st-'+p.id+'"><ol class="steps">'+
@@ -1140,7 +2786,7 @@ function symptomCard(sy){
    ======================================================================= */
 const TRIG=[
  {id:'t1',n:'⚑ 旗が押されたとき',sc:[{op:'event_whenflagclicked'}],mcO:'',mcC:'',mcNote:'// スタート'},
- {id:'t2',n:'スペースキーが押されたとき',sc:[{op:'event_whenkeypressed',fl:{KEY_OPTION:'スペース'}}],
+ {id:'t2',n:'スペースキーが押されたとき',sc:[{op:'event_whenkeypressed',fl:{KEY_OPTION:'space'}}],
    mcO:'input.onButtonPressed(Button.A, function () {',mcC:'})'},
  {id:'t3',n:'このスプライトが押されたとき',sc:[{op:'event_whenthisspriteclicked'}],
    mcO:'input.onButtonPressed(Button.A, function () {',mcC:'})'},
@@ -1157,8 +2803,8 @@ const LOOP=[
 ];
 const COND=[
  {id:'c0',n:'（条件なし）',sc:null,mc:null},
- {id:'c1',n:'端に触れた',sc:{op:'sensing_touchingobject',fl:{TOUCHINGOBJECTMENU:'端'}},mc:null},
- {id:'c2',n:'右向き矢印キーが押された',sc:{op:'sensing_keypressed',fl:{KEY_OPTION:'右向き矢印'}},
+ {id:'c1',n:'端に触れた',sc:{op:'sensing_touchingobject',fl:{TOUCHINGOBJECTMENU:'_edge_'}},mc:null},
+ {id:'c2',n:'右向き矢印キーが押された',sc:{op:'sensing_keypressed',fl:{KEY_OPTION:'right arrow'}},
    mc:'input.buttonIsPressed(Button.A)'},
  {id:'c3',n:'得点 > 10',sc:{op:'operator_gt',in:{OPERAND1:{op:'data_variable',fl:{VARIABLE:'得点'}},OPERAND2:10}},
    mc:'count > 10'},
@@ -1444,18 +3090,29 @@ const TEACH = `
 
 <div class="panel"><h2>📚 授業での使いどころ（例）</h2>
 <table><tr><th>場面</th><th>使うタブ</th><th>ねらい／声かけ</th></tr>
+<tr><td>マリオゲームの制作</td><td>🍄 マリオ制作</td><td>①〜⑪の順に進めるロードマップ。班の進み具合を「今どの段階か」で把握できる。</td></tr>
 <tr><td>自分で組める生徒</td><td>🎯 つくる → 🚀 もう一歩</td><td>提案をそのまま使わせず、「この数字を変えるとどうなる？」と発展課題へ。</td></tr>
-<tr><td>手が止まる生徒</td><td>🧱 くみたて</td><td>「いつ・どうやって・なにを」の3択で形にする。まず動かす体験を先にする。</td></tr>
+<tr><td>手が止まる生徒</td><td>🧱 くみたて／📚 パターン一覧</td><td>「いつ・どうやって・なにを」の3択、または種類から選ぶ。まず動かす体験を先にする。</td></tr>
 <tr><td>つまずいた生徒</td><td>🔍 なおす</td><td>教師を呼ぶ前に自己診断。「どの症状？」と問うだけで原因を言語化できる。</td></tr>
 <tr><td>スクラッチ→micro:bit</td><td>📖 対応表</td><td>同じ考え方が別の道具でも使えることを確認（転移）。</td></tr>
 <tr><td>計測・制御の設計</td><td>📡 計測・制御</td><td>「①ずっと ②測る ③判断 ④出力」の型を全員で共有する。</td></tr>
 </table>
-<h3>3時間の展開例</h3>
+<h3>マリオゲーム制作（Scratch）の展開例</h3>
 <ol class="steps">
-<li><b>第1時</b>　Scratchで「ずっと＋もし〜なら」を体験（つくる／くみたてタブ）。センサ＝「調べる」ブロックだと気づかせる。</li>
-<li><b>第2時</b>　micro:bitをMakeCodeで計測（明るさ・温度を表示してデータを記録）。しきい値を自分たちで決める。</li>
-<li><b>第3時</b>　計測した値で出力を制御（LED・モーター）。動かない班は「なおす」タブで自己診断→改善→発表。</li>
-</ol></div>
+<li><b>第1・2時</b>　主人公を動かす／ジャンプ（ロードマップ①②）。全員が「動くもの」を完成させるのが目標。組めない生徒は「組み立て手順」を見ながら置くだけでよい。</li>
+<li><b>第3・4時</b>　ステージと当たり判定（③）。色で地面を作る考え方を全体で共有する。ここで「順次・分岐・反復」が全部出そろう。</li>
+<li><b>第5・6時</b>　敵とアイテム（⑤⑥）。クローンの考え方を扱う。班内での教え合いが起こりやすい場面。</li>
+<li><b>第7時</b>　画面・シーン・音（⑧⑨）で作品として仕上げ、相互評価。</li>
+<li><b>発展</b>　スクロール（④）、ボス・記録（⑩）は、早く終わった生徒の課題に。</li>
+</ol>
+<h3>計測・制御（micro:bit）への接続</h3>
+<ol class="steps">
+<li><b>第1時</b>　作ったゲームを micro:bit で操作してみる（ロードマップ⑪）。「入力装置を自分で作る」という発想につなげる。</li>
+<li><b>第2時</b>　MakeCodeで計測（明るさ・温度を表示してデータを記録）。しきい値を自分たちで決める。</li>
+<li><b>第3時</b>　計測した値で出力を制御（LED・モーター・サーボ）。動かない班は「なおす」タブで自己診断→改善→発表。</li>
+</ol>
+<div class="note info"><b>つながり：</b>ゲームの「ずっと＋もし〜なら」は、計測・制御の「ずっと測って、条件で出力を変える」と同じ形です。
+ゲーム制作で身につけた形が、そのまま実物の制御に使えることを、対応表タブで確かめさせると学びがつながります。</div></div>
 
 <div class="panel"><h2>🧭 指導のポイント（差がある学級で）</h2>
 <ul class="tight">
@@ -1475,8 +3132,15 @@ const TEACH = `
 <div class="panel"><h2>🛠 先生によるカスタマイズ</h2>
 <p class="lead">このファイルをテキストエディタ（メモ帳・VSCodeなど）で開くと、次の場所を書きかえられます。授業や使用教材に合わせて増やしてください。</p>
 <ul class="tight">
-<li><code>const PATTERNS = [ ... ]</code>　…　やりたいこと→コードの辞書。<code>kw2</code>（強いキーワード）と <code>kw</code> を増やすほど、生徒の言い回しに当たりやすくなります。</li>
-<li><code>const SYMPTOMS = [ ... ]</code>　…　つまずき診断。学級でよく出る質問を追加すると、教師の手が空きます。</li>
+<li><code>PATTERNS.push( _P(...) )</code>　…　やりたいこと→コードの辞書。1つのパターンは
+ <code>_P(ID, 分類, レベル, 題名, ねらい, 強い言葉, 言葉, コード, しくみ, つまずき, 発展)</code> の順で書きます。
+ 言葉は <code>|</code> で区切ります（強い言葉＝3点、言葉＝1点で照合）。生徒が実際に使った言い回しを足していくほど、当たるようになります。</li>
+<li>コードは短い道具で書けます。例：<code>[flag(), fore( iff(kp('space'), chy(10)) )]</code> ＝
+ 「旗が押されたとき／ずっと／もしスペースキーが押されたなら／y座標を10ずつ変える」。
+ 道具の一覧はファイル内の「ブロックを短く書くための道具」の部分にまとまっています。</li>
+<li><code>SYMPTOMS.push( ... )</code>　…　つまずき診断。学級でよく出る質問を追加すると、教師の手が空きます。</li>
+<li><code>const ROAD = [ ... ]</code>　…　「マリオ制作」タブのロードマップ（段階と、その段階で使うパターンのID）。
+ 題材が変わったら、ここを書きかえれば別のゲームの手順書になります。</li>
 <li><code>const ACT / COND / TRIG</code>　…　「くみたて」タブの選択肢。</li>
 </ul>
 <p class="muted">※ 書きかえる前に、必ずコピーを残しておいてください。</p></div>`;
@@ -1485,10 +3149,11 @@ const TEACH = `
    11. 画面の組み立て・イベント
    ======================================================================= */
 const $=s=>document.querySelector(s), $$=s=>Array.from(document.querySelectorAll(s));
-const EXAMPLES=['ねこを矢印キーで動かしたい','ずっと動き続けるようにしたい','端で跳ね返るようにしたい',
- '点数を数えたい','何かに触れたら止めたい','くりかえしても1回しか動かない','旗を押しても何も起きない',
- 'micro:bitのボタンAで動かしたい','暗くなったらライトをつけたい','温度が高くなったらファンを回したい',
- '無線で2台をつなげたい','サーボを90度にしたい'];
+const EXAMPLES=['マリオを左右に動かしたい','マリオみたいなジャンプにしたい','床をすり抜けてしまう',
+ '敵を踏んで倒したい','敵に当たったらミスにしたい','コインを集めたい','得点を表示したい','残機を作りたい',
+ '画面をスクロールさせたい','タイトル画面を作りたい','ゲームオーバーの画面を出したい','BGMを流したい',
+ '動く床を作りたい','ボスを作りたい','クローンが増えて重くなる','micro:bitでマリオを動かしたい',
+ '暗くなったらライトをつけたい','温度が高くなったらファンを回したい'];
 
 function switchTab(id){
   $$('nav.tabs button').forEach(b=>{
@@ -1572,7 +3237,7 @@ function renderSymptoms(){
     SYMPTOMS.map(s=>'<option value="'+s.id+'">'+esc(s.label)+'</option>').join('');
 }
 function renderMbTab(f){
-  const list=PATTERNS.filter(p=>(p.plat==='microbit'||p.plat==='both'||p.id.indexOf('mb-')===0));
+  const list=PATTERNS.filter(p=>p.cat==='microbit'||p.plat==='microbit'||p.plat==='both');
   const filtered = f&&f!=='all' ? list.filter(p=>f==='sc'?p.sc:!!p.mc) : list;
   $('#mbList').innerHTML=filtered.map(p=>patternCard(p,null,null,false)).join('');
   $('#mbFilter').innerHTML=[['all','すべて'],['sc','スクラッチ拡張機能で'],['mc','MakeCodeで']]
@@ -1645,11 +3310,82 @@ function handleFiles(files){
   const r=new FileReader(); r.onload=e=>loadShot(e.target.result); r.readAsDataURL(f);
 }
 
+/* =======================================================================
+   12. パターン一覧・マリオ制作ロードマップ
+   ======================================================================= */
+const CATS=[['move','🏃 動き・ジャンプ'],['stage','🧱 ステージ・地面'],['enemy','👾 敵'],
+ ['item','🪙 アイテム・得点'],['scene','🎬 画面・シーン'],['sound','🔊 音'],
+ ['looks','🎨 見た目'],['sensing','🔍 調べる・条件'],['data','🔢 変数・リスト'],
+ ['basic','📘 きほんのしくみ'],['microbit','📡 micro:bit']];
+const catName=c=>{const f=CATS.find(x=>x[0]===c); return f?f[1]:c;};
+let curCat=null;
+function renderCatChips(){
+  const cnt={}; PATTERNS.forEach(p=>cnt[p.cat]=(cnt[p.cat]||0)+1);
+  $('#patCount').textContent='　（全 '+PATTERNS.length+' パターン）';
+  $('#catChips').innerHTML=CATS.filter(c=>cnt[c[0]])
+    .map(c=>'<button class="chip'+(curCat===c[0]?' on':'')+'" data-cat="'+c[0]+'">'+c[1]+' '+cnt[c[0]]+'</button>').join('');
+}
+function renderCatList(cat){
+  curCat=cat; renderCatChips();
+  const list=PATTERNS.filter(p=>p.cat===cat);
+  $('#catList').innerHTML='<div class="chips" style="margin-top:.5rem">'+
+    list.map(p=>'<button class="chip" data-open="'+p.id+'">'+lvMark(p.lv)+' '+esc(p.title)+'</button>').join('')+'</div>';
+}
+const lvMark=lv=>['','★','★★','★★★'][lv||1];
+
+const ROAD=[
+ ['① 主人公を動かす','まずは左右に歩かせる。ここができれば、ゲームは半分できたようなものです。',
+  ['mm-start','mm-walk','mm-face','mm-walkanim','mm-turnaround']],
+ ['② ジャンプさせる','かんたんなジャンプ → 重力を使った本格ジャンプへ。マリオらしさの中心です。',
+  ['mm-jump-easy','mm-gravity','mm-ground','mm-maxfall','mm-double','mm-jumphold']],
+ ['③ ステージ（地面・壁）を作る','背景に色で地面を描き、その色で判定します。壁や坂もここで。',
+  ['ms-ground','mm-wall','mm-slope','ms-platform','mm-fall','mm-aircontrol']],
+ ['④ 画面をスクロールさせる','画面より広いステージにする段階。むずかしいので、③まで完成してから。',
+  ['ms-scroll','ms-camera','ms-scroll-all','ms-parallax']],
+ ['⑤ 敵を出す','踏んで倒す・当たるとダメージ。ゲームらしくなる山場です。',
+  ['me-patrol','me-edge','me-stomp','me-hit','me-invincible','me-clone','me-chase','me-defeat']],
+ ['⑥ アイテムと得点','コイン・残機・パワーアップ。集める楽しさを足します。',
+  ['mi-coin','mi-coin-clone','mi-score','mi-life','mi-powerup','mi-fire','mi-fire-hit','mi-1up','mi-star']],
+ ['⑦ しかけを増やす','動く床・ジャンプ台・土管・ハテナブロック。ステージに変化をつけます。',
+  ['ms-moving','ms-spring','ms-fallfloor','ms-ladder','ms-pipe','ms-blockhit','ms-question','ms-hidden','mi-key-door']],
+ ['⑧ 画面とシーンを整える','タイトル・クリア・ゲームオーバー。ここまで来れば「作品」になります。',
+  ['sn-title','sn-startbutton','sn-broadcast','ms-goal','sn-clear','mi-gameover','ms-nextstage','sn-restart','sn-countdown','sn-hud']],
+ ['⑨ 音をつける','BGMと効果音。手ざわりが一気に変わるので、必ず入れましょう。',
+  ['so-bgm','so-se','so-stop','so-volume']],
+ ['⑩ 発展：もっと面白くする','時間制限・ボス・記録。余裕のある人はここへ。',
+  ['mi-timelimit','mi-timeup','me-boss','me-boss-pattern','mi-highscore','sn-pause','b-list','b-varscope']],
+ ['⑪ 発展：micro:bit をコントローラにする','計測・制御の学習とつなげる段階。作ったゲームを実物のスイッチで操作します。',
+  ['mbg-controller','mbg-tilt-move','mbg-jump']]
+];
+function renderMario(){
+  $('#marioRoad').innerHTML=ROAD.map((r,i)=>
+    '<details'+(i===0?' open':'')+'><summary>'+esc(r[0])+'</summary>'+
+    '<p class="muted" style="margin:.3rem 0">'+esc(r[1])+'</p><div class="chips">'+
+    r[2].map(id=>{const p=PATTERNS.find(x=>x.id===id);
+      return p?'<button class="chip" data-open="'+id+'" data-to="mario">'+lvMark(p.lv)+' '+esc(p.title)+'</button>':'';}).join('')+
+    '</div></details>').join('');
+  $('#marioPrep').innerHTML=
+   '<div class="grid2"><div><h3 style="margin-top:0">用意するスプライト</h3><ul class="tight">'+
+   ['<b>マリオ</b>（主人公）…コスチュームは「立つ」「歩く1」「歩く2」「ジャンプ」',
+    '<b>敵</b>…「ふつう」「つぶれた」の2枚',
+    '<b>コイン</b>／<b>ハテナブロック</b>／<b>ゴール</b>',
+    '<b>地面</b>（横長のスプライト。スクロールさせるなら必須）',
+    '<b>得点表示</b>（文字を出す係）'].map(x=>'<li>'+x+'</li>').join('')+
+   '</ul></div><div><h3 style="margin-top:0">色の決めごと（当たり判定用）</h3><ul class="tight">'+
+   ['<span class="sw" style="background:#3ec13e"></span> 緑 … 地面・足場',
+    '<span class="sw" style="background:#b5651d"></span> 茶 … 壁・ブロック',
+    '<span class="sw" style="background:#ffd11a"></span> 黄 … はしご',
+    '<span class="sw" style="background:#29a8ff"></span> 青 … 水'].map(x=>'<li>'+x+'</li>').join('')+
+   '</ul><div class="note info">色は必ず<b>スポイト</b>で取ります。手で選ぶとわずかに違う色になり、判定が効きません。</div></div></div>';
+}
+
 /* ---- 初期化 ---- */
 function init(){
   $('#exChips').innerHTML='<span class="muted" style="width:100%">例をクリックすると入ります：</span>'+
     EXAMPLES.map(x=>'<button class="chip" data-ex="'+esc(x)+'">'+esc(x)+'</button>').join('');
   renderBuild(); renderSymptoms(); renderMbTab('all'); renderDict();
+  renderCatChips(); renderCatList('move'); renderMario();
+  $('#hdCount').textContent=PATTERNS.length;
   $('#teachBody').innerHTML=TEACH;
 
   $$('nav.tabs button').forEach(b=>b.onclick=()=>switchTab(b.id.slice(4)));
@@ -1666,14 +3402,19 @@ function init(){
     renderBuild(); $('#buildResult').innerHTML=''; };
 
   document.addEventListener('click',e=>{
-    const t=e.target.closest('[data-ex],[data-sb3],[data-steps],[data-copy],[data-open],[data-pick],[data-sym],[data-mbf]');
+    const t=e.target.closest('[data-ex],[data-sb3],[data-steps],[data-copy],[data-open],[data-pick],[data-sym],[data-mbf],[data-cat]');
     if(!t) return;
     if(t.dataset.ex){ $('#q').value=t.dataset.ex; runSearch(); }
-    else if(t.dataset.sb3){ const p=PATTERNS.find(x=>x.id===t.dataset.sb3); if(p) exportSb3(p.sc,p.title); }
+    else if(t.dataset.sb3){ const p=PATTERNS.find(x=>x.id===t.dataset.sb3); if(p) exportSb3(p.sc,p.title,p.owner); }
     else if(t.dataset.steps){ const el=$('#st-'+t.dataset.steps); if(el) el.classList.toggle('hidden'); }
     else if(t.dataset.copy){ const p=PATTERNS.find(x=>x.id===t.dataset.copy); if(p&&p.mc) copyText(p.mc.code,t); }
+    else if(t.dataset.cat){ renderCatList(t.dataset.cat); }
     else if(t.dataset.open){ const p=PATTERNS.find(x=>x.id===t.dataset.open);
-      if(p){ $('#makeResult').innerHTML=patternCard(p,null,null,true); window.scrollTo({top:0,behavior:'smooth'}); } }
+      if(p){
+        if(t.dataset.to==='mario'){ $('#marioResult').innerHTML=patternCard(p,null,null,true);
+          $('#marioResult').scrollIntoView({behavior:'smooth',block:'start'}); }
+        else { $('#makeResult').innerHTML=patternCard(p,null,null,true); window.scrollTo({top:0,behavior:'smooth'}); }
+      } }
     else if(t.dataset.pick){
       const g=t.dataset.pick, id=t.dataset.id;
       if(g==='bAct'){ const i=pick.acts.indexOf(id); if(i>=0) pick.acts.splice(i,1); else pick.acts.push(id); }
