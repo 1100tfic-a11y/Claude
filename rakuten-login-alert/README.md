@@ -36,12 +36,17 @@ Gmail に届く **楽天のログイン通知メール** を、Google のクラ�
 
 ## 通知方法
 
-初期設定は **自分の Gmail 宛てのメール**（件名：`楽天アカウントにログインあり`、他の端末の場合は `【要確認】楽天アカウントにログインあり`）です。
+初期設定は **Google カレンダーの通知** と **自分の Gmail 宛てのメール** です。
+
+- **Google カレンダー（おすすめ）**：通知のたびに「楽天アカウントにログインあり」という予定を作り、すぐに通知を鳴らします（他の端末からのログインは赤色の予定）。iPhone に **Google カレンダー アプリ** を入れ、同じ Google アカウントでログインし、通知をオンにしてください。追加の登録は不要です
+- **Gmail**：記録用です。自分から自分へのメールになるため、iPhone の Gmail アプリでは通知が鳴らないことがあります
+
+メールの件名は `楽天アカウントにログインあり`、他の端末の場合は `【要確認】楽天アカウントにログインあり` です。
 ほかの方法を使う場合は `Code.gs` の `CONFIG.NOTIFY` で `true` にし、Apps Script の「プロジェクトの設定 → スクリプト プロパティ」に値を登録します。
 
 | 方法 | CONFIG.NOTIFY | スクリプト プロパティ |
 |---|---|---|
-| ntfy（iPhone アプリ「ntfy」でプッシュ通知、無料・登録不要） | `NTFY` | 不要（`CONFIG.NTFY_TOPIC` に直接書く。推測されにくい長い文字列にする） |
+| ntfy（iPhone アプリ「ntfy」でプッシュ通知、無料・登録不要。※Apps Script から `Address unavailable` で接続できないことがあります） | `NTFY` | 不要（`CONFIG.NTFY_TOPIC` に直接書く。推測されにくい長い文字列にする） |
 | Discord | `DISCORD` | `DISCORD_WEBHOOK_URL` |
 | Slack | `SLACK` | `SLACK_WEBHOOK_URL` |
 | LINE（Messaging API。※LINE Notify は 2025 年 3 月で終了） | `LINE` | `LINE_CHANNEL_TOKEN`, `LINE_USER_ID` |

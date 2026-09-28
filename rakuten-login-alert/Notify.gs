@@ -18,16 +18,34 @@ function notify_(msg) {
     });
   });
 
+  // Google カレンダーに予定を作り、その通知（ポップアップ）を今すぐ鳴らす。
+  // Google の中だけで完結するので、外部サービスに接続できない問題が起きない
+  if (CONFIG.NOTIFY.CALENDAR) tryRun('CALENDAR', () => {
+    const start = new Date(Date.now() + 5 * 60 * 1000);   // 5 分後に始まる予定に
+    const end = new Date(start.getTime() + 5 * 60 * 1000);
+    const ev = CalendarApp.getDefaultCalendar().createEvent(
+      msg.isSelf ? msg.title : '【要確認】' + msg.title, start, end, { description: msg.body });
+    ev.removeAllReminders();
+    ev.addPopupReminder(5);                                   // 5 分前 ＝ 今すぐ通知
+    ev.setColor(msg.isSelf ? CalendarApp.EventColor.GREEN : CalendarApp.EventColor.RED);
+  });
+
   if (CONFIG.NOTIFY.NTFY) tryRun('NTFY', () => {
     const topic = CONFIG.NTFY_TOPIC || props.getProperty('NTFY_TOPIC');
     if (!topic) throw new Error('Main.gs の NTFY_TOPIC にトピック名を書いてください');
-    postJson_('https://ntfy.sh/', {
+    const payload = {
       topic: topic,
       title: msg.title,
       message: msg.body,
       priority: msg.isSelf ? 3 : 5,
       tags: [msg.isSelf ? 'white_check_mark' : 'warning'],
-    });
+    };
+    try {
+      postJson_('https://ntfy.sh/', payload);
+    } catch (e) {
+      Utilities.sleep(3000);                                  // 一時的な接続失敗に備えて 1 回だけ再試行
+      postJson_('https://ntfy.sh/', payload);
+    }
   });
 
   if (CONFIG.NOTIFY.DISCORD) tryRun('DISCORD', () => {

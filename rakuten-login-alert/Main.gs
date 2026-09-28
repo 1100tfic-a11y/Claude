@@ -31,7 +31,8 @@ const CONFIG = {
 
   // 通知方法。使うものを true にし、必要なキーはスクリプト プロパティに登録します（README 参照）
   NOTIFY: {
-    EMAIL: true,    // 自分の Gmail 宛てに通知メール（iPhone の Gmail アプリでプッシュ通知）
+    EMAIL: true,    // 自分の Gmail 宛てに通知メール（記録用。自分宛てのため iPhone では鳴らないことがある）
+    CALENDAR: true, // Google カレンダーの通知で知らせる（iPhone の Google カレンダー アプリで鳴る）
     NTFY: false,    // ntfy.sh（下の NTFY_TOPIC を設定）
     DISCORD: false, // Discord Webhook（DISCORD_WEBHOOK_URL）
     SLACK: false,   // Slack Incoming Webhook（SLACK_WEBHOOK_URL）

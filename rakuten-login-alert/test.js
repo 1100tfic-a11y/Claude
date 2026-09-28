@@ -38,7 +38,7 @@ assert.ok(!isTrustedSender_(ng));
 
 // ===== Gmail / メール送信を模擬して、定期実行の流れを確認 =====
 function flowTest() {
-  const sent = [], props = {};
+  const sent = [], events = [], props = {};
   const raw = d => 'Authentication-Results: mx.google.com;\r\n dkim=pass header.i=@' + d + '\r\n\r\n';
   const mk = (id, subject, body, dkim) => ({
     getId: () => id, getSubject: () => subject, getDate: () => new Date('2026-09-27T03:34:00Z'),
@@ -52,6 +52,10 @@ function flowTest() {
       getProperty: k => props[k] || null, setProperty: (k, v) => { props[k] = v; } }) },
     GmailApp: { search: () => [{ getMessages: () => inbox }] },
     MailApp: { sendEmail: o => sent.push(o) },
+    CalendarApp: { EventColor: { GREEN: 'g', RED: 'r' }, getDefaultCalendar: () => ({ createEvent: (t, st, en, o) => {
+      events.push({ t, st, o });
+      return { removeAllReminders() {}, addPopupReminder(m) { events[events.length - 1].rem = m; }, setColor() {} };
+    } }) },
     Session: { getEffectiveUser: () => ({ getEmail: () => 'me@example.com' }) },
     ScriptApp: { AuthMode: { FULL: 'FULL' }, requireAllScopes() {}, getProjectTriggers: () => [], deleteTrigger() {}, newTrigger: () => ({ timeBased: () => ({ everyMinutes: () => ({ create() {} }) }) }) },
   };
@@ -71,6 +75,8 @@ function flowTest() {
   assert.deepStrictEqual(sent.map(o => o.subject), ['楽天アカウントにログインあり', '【要確認】楽天アカウントにログインあり']);
   assert.ok(sent[0].body.startsWith('自分の端末でログインしました'));
   assert.ok(sent[1].body.includes('IPアドレス：203.0.113.45'));
+  assert.deepStrictEqual(events.map(e => e.t), ['楽天アカウントにログインあり', '【要確認】楽天アカウントにログインあり']);
+  assert.ok(events.every(e => e.rem === 5 && e.o.description));
 
   c.checkRakutenLogin();
   assert.strictEqual(sent.length, 2, '同じメールで二重通知しない');
