@@ -10,7 +10,9 @@ function notify_(msg) {
 
   if (CONFIG.NOTIFY.EMAIL) tryRun('EMAIL', () => {
     MailApp.sendEmail({
-      to: Session.getEffectiveUser().getEmail(),
+      // CONFIG.EMAIL_TO（iCloud メールなど自分の別アドレス）があればそちらへ。
+      // 自分の Gmail 宛てだと「自分が送ったメール」扱いで iPhone の Gmail アプリが鳴らないため
+      to: CONFIG.EMAIL_TO || Session.getEffectiveUser().getEmail(),
       subject: msg.isSelf ? msg.title : '【要確認】' + msg.title,
       body: msg.body + (msg.isSelf ? '' :
         '\n\n心当たりがない場合は、すぐに楽天会員情報管理からパスワードを変更し、' +
@@ -18,15 +20,17 @@ function notify_(msg) {
     });
   });
 
-  // Google カレンダーに予定を作り、その通知（ポップアップ）を今すぐ鳴らす。
+  // Google カレンダーに予定を作り、その通知（ポップアップ）を鳴らす。
   // Google の中だけで完結するので、外部サービスに接続できない問題が起きない
   if (CONFIG.NOTIFY.CALENDAR) tryRun('CALENDAR', () => {
-    const start = new Date(Date.now() + 5 * 60 * 1000);   // 5 分後に始まる予定に
+    // 作成した瞬間に通知時刻を置くと、iPhone のアプリが予定を受け取る前に時刻が過ぎて鳴らないことがある。
+    // そのため 15 分後に始まる予定にし、作成の 1・3・5 分後に通知が鳴るようにする
+    const start = new Date(Date.now() + 15 * 60 * 1000);
     const end = new Date(start.getTime() + 5 * 60 * 1000);
     const ev = CalendarApp.getDefaultCalendar().createEvent(
       msg.isSelf ? msg.title : '【要確認】' + msg.title, start, end, { description: msg.body });
     ev.removeAllReminders();
-    ev.addPopupReminder(5);                                   // 5 分前 ＝ 今すぐ通知
+    [14, 12, 10].forEach(m => ev.addPopupReminder(m));      // 開始 14・12・10 分前 ＝ 作成の 1・3・5 分後
     ev.setColor(msg.isSelf ? CalendarApp.EventColor.GREEN : CalendarApp.EventColor.RED);
   });
 

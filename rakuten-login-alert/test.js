@@ -54,7 +54,7 @@ function flowTest() {
     MailApp: { sendEmail: o => sent.push(o) },
     CalendarApp: { EventColor: { GREEN: 'g', RED: 'r' }, getDefaultCalendar: () => ({ createEvent: (t, st, en, o) => {
       events.push({ t, st, o });
-      return { removeAllReminders() {}, addPopupReminder(m) { events[events.length - 1].rem = m; }, setColor() {} };
+      return { removeAllReminders() {}, addPopupReminder(m) { (events[events.length - 1].rem = events[events.length - 1].rem || []).push(m); }, setColor() {} };
     } }) },
     Session: { getEffectiveUser: () => ({ getEmail: () => 'me@example.com' }) },
     ScriptApp: { AuthMode: { FULL: 'FULL' }, requireAllScopes() {}, getProjectTriggers: () => [], deleteTrigger() {}, newTrigger: () => ({ timeBased: () => ({ everyMinutes: () => ({ create() {} }) }) }) },
@@ -76,7 +76,7 @@ function flowTest() {
   assert.ok(sent[0].body.startsWith('自分の端末でログインしました'));
   assert.ok(sent[1].body.includes('IPアドレス：203.0.113.45'));
   assert.deepStrictEqual(events.map(e => e.t), ['楽天アカウントにログインあり', '【要確認】楽天アカウントにログインあり']);
-  assert.ok(events.every(e => e.rem === 5 && e.o.description));
+  assert.ok(events.every(e => e.rem.join() === '14,12,10' && e.o.description));
 
   c.checkRakutenLogin();
   assert.strictEqual(sent.length, 2, '同じメールで二重通知しない');
