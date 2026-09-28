@@ -53,7 +53,7 @@ function flowTest() {
     GmailApp: { search: () => [{ getMessages: () => inbox }] },
     MailApp: { sendEmail: o => sent.push(o) },
     Session: { getEffectiveUser: () => ({ getEmail: () => 'me@example.com' }) },
-    ScriptApp: { getProjectTriggers: () => [], deleteTrigger() {}, newTrigger: () => ({ timeBased: () => ({ everyMinutes: () => ({ create() {} }) }) }) },
+    ScriptApp: { AuthMode: { FULL: 'FULL' }, requireAllScopes() {}, getProjectTriggers: () => [], deleteTrigger() {}, newTrigger: () => ({ timeBased: () => ({ everyMinutes: () => ({ create() {} }) }) }) },
   };
   vm.createContext(c);
   vm.runInContext(src, c);

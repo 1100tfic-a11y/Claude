@@ -52,6 +52,7 @@ const CONFIG = {
 
 /** 最初に 1 回だけ手動実行：定期実行トリガーを作成し、既存メールを「処理済み」にする */
 function setup() {
+  requireAuth_();
   ScriptApp.getProjectTriggers()
     .filter(t => t.getHandlerFunction() === 'checkRakutenLogin')
     .forEach(t => ScriptApp.deleteTrigger(t));
@@ -65,6 +66,14 @@ function setup() {
   GmailApp.search(CONFIG.SEARCH_QUERY).forEach(th => th.getMessages().forEach(m => ids.push(m.getId())));
   saveProcessedIds_(ids);
   Logger.log('セットアップ完了：' + CONFIG.CHECK_INTERVAL_MINUTES + '分ごとにチェックします（既存 ' + ids.length + ' 通は処理済み）');
+}
+
+/**
+ * 必要な権限（Gmail の閲覧・メール送信など）がすべて許可されているか確認し、
+ * 足りなければ許可画面を出す。許可画面では「すべて選択」にチェックを入れること
+ */
+function requireAuth_() {
+  if (ScriptApp.requireAllScopes) ScriptApp.requireAllScopes(ScriptApp.AuthMode.FULL);
 }
 
 // ===== メイン処理 ================================================================
