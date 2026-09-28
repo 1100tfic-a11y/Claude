@@ -1,4 +1,4 @@
-// 楽天ログイン通知ウォッチャー：通知処理（Main.gs・Logic.gs と同じプロジェクトに入れる）
+// 楽天ログイン通知ウォッチャー：通知処理（Main.gs ほかと同じプロジェクトに入れる）
 
 // ===== 通知 ======================================================================
 
@@ -20,7 +20,7 @@ function notify_(msg) {
 
   if (CONFIG.NOTIFY.NTFY) tryRun('NTFY', () => {
     postJson_('https://ntfy.sh/', {
-      topic: props.getProperty('NTFY_TOPIC'),
+      topic: CONFIG.NTFY_TOPIC || props.getProperty('NTFY_TOPIC'),
       title: msg.title,
       message: msg.body,
       priority: msg.isSelf ? 3 : 5,
@@ -48,8 +48,9 @@ function notify_(msg) {
     });
   });
 
-  if (errors.length) Logger.log('通知エラー：\n' + errors.join('\n'));
   Logger.log(text);
+  // 失敗を黙って見逃さないよう、エラーとして表示する（定期実行時は Google から失敗通知メールが届く）
+  if (errors.length) throw new Error('通知に失敗しました：\n' + errors.join('\n'));
 }
 
 function postJson_(url, obj) {

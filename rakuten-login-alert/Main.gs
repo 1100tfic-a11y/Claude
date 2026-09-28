@@ -6,7 +6,7 @@
  *   - それ以外                            → 「他の端末からログインされました。」＋ IP アドレス
  * を通知します。
  *
- * Main.gs / Logic.gs / Notify.gs の 3 ファイルで 1 セットです。
+ * Main.gs / Logic.gs / Notify.gs / Test.gs の 4 ファイルで 1 セットです。
  * 使い方は README.md を参照。最初に setup() を 1 回実行してください。
  */
 
@@ -17,7 +17,10 @@ const CONFIG = {
   MY_IPS: ['133.106.50.64'],
 
   // 楽天のログイン通知メールを探す Gmail 検索条件
-  SEARCH_QUERY: 'from:rakuten.co.jp subject:ログイン newer_than:2d',
+  SEARCH_QUERY: 'from:(rakuten.co.jp OR rakuten.com) ログイン newer_than:2d',
+  // 上の検索で見つかったメールのうち、件名がこれに合うもの、または本文に IP アドレスがあるものを通知
+  //（「ログインでポイント」のような広告メールを除くため）
+  SUBJECT_PATTERN: /ログイン.*(お知らせ|通知|確認|検知)|新しい.*ログイン|ログインがありました/,
 
   // 何分おきにチェックするか（1, 5, 10, 15, 30 のいずれか）
   CHECK_INTERVAL_MINUTES: 5,
@@ -29,11 +32,13 @@ const CONFIG = {
   // 通知方法。使うものを true にし、必要なキーはスクリプト プロパティに登録します（README 参照）
   NOTIFY: {
     EMAIL: true,    // 自分の Gmail 宛てに通知メール（iPhone の Gmail アプリでプッシュ通知）
-    NTFY: false,    // ntfy.sh（スクリプト プロパティ NTFY_TOPIC）
+    NTFY: false,    // ntfy.sh（下の NTFY_TOPIC を設定）
     DISCORD: false, // Discord Webhook（DISCORD_WEBHOOK_URL）
     SLACK: false,   // Slack Incoming Webhook（SLACK_WEBHOOK_URL）
     LINE: false,    // LINE Messaging API（LINE_CHANNEL_TOKEN, LINE_USER_ID）
   },
+  // ntfy のトピック名（iPhone の ntfy アプリで購読する名前）。他人に推測されない長い文字列に
+  NTFY_TOPIC: '',
 
   TITLE: '楽天アカウントにログインあり',
   MSG_SELF: '自分の端末でログインしました',
@@ -62,12 +67,6 @@ function setup() {
   Logger.log('セットアップ完了：' + CONFIG.CHECK_INTERVAL_MINUTES + '分ごとにチェックします（既存 ' + ids.length + ' 通は処理済み）');
 }
 
-/** 通知のテスト送信（自分の端末／他の端末の両パターン） */
-function testNotify() {
-  notify_(buildMessage_(CONFIG.MY_IPS[0], new Date()));
-  notify_(buildMessage_('203.0.113.45', new Date()));
-}
-
 // ===== メイン処理 ================================================================
 
 /** トリガーから定期実行される本体 */
@@ -77,7 +76,6 @@ function checkRakutenLogin() {
   try {
     const processed = loadProcessedIds_();
     const done = new Set(processed);
-    const newIds = [];
 
     const threads = GmailApp.search(CONFIG.SEARCH_QUERY, 0, 50);
     const messages = [];
@@ -86,21 +84,29 @@ function checkRakutenLogin() {
     }));
     messages.sort((a, b) => a.getDate() - b.getDate());
 
+    // 先に処理済みとして保存（通知に失敗しても同じメールで何度も通知しないため）
+    if (messages.length) saveProcessedIds_(processed.concat(messages.map(m => m.getId())));
+
     messages.forEach(m => {
-      newIds.push(m.getId());
+      if (!isLoginMail_(m)) return;
       if (CONFIG.REQUIRE_DKIM && !isTrustedSender_(m.getRawContent())) {
         Logger.log('DKIM 検証に失敗したためスキップ（なりすましの可能性）：' + m.getSubject());
         return;
       }
-      const body = m.getPlainBody() || stripHtml_(m.getBody());
-      const ip = extractIp_(body);
-      notify_(buildMessage_(ip, m.getDate()));
+      notify_(buildMessage_(extractIp_(bodyOf_(m)), m.getDate()));
     });
-
-    if (newIds.length) saveProcessedIds_(processed.concat(newIds));
   } finally {
     lock.releaseLock();
   }
+}
+
+function bodyOf_(m) {
+  return m.getPlainBody() || stripHtml_(m.getBody());
+}
+
+/** 楽天のログイン通知メールか（広告メールを除く） */
+function isLoginMail_(m) {
+  return CONFIG.SUBJECT_PATTERN.test(m.getSubject()) || /IP\s*(アドレス|address)/i.test(bodyOf_(m));
 }
 
 // ===== 処理済み管理 ================================================================

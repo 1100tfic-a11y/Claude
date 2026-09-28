@@ -2,7 +2,8 @@
 const fs = require('fs'), vm = require('vm'), assert = require('assert');
 const ctx = {};
 vm.createContext(ctx);
-vm.runInContext(['Main.gs', 'Logic.gs', 'Notify.gs'].map(f => fs.readFileSync(__dirname + '/' + f, 'utf8')).join('\n') + '\nthis.CONFIG = CONFIG;', ctx);
+const src = ['Main.gs', 'Logic.gs', 'Notify.gs', 'Test.gs'].map(f => fs.readFileSync(__dirname + '/' + f, 'utf8')).join('\n') + '\nthis.CONFIG = CONFIG;';
+vm.runInContext(src, ctx);
 const { extractIp_, isMyIp_, buildMessage_, isTrustedSender_ } = ctx;
 
 // IP 抽出
@@ -33,6 +34,54 @@ const ok = 'Authentication-Results: mx.google.com;\r\n       dkim=pass header.i=
 const ng = 'Authentication-Results: mx.google.com;\r\n       dkim=pass header.i=@rakuten-secure.example header.s=x\r\n\r\nbody dkim=pass header.i=@rakuten.co.jp';
 assert.ok(isTrustedSender_(ok));
 assert.ok(!isTrustedSender_(ng));
+
+
+// ===== Gmail / メール送信を模擬して、定期実行の流れを確認 =====
+function flowTest() {
+  const sent = [], props = {};
+  const raw = d => 'Authentication-Results: mx.google.com;\r\n dkim=pass header.i=@' + d + '\r\n\r\n';
+  const mk = (id, subject, body, dkim) => ({
+    getId: () => id, getSubject: () => subject, getDate: () => new Date('2026-09-27T03:34:00Z'),
+    getPlainBody: () => body, getBody: () => body, getRawContent: () => raw(dkim), getFrom: () => 'x',
+  });
+  let inbox = [];
+  const c = {
+    Logger: { log: () => {} },
+    LockService: { getScriptLock: () => ({ tryLock: () => true, releaseLock: () => {} }) },
+    PropertiesService: { getScriptProperties: () => ({
+      getProperty: k => props[k] || null, setProperty: (k, v) => { props[k] = v; } }) },
+    GmailApp: { search: () => [{ getMessages: () => inbox }] },
+    MailApp: { sendEmail: o => sent.push(o) },
+    Session: { getEffectiveUser: () => ({ getEmail: () => 'me@example.com' }) },
+    ScriptApp: { getProjectTriggers: () => [], deleteTrigger() {}, newTrigger: () => ({ timeBased: () => ({ everyMinutes: () => ({ create() {} }) }) }) },
+  };
+  vm.createContext(c);
+  vm.runInContext(src, c);
+
+  inbox = [mk('old', '【楽天】ログインのお知らせ', 'IPアドレス：198.51.100.1', 'mail.rakuten.co.jp')];
+  c.setup();
+  c.checkRakutenLogin();
+  assert.strictEqual(sent.length, 0, 'setup 前からあるメールは通知しない');
+
+  inbox.push(mk('a', '【楽天】ログインのお知らせ', 'IPアドレス：133.106.50.64', 'mail.rakuten.co.jp'));
+  inbox.push(mk('b', 'ログインのお知らせ', 'IPアドレス：203.0.113.9', 'evil.example'));
+  inbox.push(mk('c', 'ログインでポイント2倍！', '今すぐログイン', 'mail.rakuten.co.jp'));
+  inbox.push(mk('d', '楽天会員 ご利用のお知らせ', 'ログイン日時 2026/09/27\nIPアドレス：203.0.113.45', 'rakuten.co.jp'));
+  c.checkRakutenLogin();
+  assert.deepStrictEqual(sent.map(o => o.subject), ['楽天アカウントにログインあり', '【要確認】楽天アカウントにログインあり']);
+  assert.ok(sent[0].body.startsWith('自分の端末でログインしました'));
+  assert.ok(sent[1].body.includes('IPアドレス：203.0.113.45'));
+
+  c.checkRakutenLogin();
+  assert.strictEqual(sent.length, 2, '同じメールで二重通知しない');
+
+  // 送信失敗はエラーとして表に出る
+  c.MailApp.sendEmail = () => { throw new Error('quota'); };
+  inbox.push(mk('e', 'ログインのお知らせ', 'IPアドレス：203.0.113.7', 'rakuten.co.jp'));
+  assert.throws(() => c.checkRakutenLogin(), /通知に失敗/);
+  console.log('flow test passed');
+}
+flowTest();
 
 console.log('all tests passed');
 console.log('---\n' + self.title + '\n' + self.body + '\n---\n' + other.title + '\n' + other.body);

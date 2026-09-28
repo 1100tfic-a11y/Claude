@@ -12,8 +12,9 @@ Gmail に届く **楽天のログイン通知メール** を、Google のクラ�
 - `Main.gs` … 設定・定期実行の本体
 - `Logic.gs` … IP アドレスの取り出しと判定
 - `Notify.gs` … 通知の送信
+- `Test.gs` … テスト送信・調査用（`testNotify` / `testWithLatestMail` / `diagnose`）
 
-3 つとも同じ Apps Script プロジェクトに入れてください（1 つのファイルにまとめて貼っても動きます）。
+4 つとも同じ Apps Script プロジェクトに入れてください（1 つのファイルにまとめて貼っても動きます）。
 - `appsscript.json` … プロジェクト設定（タイムゾーン：東京）
 - `test.js` … 判定ロジックのローカル確認用（`node test.js`）
 
@@ -23,7 +24,7 @@ Gmail に届く **楽天のログイン通知メール** を、Google のクラ�
 2. ファイルを 3 つ用意して貼り付け、保存（💾）
    - 最初からある `コード.gs` の中身を全部消し、`Main.gs` の内容を貼り付け
    - 左の「ファイル」の ＋ →「スクリプト」で `Logic` を作り、`Logic.gs` の内容を貼り付け
-   - 同様に `Notify` を作り、`Notify.gs` の内容を貼り付け
+   - 同様に `Notify`、`Test` を作り、それぞれ貼り付け
    - **各ファイルの最後の行が `// ===== ここまで（○○.gs の最終行）=====` になっているか確認**してください。なっていなければコピーが途中で切れています
    - GitHub からコピーするときは、ファイルを開いて右上の「Raw」を押し、表示された全文をコピーすると確実です
 3. 上部の関数選択で **`setup`** を選び「実行」
@@ -39,7 +40,7 @@ Gmail に届く **楽天のログイン通知メール** を、Google のクラ�
 
 | 方法 | CONFIG.NOTIFY | スクリプト プロパティ |
 |---|---|---|
-| ntfy（iPhone アプリ「ntfy」でプッシュ通知、無料・登録不要） | `NTFY` | `NTFY_TOPIC`（推測されにくい長い文字列にする） |
+| ntfy（iPhone アプリ「ntfy」でプッシュ通知、無料・登録不要） | `NTFY` | 不要（`CONFIG.NTFY_TOPIC` に直接書く。推測されにくい長い文字列にする） |
 | Discord | `DISCORD` | `DISCORD_WEBHOOK_URL` |
 | Slack | `SLACK` | `SLACK_WEBHOOK_URL` |
 | LINE（Messaging API。※LINE Notify は 2025 年 3 月で終了） | `LINE` | `LINE_CHANNEL_TOKEN`, `LINE_USER_ID` |
@@ -65,8 +66,20 @@ Gmail に届く **楽天のログイン通知メール** を、Google のクラ�
 | 表示されるエラー | 原因と対処 |
 |---|---|
 | `SyntaxError: Unexpected end of input` | コードが途中までしか貼り付けられていません。各ファイルの最後が「ここまで」の行になっているか確認し、貼り直してください |
-| `ReferenceError: ○○ is not defined` | 3 つのファイルのどれかが入っていません |
-| 通知が来ない | 実行数（左メニュー）でログを確認。「DKIM 検証に失敗」と出ていれば `REQUIRE_DKIM` を、何も出ていなければ `SEARCH_QUERY` を見直してください |
+| `ReferenceError: ○○ is not defined` | 4 つのファイルのどれかが入っていません |
+| `通知に失敗しました` | 表示された通知方法の設定（URL・トピック名など）を確認してください |
+| 通知が来ない | 下の「通知が来ないとき」を参照 |
+
+### 通知が来ないとき
+
+1. **`testNotify` を実行** → Gmail の受信トレイに通知メールが 2 通あるか確認
+   - 受信トレイにあるのに iPhone が鳴らない：自分から自分宛てのメールは Gmail アプリが通知しないことがあります。**ntfy での通知がおすすめ**です（App Store で「ntfy」を入れ、アプリで好きなトピック名を購読し、同じ名前を `CONFIG.NTFY_TOPIC` に書いて `NOTIFY.NTFY` を `true` に）
+2. **`diagnose` を実行** → 実行ログに、トリガーの有無と、過去 30 日に楽天から届いたメールの一覧（ログイン通知と判定されたか・DKIM・IP）が出ます
+   - 楽天のログイン通知メールが「判定：いいえ」→ 件名に合わせて `SUBJECT_PATTERN` を変更
+   - 「DKIM：NG」→ `REQUIRE_DKIM` を `false` に
+3. **`testWithLatestMail` を実行** → 直近の楽天ログイン通知メールを使って、本番と同じ通知を送ります
+
+なお `setup` は、その時点で届いているメールを通知しません。通知が来るのは、setup 後に新しくログインがあったときです。
 
 ## 停止するには
 
