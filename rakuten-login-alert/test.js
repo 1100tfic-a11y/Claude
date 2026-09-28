@@ -2,7 +2,7 @@
 const fs = require('fs'), vm = require('vm'), assert = require('assert');
 const ctx = {};
 vm.createContext(ctx);
-vm.runInContext(fs.readFileSync(__dirname + '/Code.gs', 'utf8') + '\nthis.CONFIG = CONFIG;', ctx);
+vm.runInContext(['Main.gs', 'Logic.gs', 'Notify.gs'].map(f => fs.readFileSync(__dirname + '/' + f, 'utf8')).join('\n') + '\nthis.CONFIG = CONFIG;', ctx);
 const { extractIp_, isMyIp_, buildMessage_, isTrustedSender_ } = ctx;
 
 // IP 抽出
