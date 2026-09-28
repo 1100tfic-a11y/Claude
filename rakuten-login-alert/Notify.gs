@@ -19,8 +19,10 @@ function notify_(msg) {
   });
 
   if (CONFIG.NOTIFY.NTFY) tryRun('NTFY', () => {
+    const topic = CONFIG.NTFY_TOPIC || props.getProperty('NTFY_TOPIC');
+    if (!topic) throw new Error('Main.gs の NTFY_TOPIC にトピック名を書いてください');
     postJson_('https://ntfy.sh/', {
-      topic: CONFIG.NTFY_TOPIC || props.getProperty('NTFY_TOPIC'),
+      topic: topic,
       title: msg.title,
       message: msg.body,
       priority: msg.isSelf ? 3 : 5,
