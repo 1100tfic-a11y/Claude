@@ -51,7 +51,19 @@ Gmail に届く **楽天のログイン通知メール** を、Google のクラ�
 | ntfy（iPhone アプリ「ntfy」でプッシュ通知、無料・登録不要。※Apps Script から `Address unavailable` で接続できないことがあります） | `NTFY` | 不要（`CONFIG.NTFY_TOPIC` に直接書く。推測されにくい長い文字列にする） |
 | Discord | `DISCORD` | `DISCORD_WEBHOOK_URL` |
 | Slack | `SLACK` | `SLACK_WEBHOOK_URL` |
-| LINE（Messaging API。※LINE Notify は 2025 年 3 月で終了） | `LINE` | `LINE_CHANNEL_TOKEN`, `LINE_USER_ID` |
+| LINE（Messaging API。※LINE Notify は 2025 年 3 月で終了） | `LINE` | 不要（`CONFIG.LINE_CHANNEL_TOKEN` に直接書く。手順は下の「LINE で通知する」） |
+
+## LINE で通知する
+
+自分専用の LINE 公式アカウント（無料。月 200 通まで）を作り、そこから自分に通知を送ります。iPhone だけで設定できます。
+
+1. **公式アカウントを作る**：Safari で https://entry.line.biz/ を開き「LINE公式アカウントを開設」→ LINE アカウントでログイン → アカウント名（例：楽天ログイン監視）などを入力して作成
+2. **Messaging API を有効にする**：https://manager.line.biz/ で作ったアカウントを開き、「設定」→「Messaging API」→「Messaging APIを利用する」→ プロバイダー（名前は自由）を作成して「OK」
+3. **トークンを取得する**：https://developers.line.biz/console/ を開き、プロバイダー → チャネル →「Messaging API設定」タブの一番下「チャネルアクセストークン（長期）」で「発行」→ 表示された長い文字列をコピー
+4. **友だちになる**：同じ「Messaging API設定」タブの QR コードを LINE アプリで読み取り（または画面の ID で検索し）、友だち追加
+5. **Main.gs を書き換える**：`LINE: false,` を `LINE: true,` にし、`LINE_CHANNEL_TOKEN: '',` の `''` の間にコピーしたトークンを貼る → 保存 → `testNotify` を実行
+
+トークンは他人に教えないでください（知られると、その公式アカウントからメッセージを送れてしまいます）。
 
 ## 設定の調整（`Main.gs` の `CONFIG`）
 

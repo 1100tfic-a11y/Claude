@@ -36,8 +36,10 @@ const CONFIG = {
     NTFY: false,    // ntfy.sh（下の NTFY_TOPIC を設定）
     DISCORD: false, // Discord Webhook（DISCORD_WEBHOOK_URL）
     SLACK: false,   // Slack Incoming Webhook（SLACK_WEBHOOK_URL）
-    LINE: false,    // LINE Messaging API（LINE_CHANNEL_TOKEN, LINE_USER_ID）
+    LINE: false,    // LINE 公式アカウントから通知（下の LINE_CHANNEL_TOKEN を設定）
   },
+  // LINE Messaging API のチャネルアクセストークン（長期）。README の手順で取得
+  LINE_CHANNEL_TOKEN: '',
   // ntfy のトピック名（iPhone の ntfy アプリで購読する名前）。他人に推測されない長い文字列に
   NTFY_TOPIC: '',
 

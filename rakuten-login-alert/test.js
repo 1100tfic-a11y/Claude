@@ -85,6 +85,15 @@ function flowTest() {
   c.MailApp.sendEmail = () => { throw new Error('quota'); };
   inbox.push(mk('e', 'ログインのお知らせ', 'IPアドレス：203.0.113.7', 'rakuten.co.jp'));
   assert.throws(() => c.checkRakutenLogin(), /通知に失敗/);
+  // LINE：ユーザー ID なしなら broadcast
+  const fetched = [];
+  c.MailApp.sendEmail = () => {};
+  c.UrlFetchApp = { fetch: (u, o) => fetched.push({ u, o }) };
+  c.CONFIG.NOTIFY.LINE = true; c.CONFIG.LINE_CHANNEL_TOKEN = 'tok';
+  c.notify_(c.buildMessage_('203.0.113.45', new Date()));
+  assert.strictEqual(fetched[0].u, 'https://api.line.me/v2/bot/message/broadcast');
+  assert.strictEqual(fetched[0].o.headers.Authorization, 'Bearer tok');
+  assert.ok(JSON.parse(fetched[0].o.payload).messages[0].text.startsWith('⚠️楽天アカウントにログインあり\n他の端末から'));
   console.log('flow test passed');
 }
 flowTest();

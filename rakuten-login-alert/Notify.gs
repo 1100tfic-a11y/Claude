@@ -60,15 +60,19 @@ function notify_(msg) {
     postJson_(props.getProperty('SLACK_WEBHOOK_URL'), { text: text });
   });
 
+  // LINE 公式アカウント（Messaging API）から通知。
+  // LINE_USER_ID が空なら、その公式アカウントの友だち全員（＝自分だけ）に送る broadcast を使う
   if (CONFIG.NOTIFY.LINE) tryRun('LINE', () => {
-    UrlFetchApp.fetch('https://api.line.me/v2/bot/message/push', {
+    const token = CONFIG.LINE_CHANNEL_TOKEN || props.getProperty('LINE_CHANNEL_TOKEN');
+    const userId = CONFIG.LINE_USER_ID || props.getProperty('LINE_USER_ID');
+    if (!token) throw new Error('Main.gs の LINE_CHANNEL_TOKEN にチャネルアクセストークンを書いてください');
+    const body = { messages: [{ type: 'text', text: (msg.isSelf ? '' : '⚠️') + text }] };
+    if (userId) body.to = userId;
+    UrlFetchApp.fetch('https://api.line.me/v2/bot/message/' + (userId ? 'push' : 'broadcast'), {
       method: 'post',
       contentType: 'application/json',
-      headers: { Authorization: 'Bearer ' + props.getProperty('LINE_CHANNEL_TOKEN') },
-      payload: JSON.stringify({
-        to: props.getProperty('LINE_USER_ID'),
-        messages: [{ type: 'text', text: text }],
-      }),
+      headers: { Authorization: 'Bearer ' + token },
+      payload: JSON.stringify(body),
     });
   });
 
