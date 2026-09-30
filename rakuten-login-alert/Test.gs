@@ -37,20 +37,24 @@ function diagnose() {
   const hits = GmailApp.search(CONFIG.SEARCH_QUERY).length;
   log('■ 現在の検索条件「' + CONFIG.SEARCH_QUERY + '」に合うスレッド：' + hits + ' 件');
 
+  // アンケートや広告に埋もれないよう、件名がログイン・パスワード関連のメールだけを探す
+  const q = '(from:(rakuten.co.jp OR rakuten.com) OR subject:楽天) ' +
+    'subject:(ログイン OR パスワード OR 本人確認 OR セキュリティ OR 不正 OR 認証 OR ロック) newer_than:180d';
   const msgs = [];
-  GmailApp.search('from:(rakuten.co.jp OR rakuten.com) newer_than:30d', 0, 30)
-    .forEach(th => th.getMessages().forEach(m => msgs.push(m)));
+  GmailApp.search(q, 0, 20).forEach(th => th.getMessages().forEach(m => msgs.push(m)));
   msgs.sort((a, b) => b.getDate() - a.getDate());
-  log('■ 過去 30 日に楽天から届いたメール（新しい順・最大 15 通）');
-  msgs.slice(0, 15).forEach(m => {
-    const ip = extractIp_(bodyOf_(m));
+  log('■ 過去 180 日のログイン・パスワード関連の楽天メール（新しい順・最大 10 通）');
+  msgs.slice(0, 10).forEach(m => {
+    const body = bodyOf_(m);
+    const ip = extractIp_(body);
     log('・' + formatDate_(m.getDate()) + '｜' + m.getSubject() +
       '\n   差出人：' + m.getFrom() +
       '\n   ログイン通知と判定：' + (isLoginMail_(m) ? 'はい' : 'いいえ') +
-      '｜DKIM：' + (isTrustedSender_(m.getRawContent()) ? 'OK' : 'NG') +
-      '｜IP：' + (ip || 'なし'));
+      '｜DKIM：' + (isTrustedSender_(m.getRawContent()) ? 'OK' : 'NG（偽メールの可能性）') +
+      '｜IP：' + (ip || 'なし') +
+      '\n   本文の冒頭：' + body.replace(/\s+/g, ' ').slice(0, 250));
   });
-  if (!msgs.length) log('  （なし。楽天のメールが別のアカウントに届いていないか確認してください）');
+  if (!msgs.length) log('  （なし。楽天からログイン・パスワード関連のメールは届いていません）');
 }
 
 // ===== ここまで（Test.gs の最終行）=====
