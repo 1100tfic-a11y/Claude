@@ -2,7 +2,7 @@
 
 /** 通知のテスト送信（自分の端末／他の端末の両パターン） */
 function testNotify() {
-  requireAuth_();
+  if (typeof requireAuth_ === 'function') requireAuth_();   // Main.gs が古い版でも動くように
   notify_(buildMessage_(CONFIG.MY_IPS[0], new Date()));
   notify_(buildMessage_('203.0.113.45', new Date()));
   Logger.log('テスト通知を送信しました。届かない場合は diagnose を実行してください');
@@ -10,7 +10,7 @@ function testNotify() {
 
 /** 直近の楽天ログイン通知メール 1 通を使って、実際と同じ通知を送る（処理済みでも送る） */
 function testWithLatestMail() {
-  requireAuth_();
+  if (typeof requireAuth_ === 'function') requireAuth_();   // Main.gs が古い版でも動くように
   const q = CONFIG.SEARCH_QUERY.replace(/newer_than:\S+/, 'newer_than:90d');
   const msgs = [];
   GmailApp.search(q, 0, 20).forEach(th => th.getMessages().forEach(m => msgs.push(m)));
@@ -25,7 +25,7 @@ function testWithLatestMail() {
 
 /** うまく動かないときの調査用。結果は「実行ログ」に表示されます */
 function diagnose() {
-  requireAuth_();
+  if (typeof requireAuth_ === 'function') requireAuth_();   // Main.gs が古い版でも動くように
   const log = s => Logger.log(s);
   const triggers = ScriptApp.getProjectTriggers().filter(t => t.getHandlerFunction() === 'checkRakutenLogin');
   log('■ 定期実行トリガー：' + (triggers.length ? triggers.length + ' 件（OK）' : 'なし → setup を実行してください'));
