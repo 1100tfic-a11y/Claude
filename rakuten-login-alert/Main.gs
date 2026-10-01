@@ -13,11 +13,18 @@
 // ===== 設定 =====================================================================
 
 const CONFIG = {
-  // 自分の端末の IP アドレス（複数可）。"133.106.0.0/16" のような CIDR 表記も使えます。
-  MY_IPS: ['133.106.50.64'],
+  // 自分の端末の IP アドレス（複数可）。"133.106.0.0/16" のような範囲（CIDR）も使えます。
+  // iPhone のモバイル回線の IP は 133.106.50.64 → 133.106.51.169 のように変わるため、範囲で指定。
+  // ただし同じ回線（携帯会社）の他人も「自分」と判定されるので、通知の IP も必ず確認すること
+  MY_IPS: ['133.106.0.0/16'],
+
+  // 通知メールの送り先（iCloud メールなど）。空なら自分の Gmail に送る
+  EMAIL_TO: '',
 
   // 楽天のログイン通知メールを探す Gmail 検索条件
-  SEARCH_QUERY: 'from:(rakuten.co.jp OR rakuten.com) ログイン newer_than:2d',
+  // 楽天会員のほか、楽天証券・楽天銀行・楽天カード・楽天Edy のドメインも対象
+  SEARCH_QUERY: 'from:(rakuten.co.jp OR rakuten.com OR rakuten-sec.co.jp OR rakuten-bank.co.jp ' +
+    'OR rakuten-card.co.jp OR rakuten-edy.co.jp) ログイン newer_than:2d',
   // 上の検索で見つかったメールのうち、件名がこれに合うもの、または本文に IP アドレスがあるものを通知
   //（「ログインでポイント」のような広告メールを除くため）
   SUBJECT_PATTERN: /ログイン.*(お知らせ|通知|確認|検知)|新しい.*ログイン|ログインがありました/,
@@ -27,7 +34,8 @@ const CONFIG = {
 
   // true: DKIM で楽天ドメインの署名が確認できたメールだけを通知（なりすましメール対策）
   REQUIRE_DKIM: true,
-  TRUSTED_DOMAINS: ['rakuten.co.jp', 'rakuten.com'],
+  TRUSTED_DOMAINS: ['rakuten.co.jp', 'rakuten.com', 'rakuten-sec.co.jp', 'rakuten-bank.co.jp',
+    'rakuten-card.co.jp', 'rakuten-edy.co.jp'],
 
   // 通知方法。使うものを true にし、必要なキーはスクリプト プロパティに登録します（README 参照）
   NOTIFY: {
@@ -105,7 +113,7 @@ function checkRakutenLogin() {
         Logger.log('DKIM 検証に失敗したためスキップ（なりすましの可能性）：' + m.getSubject());
         return;
       }
-      notify_(buildMessage_(extractIp_(bodyOf_(m)), m.getDate()));
+      notify_(buildMessage_(extractIp_(bodyOf_(m)), m.getDate(), m.getSubject()));
     });
   } finally {
     lock.releaseLock();

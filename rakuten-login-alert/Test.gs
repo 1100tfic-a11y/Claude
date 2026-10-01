@@ -3,8 +3,8 @@
 /** 通知のテスト送信（自分の端末／他の端末の両パターン） */
 function testNotify() {
   if (typeof requireAuth_ === 'function') requireAuth_();   // Main.gs が古い版でも動くように
-  notify_(buildMessage_(CONFIG.MY_IPS[0], new Date()));
-  notify_(buildMessage_('203.0.113.45', new Date()));
+  notify_(buildMessage_(String(CONFIG.MY_IPS[0]).split('/')[0], new Date(), '（テスト）'));
+  notify_(buildMessage_('203.0.113.45', new Date(), '（テスト）'));
   Logger.log('テスト通知を送信しました。届かない場合は diagnose を実行してください');
 }
 
@@ -20,7 +20,7 @@ function testWithLatestMail() {
     return;
   }
   Logger.log('使用するメール：' + formatDate_(target.getDate()) + ' ' + target.getSubject());
-  notify_(buildMessage_(extractIp_(bodyOf_(target)), target.getDate()));
+  notify_(buildMessage_(extractIp_(bodyOf_(target)), target.getDate(), target.getSubject()));
 }
 
 /** うまく動かないときの調査用。結果は「実行ログ」に表示されます */
@@ -38,7 +38,8 @@ function diagnose() {
   log('■ 現在の検索条件「' + CONFIG.SEARCH_QUERY + '」に合うスレッド：' + hits + ' 件');
 
   // アンケートや広告に埋もれないよう、件名がログイン・パスワード関連のメールだけを探す
-  const q = '(from:(rakuten.co.jp OR rakuten.com) OR subject:楽天) ' +
+  const q = '(from:(rakuten.co.jp OR rakuten.com OR rakuten-sec.co.jp OR rakuten-bank.co.jp OR ' +
+    'rakuten-card.co.jp OR rakuten-edy.co.jp) OR subject:楽天) -from:me ' +
     'subject:(ログイン OR パスワード OR 本人確認 OR セキュリティ OR 不正 OR 認証 OR ロック) newer_than:180d';
   const msgs = [];
   GmailApp.search(q, 0, 20).forEach(th => th.getMessages().forEach(m => msgs.push(m)));

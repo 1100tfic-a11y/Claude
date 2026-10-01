@@ -23,8 +23,14 @@ assert.ok(!isMyIp_('133.107.0.1', ['133.106.0.0/16']));
 // 通知文
 const d = new Date('2026-09-27T03:34:00Z');
 const self = buildMessage_('133.106.50.64', d);
+// 実際に届いた楽天証券のメール（IP が変わっていても範囲指定で「自分」）
+const sec = buildMessage_(extractIp_('楽天証券のiGrow（iPhone）にログインがありました。 ログイン日時：2026年9月29日 17時21分 IPアドレス：133.106.51.169 ■本メール'),
+  d, '楽天証券のお取引画面にログインがありました');
+assert.strictEqual(sec.body, '自分の端末でログインしました\nIPアドレス：133.106.51.169\n元のメール：楽天証券のお取引画面にログインがありました\n日時：2026/09/27 12:34');
+assert.ok(isTrustedSender_('Authentication-Results: mx.google.com;\r\n dkim=pass header.i=@rakuten-sec.co.jp\r\n\r\n'));
+assert.ok(!isTrustedSender_('Authentication-Results: mx.google.com;\r\n dkim=pass header.i=@rakuten-sec.co.jp.evil.example\r\n\r\n'));
 assert.strictEqual(self.title, '楽天アカウントにログインあり');
-assert.strictEqual(self.body, '自分の端末でログインしました\n日時：2026/09/27 12:34');
+assert.strictEqual(self.body, '自分の端末でログインしました\nIPアドレス：133.106.50.64\n日時：2026/09/27 12:34');
 const other = buildMessage_('203.0.113.45', d);
 assert.strictEqual(other.body, '他の端末からログインされました。\nIPアドレス：203.0.113.45\n日時：2026/09/27 12:34');
 assert.ok(buildMessage_(null, d).body.includes('取得できませんでした'));

@@ -3,18 +3,19 @@
 // ===== 判定ロジック（純粋関数） =====================================================
 
 /** 通知タイトルと本文を組み立てる */
-function buildMessage_(ip, date) {
+function buildMessage_(ip, date, subject) {
   const when = formatDate_(date);
   const self = ip && isMyIp_(ip, CONFIG.MY_IPS);
-  let body;
-  if (self) {
-    body = CONFIG.MSG_SELF;
-  } else {
-    body = CONFIG.MSG_OTHER + '\nIPアドレス：' + (ip || '（メールから取得できませんでした）');
-  }
+  const lines = [
+    self ? CONFIG.MSG_SELF : CONFIG.MSG_OTHER,
+    'IPアドレス：' + (ip || '（メールから取得できませんでした）'),
+  ];
+  // 楽天会員・楽天証券など、どのサービスへのログインかがわかるよう元メールの件名を添える
+  if (subject) lines.push('元のメール：' + subject);
+  lines.push('日時：' + when);
   return {
     title: CONFIG.TITLE,
-    body: body + '\n日時：' + when,
+    body: lines.join('\n'),
     isSelf: !!self,
     ip: ip || null,
   };
