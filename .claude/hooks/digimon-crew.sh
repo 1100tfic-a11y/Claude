@@ -9,7 +9,7 @@ mode="${1:-tool}"
 input="$(cat)"
 
 if [ "$mode" = "prompt" ]; then
-  echo "【デジモン・クルー演出】この作業でも .claude/skills/digimon-crew/SKILL.md に従い、選ばれし子どもたちとパートナーデジモンが作業を分担している演出を短く入れること（成果物には入れない・事実は正確に）。"
+  echo "【デジモン・クルー演出】この作業でも .claude/skills/digimon-crew/SKILL.md に従い、選ばれし子どもたちとパートナーデジモンが作業を分担している演出を短く入れ、作業開始時と最終報告では担当ペアの画像も SendUserFile で表示すること（成果物には入れない・事実は正確に）。"
   exit 0
 fi
 

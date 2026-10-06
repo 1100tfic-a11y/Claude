@@ -1,0 +1,3 @@
+# digimon-crew: 自分で用意した画像は GitHub に上げない
+.claude/skills/digimon-crew/images/custom/*
+!.claude/skills/digimon-crew/images/custom/README.md
