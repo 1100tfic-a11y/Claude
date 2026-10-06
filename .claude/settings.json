@@ -5,18 +5,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/digimon-crew.sh\" prompt"
-          }
-        ]
-      }
-    ],
-    "PreToolUse": [
-      {
-        "matcher": "*",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/digimon-crew.sh\" tool"
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/digimon-crew.sh\""
           }
         ]
       }
