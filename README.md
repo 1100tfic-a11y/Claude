@@ -139,15 +139,18 @@ Scratch上でも別々のスクリプトとして配置されます。
 
 ## 付録：栽培観察レポート作成スキル（生物育成）
 
-`.claude/skills/cultivation-report/` に、技術科「生物育成の技術」で使う **栽培観察レポート（A4・1日1枚の Word／PDF）** を作る Claude Code スキルを収録しています。
+`.claude/skills/cultivation-report/` に、技術科「生物育成の技術」で使う **栽培観察レポート** を作る Claude Code スキルを収録しています。
+生徒が **Word で直接入力して提出できる .docx（A4・1日1枚）** を出力します。
 Claude に「ミニトマトの栽培レポートを 5/11〜7/17 で作って」のように頼むと、このスキルが使われます。
 
-- 表紙：作物名入りタイトル、年・組・番・名前、観察・栽培期間
+- 表紙：作物名入りタイトル、年・組・番・名前、観察・栽培期間（表紙で入れた名前は全ページのヘッダーに自動反映）
 - 観察日記：土日を除く月〜金を1日1ページ（写真欄、一番大きい株の背丈、葉の枚数、手入れ、考察）
 - 最後のページ：収穫後のまとめ
+- 記入欄は Word のコンテンツ コントロール（クリックして入力、天気は一覧から選択、手入れはチェック、写真はクリックで挿入）
+- `--print` で手書き用（罫線つき）も作れます
 
 スクリプトを直接使う場合：
 
 ```bash
-python3 .claude/skills/cultivation-report/scripts/make_report.py --crop ミニトマト --start 2026-05-11 --end 2026-07-17 --pdf
+python3 .claude/skills/cultivation-report/scripts/make_report.py --crop ミニトマト --start 2026-05-11 --end 2026-07-17
 ```
