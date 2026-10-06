@@ -64,14 +64,19 @@
              background-position: 0 1mm; }
   .q1 { flex: 2.6; } .q2 { flex: 2.6; } .q3 { flex: 2.6; }
 
-  /* ===== ⑤ 本時の振り返り ===== */
-  .ref { flex: 2.6; border: 2px solid #111; border-radius: 2mm; display: flex; flex-direction: column; }
-  .ref .qt { padding: 1.5mm 3mm; border-bottom: 1px solid #111; font-size: 10.5pt; }
-  .ref .qt strong { font-size: 11pt; }
-  .ref .qt .hint { display: block; font-size: 8.5pt; color: #444; }
-  .ref .area { flex: 1;
-               background-image: repeating-linear-gradient(to bottom, transparent 0, transparent 8.5mm, #9a9a9a 8.5mm, #9a9a9a 8.8mm);
-               background-position: 0 1mm; }
+  /* ===== ⑤ 本時の振り返り（自己評価５段階＋記述） ===== */
+  .ref { flex: none; display: flex; flex-direction: column; }
+  .ref-head { display: flex; justify-content: space-between; align-items: flex-end;
+              font-size: 10.5pt; padding: 0 0 .5mm; }
+  .ref-head .scale { width: 50mm; display: flex; justify-content: space-between; font-size: 8.5pt; }
+  .ref-box { flex: 1; border: 1.5px solid #111; display: flex; flex-direction: column; }
+  table.eval { width: 100%; border-collapse: collapse; font-size: 10.5pt; }
+  table.eval td { border-bottom: 1px solid #111; height: 7mm; padding: 0 2mm; }
+  table.eval td.n { width: 10mm; border-left: 1px solid #111; text-align: center; padding: 0; }
+  .ref-write { flex: 1; display: flex; flex-direction: column; padding: 1mm 2mm 1.5mm; }
+  .ref-write p { font-size: 10.5pt; line-height: 1.55; }
+  .ref-write .lines { flex: 1; display: flex; flex-direction: column; }
+  .ref-write .lines div { height: 8.5mm; border-bottom: 1.2px dashed #333; }
 
   * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 </style>
@@ -122,10 +127,21 @@
 
   <!-- ⑤ 本時の振り返り -->
   <div class="ref">
-    <div class="qt"><strong>本時の振り返り</strong>
-      <span class="hint">今日の学習で考えたこと、友達の意見を聞いて気づいたこと、これからの自分に生かしたいことを書こう。</span>
+    <div class="ref-head">
+      <span>☆今日の振り返り（自分の感じたこと、自分に生かせそうなこと）</span>
+      <span class="scale"><span>とても</span><span>←</span><span>ふつう</span><span>→</span><span>ぜんぜん</span></span>
     </div>
-    <div class="area"></div>
+    <div class="ref-box">
+      <table class="eval">
+        <tr><td>①自分の考え方・判断に影響はありましたか。</td><td class="n">5</td><td class="n">4</td><td class="n">3</td><td class="n">2</td><td class="n">1</td></tr>
+        <tr><td>②これからの自分に生かしていこうと思いましたか。</td><td class="n">5</td><td class="n">4</td><td class="n">3</td><td class="n">2</td><td class="n">1</td></tr>
+        <tr><td>③自分の考えを友達に伝えることができましたか。</td><td class="n">5</td><td class="n">4</td><td class="n">3</td><td class="n">2</td><td class="n">1</td></tr>
+      </table>
+      <div class="ref-write">
+        <p>今日の授業で考えたことを書きましょう。『あなたが、だれかのために見返りを求めずに行動したのはどんなときですか。そのとき、どんな気持ちになりましたか。』</p>
+        <div class="lines"><div></div><div></div><div></div></div>
+      </div>
+    </div>
   </div>
 
 </div>
