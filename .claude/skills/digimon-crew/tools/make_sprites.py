@@ -88,14 +88,20 @@ class Canvas:
 
 
 def custom_frames(path, body):
-    """携帯ゲームのドット絵（16x16）を読み、2倍にして 32x32 のコマにする。"""
-    pal = {"K": INK, "Z": body, ".": None}
+    """携帯ゲームのドット絵を読み、32x32 のコマにする（16x16 以下の絵は2倍にする）。"""
+    pal = {"K": INK, "Z": body, "W": (255, 255, 255), ".": None}
     out = []
-    for rows in vpet_import.load_sprite(path, body="Z"):
-        big = []
-        for row in rows:
-            line = [pal[ch] for ch in row for _ in range(2)]
-            big += [line, line[:]]
+    for rows in vpet_import.load_sprite(path, body="Z", size=32):
+        used = [x for x in range(32) if any(r[x] != "." for r in rows)]
+        top = next(y for y, r in enumerate(rows) if r.strip("."))
+        k = 2 if max(used[-1] - used[0] + 1, 32 - top) <= 16 else 1
+        art = [r[used[0]:used[-1] + 1] for r in rows[top:]]
+        w, h = len(art[0]) * k, len(art) * k
+        left = (32 - w) // 2
+        big = [[None] * 32 for _ in range(32 - h)]
+        for r in art:
+            line = [None] * left + [pal[ch] for ch in r for _ in range(k)] + [None] * (32 - w - left)
+            big += [line] + [line[:] for _ in range(k - 1)]
         out.append(big)
     return out
 

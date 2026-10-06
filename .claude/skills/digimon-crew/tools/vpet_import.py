@@ -273,8 +273,11 @@ def to_dots(px, size=16):
            [[False] * left + line + [False] * (size - cols - left) for line in dots]
 
 
-def colorize(grid, body="O", outline="K"):
-    """輪郭に囲まれた明るいドットを body で塗り、文字列の行にする（外側は '.'）。"""
+def colorize(grid, body="O", outline="K", glint="W"):
+    """輪郭に囲まれた明るいドットを body で塗り、文字列の行にする（外側は '.'）。
+
+    上下左右を輪郭に囲まれた1ドットだけの明るい点（目の光など）は glint（白）にする。
+    """
     n = len(grid)
     outside = [[False] * n for _ in range(n)]
     stack = [(y, x) for y in range(n) for x in (0, n - 1)] + [(y, x) for x in range(n) for y in (0, n - 1)]
@@ -283,16 +286,20 @@ def colorize(grid, body="O", outline="K"):
         if 0 <= y < n and 0 <= x < n and not outside[y][x] and not grid[y][x]:
             outside[y][x] = True
             stack += [(y + 1, x), (y - 1, x), (y, x + 1), (y, x - 1)]
-    return ["".join(outline if grid[y][x] else "." if outside[y][x] else body for x in range(n))
-            for y in range(n)]
+    def is_glint(y, x):
+        return all(0 <= y + dy < n and 0 <= x + dx < n and grid[y + dy][x + dx]
+                   for dy, dx in ((1, 0), (-1, 0), (0, 1), (0, -1)))
+
+    return ["".join(outline if grid[y][x] else "." if outside[y][x] else glint if is_glint(y, x) else body
+                    for x in range(n)) for y in range(n)]
 
 
-def load_sprite(path, body="O"):
-    """画像ファイルから、色付きドット絵（文字列の行）のコマのリストを返す。"""
+def load_sprite(path, body="O", size=32):
+    """画像ファイルから、色付きドット絵（size x size の文字列の行）のコマのリストを返す。"""
     frames = read_image(path)
     out = []
     for px in frames:
-        rows = colorize(to_dots(px), body)
+        rows = colorize(to_dots(px, size), body)
         if rows not in out:
             out.append(rows)
     return out
