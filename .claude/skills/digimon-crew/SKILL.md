@@ -81,6 +81,7 @@ description: デジモンアドベンチャーの選ばれし子どもたちと�
 
 **注意**
 - `SendUserFile` が使えない環境（ローカルのターミナルなど）では画像は出さず、セリフだけにする。
+- ユーザーが `images/custom/sprites/<デジモン名>.png|gif` に携帯ゲームのドット絵を置いた場合は、`tools/make_sprites.py` を実行すると、それを読み込んで色を塗った場面が `images/custom/<画像ID>.gif` にでき、`pick-image.sh` がそちらを優先する（読み込み処理は `tools/vpet_import.py`）。公式のドット絵は Claude が取得・リポジトリに追加せず、ユーザーが用意したものだけを使う。
 - ドット絵は `tools/make_sprites.py` で作り直せる（動く `.gif` と、止まった `.png` の両方を書き出す）。`images/custom/` の画像はユーザー個人のもので、GitHub に上げない（`.gitignore` 済み）。公式画像をインターネットから取得してリポジトリに入れてはいけない。
 
 ## 5. 守るべきルール

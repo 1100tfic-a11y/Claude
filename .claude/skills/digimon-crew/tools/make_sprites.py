@@ -11,9 +11,15 @@
       上の段に作業アイコン・流れるコード・進捗バー、右でパートナーデジモンが歩きながら技のエフェクトを出す。
 ドット絵を直したいときは、下の文字列（1文字＝1ドット）を編集する。
 """
+import glob
 import os
 import struct
+import sys
 import zlib
+
+sys.dont_write_bytecode = True
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import vpet_import  # noqa: E402
 
 COLS, ROWS = 40, 26   # 液晶のドット数
 DOT, GAP = 7, 1       # 1ドットの大きさと、ドットのすき間（液晶の格子）
@@ -24,6 +30,8 @@ BTN_H = 30            # 本体下部（ボタン）の高さ
 FRAMES = 8
 DELAY = 25            # 1/100 秒単位
 OUT_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "images")
+CUSTOM_DIR = os.path.join(OUT_DIR, "custom")
+SPRITE_DIR = os.path.join(CUSTOM_DIR, "sprites")  # ここに置いたドット絵は GitHub に上がらない
 
 BASE = {
     ".": None,
@@ -178,6 +186,7 @@ DIGIMON = {
         ],
         colors={"O": (250, 166, 36), "Y": (252, 214, 120), "E": (40, 160, 70)},
         fx="flame",
+        body=(250, 166, 36),
     ),
     "gabumon": dict(
         grid=[
@@ -201,6 +210,7 @@ DIGIMON = {
         colors={"B": (110, 160, 232), "W": (236, 246, 255), "Y": (250, 204, 86),
                 "E": (210, 40, 40)},
         fx="frost",
+        body=(110, 160, 232),
     ),
     "piyomon": dict(
         grid=[
@@ -224,6 +234,7 @@ DIGIMON = {
         colors={"P": (246, 128, 170), "G": (200, 220, 90), "B": (80, 170, 240),
                 "Y": (250, 210, 60), "E": (50, 140, 230)},
         fx="heart",
+        body=(246, 128, 170),
     ),
     "tentomon": dict(
         grid=[
@@ -247,6 +258,7 @@ DIGIMON = {
         colors={"R": (214, 48, 48), "r": (255, 150, 150), "D": (110, 72, 54),
                 "E": (90, 220, 100)},
         fx="spark",
+        body=(214, 48, 48),
     ),
     "palmon": dict(
         grid=[
@@ -270,6 +282,7 @@ DIGIMON = {
         colors={"P": (246, 120, 170), "Y": (255, 224, 80), "G": (110, 200, 90),
                 "E": (34, 32, 44)},
         fx="petal",
+        body=(110, 200, 90),
     ),
     "gomamon": dict(
         grid=[
@@ -293,6 +306,7 @@ DIGIMON = {
         colors={"W": (244, 246, 252), "O": (246, 120, 40), "V": (150, 90, 210),
                 "E": (34, 32, 44)},
         fx="bubble",
+        body=(236, 240, 250),
     ),
     "patamon": dict(
         grid=[
@@ -315,6 +329,7 @@ DIGIMON = {
         ],
         colors={"O": (240, 158, 70), "C": (252, 232, 196), "E": (60, 120, 220)},
         fx="star",
+        body=(240, 158, 70),
     ),
     "tailmon": dict(
         grid=[
@@ -338,6 +353,7 @@ DIGIMON = {
         colors={"W": (250, 250, 252), "V": (150, 90, 210), "Y": (252, 214, 60),
                 "R": (220, 60, 60), "G": (240, 200, 60), "E": (60, 140, 230)},
         fx="ray",
+        body=(250, 250, 252),
     ),
 }
 
@@ -425,7 +441,7 @@ class Lcd:
                     self.put(ox + x, oy + y, c)
 
 
-def scene(pair, f):
+def scene(pair, f, sprite=None):
     """液晶のドット（COLS x ROWS、None は消灯）を返す。"""
     pid, kid_name, digi_name, crest, icon = pair
     kid, digi = KIDS[kid_name], DIGIMON[digi_name]
@@ -463,10 +479,14 @@ def scene(pair, f):
     lcd.rect(0, kid_y + 16, 17, kid_y + 16, (150, 100, 60))  # 机
 
     # --- デジモン：足ぶみしながら左右に歩く・技のエフェクト ---
-    grid = digi["grid"] if f % 2 == 0 else squash(digi["grid"])
+    if sprite and len(sprite) > 1:  # 取り込んだドット絵（コマあり）
+        grid = sprite[f % len(sprite)]
+    else:
+        g = sprite[0] if sprite else digi["grid"]
+        grid = g if f % 2 == 0 else squash(g)
     step = [0, 0, 1, 1, 2, 2, 1, 1][f]
     dx, dy = 21 + step, 9
-    lcd.stamp(grid, {**BASE, **digi["colors"]}, dx, dy)
+    lcd.stamp(grid, {**BASE, **digi["colors"], "Z": digi["body"]}, dx, dy)
     fx_rows, fx_pal = FX[digi["fx"]]
     for n, col in enumerate((19, 36)):
         t = (f + n * 4) % FRAMES
@@ -480,7 +500,7 @@ def scene(pair, f):
 # ------------------------------------------------------------
 # 液晶と本体を描いてピクセルにする
 # ------------------------------------------------------------
-def render(pair, f):
+def render(pair, f, sprite=None):
     crest = pair[3]
     lcd_w, lcd_h = COLS * PITCH + GAP, ROWS * PITCH + GAP
     w = lcd_w + 2 * (BEZEL + SHELL)
@@ -507,7 +527,7 @@ def render(pair, f):
     fill(sx, sy, sx + lcd_w + 2 * BEZEL, sy + lcd_h + 2 * BEZEL, bezel, 10)
     lx, ly = sx + BEZEL, sy + BEZEL
     fill(lx, ly, lx + lcd_w, ly + lcd_h, screen_bg)
-    dots = scene(pair, f)
+    dots = scene(pair, f, sprite)
     for r in range(ROWS):
         for c in range(COLS):
             col = dots[r][c] or unlit
@@ -604,14 +624,30 @@ def write_png(path, px):
         fp.write(chunk(b"IEND", b""))
 
 
+def find_sprite(digi_name):
+    for path in sorted(glob.glob(os.path.join(SPRITE_DIR, digi_name + ".*"))):
+        if not path.endswith(".md"):
+            return path
+    return None
+
+
 def main():
     os.makedirs(OUT_DIR, exist_ok=True)
     for pair in PAIRS:
+        # オリジナルのドット絵（リポジトリに入る）
         frames = [render(pair, f)[2] for f in range(FRAMES)]
         gif = os.path.join(OUT_DIR, pair[0] + ".gif")
         write_gif(gif, frames)
         write_png(os.path.join(OUT_DIR, pair[0] + ".png"), frames[0])
         print(os.path.relpath(gif))
+        # 自分で用意したドット絵があれば、それで custom/ に作る（GitHub には上がらない）
+        src = find_sprite(pair[2])
+        if src:
+            sprite = vpet_import.load_sprite(src, body="Z")
+            frames = [render(pair, f, sprite)[2] for f in range(FRAMES)]
+            gif = os.path.join(CUSTOM_DIR, pair[0] + ".gif")
+            write_gif(gif, frames)
+            print(f"{os.path.relpath(gif)}  <- {os.path.relpath(src)}（{len(sprite)}コマ）")
 
 
 if __name__ == "__main__":
