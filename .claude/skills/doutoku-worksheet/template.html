@@ -36,8 +36,8 @@
   .who small { font-size: 9pt; color: #444; margin-right: 2mm; }
 
   /* ===== ② 資料のタイトル ===== */
-  .title { text-align: center; padding: 2mm 0 1mm; }
-  .title .label { font-size: 9.5pt; color: #444; }
+  .title { text-align: center; margin-top: -2mm; line-height: 1.25; }
+  .title .label { font-size: 9pt; color: #444; }
   .title h1 { font-size: 19pt; font-weight: bold; letter-spacing: .08em; }
   .title .theme { font-size: 9.5pt; color: #333; }
 
@@ -59,7 +59,7 @@
   .q .qt { padding: 1.5mm 3mm; border-bottom: 1px solid #111; font-size: 10.5pt; background: #f1f1f1; }
   .q .qt b { display: inline-block; background: #111; color: #fff; padding: 0 2mm;
              margin-right: 2mm; border-radius: 1mm; font-size: 10pt; }
-  .q .area { flex: 1;
+  .q .area { flex: 1; min-height: 18.4mm;   /* 最低2行を確保 */
              background-image: repeating-linear-gradient(to bottom, transparent 0, transparent 8.5mm, #9a9a9a 8.5mm, #9a9a9a 8.8mm);
              background-position: 0 1mm; }
   .q1 { flex: 2.6; } .q2 { flex: 2.6; } .q3 { flex: 2.6; }
@@ -76,7 +76,7 @@
   .ref-write { flex: 1; display: flex; flex-direction: column; padding: 1mm 2mm 1.5mm; }
   .ref-write p { font-size: 10.5pt; line-height: 1.55; }
   .ref-write .lines { flex: 1; display: flex; flex-direction: column; }
-  .ref-write .lines div { height: 8.5mm; border-bottom: 1.2px dashed #333; }
+  .ref-write .lines div { height: 7mm; border-bottom: 1.2px dashed #333; }
 
   * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 </style>
