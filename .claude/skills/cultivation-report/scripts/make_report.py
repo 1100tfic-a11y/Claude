@@ -332,19 +332,79 @@ def ruled_lines(doc, n, h=7.6):
     return t
 
 
-def writing_box(doc, height_mm, hint, alias, lines):
-    """考察などを書く欄。Word 用は自由に書ける1つの枠、印刷用は罫線。"""
+LINE_PITCH = 7.5   # 考察欄の行の高さ（mm）。文字の行送りと罫線の間隔をこれでそろえる
+_docpr_ids = iter(range(500000, 10 ** 7))
+_ruled_png = {}
+
+
+def ruled_png(w_mm, n, pitch):
+    """行送りと同じ間隔で点線を引いた透明の画像（文字の背面に置く）"""
+    key = (w_mm, n, pitch)
+    if key not in _ruled_png:
+        from PIL import Image, ImageDraw
+        k = 10  # px/mm
+        W, H = int(w_mm * k), int(n * pitch * k)
+        im = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+        d = ImageDraw.Draw(im)
+        for i in range(1, n + 1):
+            y = int(i * pitch * k) - 2
+            for x in range(0, W, 12):
+                d.line([(x, y), (min(x + 6, W), y)], fill=(150, 162, 178, 255), width=2)
+        buf = io.BytesIO()
+        im.save(buf, "PNG")
+        _ruled_png[key] = buf.getvalue()
+    return io.BytesIO(_ruled_png[key])
+
+
+def behind_image(par, stream, w_mm, h_mm, y_mm=0.0):
+    """段落を基準に、文字の背面へ画像を固定配置する（wrapNone / behindDoc）"""
+    rid, _ = par.part.get_or_add_image(stream)
+    cx, cy, y = int(Mm(w_mm)), int(Mm(h_mm)), int(Mm(y_mm))
+    pid = next(_docpr_ids)
+    xml = (
+        f'<w:r {nsdecls("w", "wp", "a", "pic", "r")}><w:drawing>'
+        '<wp:anchor distT="0" distB="0" distL="0" distR="0" simplePos="0" relativeHeight="1" '
+        'behindDoc="1" locked="1" layoutInCell="1" allowOverlap="1">'
+        '<wp:simplePos x="0" y="0"/>'
+        '<wp:positionH relativeFrom="column"><wp:posOffset>0</wp:posOffset></wp:positionH>'
+        f'<wp:positionV relativeFrom="paragraph"><wp:posOffset>{y}</wp:posOffset></wp:positionV>'
+        f'<wp:extent cx="{cx}" cy="{cy}"/><wp:effectExtent l="0" t="0" r="0" b="0"/><wp:wrapNone/>'
+        f'<wp:docPr id="{pid}" name="罫線{pid}"/>'
+        '<wp:cNvGraphicFramePr><a:graphicFrameLocks noChangeAspect="1"/></wp:cNvGraphicFramePr>'
+        '<a:graphic><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture">'
+        f'<pic:pic><pic:nvPicPr><pic:cNvPr id="{pid}" name="lines.png"/><pic:cNvPicPr/></pic:nvPicPr>'
+        f'<pic:blipFill><a:blip r:embed="{rid}"/><a:stretch><a:fillRect/></a:stretch></pic:blipFill>'
+        f'<pic:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="{cx}" cy="{cy}"/></a:xfrm>'
+        '<a:prstGeom prst="rect"><a:avLst/></a:prstGeom></pic:spPr></pic:pic>'
+        '</a:graphicData></a:graphic></wp:anchor></w:drawing></w:r>')
+    par._p.append(parse_xml(xml))
+
+
+def writing_box(doc, lines, hint, alias, pitch=LINE_PITCH):
+    """考察などを書く欄（罫線つき）。
+
+    Word 用：1つの枠の中で自由に書ける入力欄。文字の行送りを罫線の間隔と同じ「固定値」にし、
+    罫線は文字の背面に置いた画像なので、打った文字がそのまま罫線の上に並ぶ。
+    印刷用：表の罫線。"""
     if PRINT:
-        return ruled_lines(doc, lines, h=height_mm / lines)
+        return ruled_lines(doc, lines, h=pitch)
+    pad_top, pad_bottom, anchor_pt = 0.6, 0.6, 1
     t = doc.add_table(rows=1, cols=1)
     fix_layout(t, [BODY_W])
-    set_cell_margins(t, 1.5, 1.5, 2.2, 2.2)
+    set_cell_margins(t, pad_top, pad_bottom, 2.2, 2.2)
     row = t.rows[0]
-    row_height(row, height_mm)
+    row_height(row, pad_top + pad_bottom + anchor_pt * 0.3528 + lines * pitch + 0.4)
     c = row.cells[0]
     box_borders(c, "9AA5B1", 6)
-    par = first_par(c)
-    par.paragraph_format.line_spacing = 1.25
+    # 1段落目：罫線画像の置き場所（高さ 1pt。生徒が触らない位置）
+    holder = first_par(c)
+    holder.paragraph_format.line_spacing = Pt(anchor_pt)
+    behind_image(holder, ruled_png(BODY_W - 4.4, lines, pitch), BODY_W - 4.4, lines * pitch,
+                 y_mm=anchor_pt * 0.3528)
+    # 2段落目：入力欄。行送りを罫線と同じ固定値に
+    par = c.add_paragraph()
+    tight(par)
+    par.paragraph_format.line_spacing = Mm(pitch)
     text(par, hint, 10.5, color=GRAY)
     wrap_block(par, alias, "<w:richText/>", placeholder=True)
     return t
@@ -587,7 +647,7 @@ def day_page(doc, a, n, d, total, image):
              [16, 58, 16, 30, 20, 40], h=9)
     spacer(doc, 3)
 
-    photo_box(doc, 92, image, caption="今日の写真")
+    photo_box(doc, 112, image, caption="今日の写真")
     spacer(doc, 3)
 
     form_row(doc, [("一番大きい株の背丈", None), (None, num("数字", "cm", "背丈")),
@@ -610,8 +670,8 @@ def day_page(doc, a, n, d, total, image):
 
     label(doc, "観察・手入れの記録と考察",
           "様子の変化／何をなぜしたか／変化の理由として考えられること／次にすること")
-    writing_box(doc, 114, "ここをクリックして、観察して気づいたこと・した手入れとその理由・考察を書く",
-                "観察・手入れの記録と考察", 15)
+    writing_box(doc, 12, "ここをクリックして、観察して気づいたこと・した手入れとその理由・考察を書く",
+                "観察・手入れの記録と考察")
 
 
 def summary_page(doc, a, days, image):
@@ -637,7 +697,7 @@ def summary_page(doc, a, days, image):
         ("生物育成の技術と、生活や社会とのつながり", "農家の工夫・食料・環境などと比べて", 4),
     ]:
         label(doc, title, hint)
-        writing_box(doc, n * 7.4, "ここをクリックして書く", title, n)
+        writing_box(doc, n, "ここをクリックして書く", title)
 
 
 # ---------- 日付・写真 ----------
