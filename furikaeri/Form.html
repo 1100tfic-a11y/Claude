@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<base target="_top">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>授業ふりかえり</title>
+<style>
+:root{
+  --ink:#1c2430; --ink2:#55637a; --line:#d7dee9; --bg:#f4f7fb; --panel:#fff;
+  --accent:#2f6fd0; --err:#c92a2a; --ok:#0f7b46;
+  --a:#0f7b46; --b:#2f6fd0; --c:#d9480f;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);line-height:1.6;
+  font-family:"BIZ UDPGothic","Hiragino Kaku Gothic ProN","Yu Gothic UI","Meiryo",system-ui,sans-serif;
+  -webkit-text-size-adjust:100%}
+header{background:linear-gradient(100deg,#2f6fd0,#4C97FF 60%,#0FBD8C);color:#fff;padding:.9rem 1rem}
+header h1{margin:0 auto;max-width:720px;font-size:1.3rem}
+header p{margin:.1rem auto 0;max-width:720px;font-size:.9rem;opacity:.95}
+main{max-width:720px;margin:0 auto;padding:1rem 1rem 3rem}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:1rem;margin-bottom:1rem;
+  box-shadow:0 2px 6px rgba(28,36,48,.08)}
+.panel.bad{border:2px solid var(--err)}
+h2{font-size:1.08rem;margin:0 0 .6rem}
+.req{display:inline-block;font-size:.72rem;background:var(--err);color:#fff;border-radius:6px;padding:0 .4rem;margin-left:.3rem;vertical-align:middle}
+.opt{display:inline-block;font-size:.72rem;background:#8a96a8;color:#fff;border-radius:6px;padding:0 .4rem;margin-left:.3rem;vertical-align:middle}
+.row{display:grid;grid-template-columns:repeat(4,1fr);gap:.6rem}
+.row.three{grid-template-columns:repeat(3,1fr)}
+@media(max-width:520px){.row,.row.three{grid-template-columns:1fr 1fr}}
+label.f{display:block;font-size:.85rem;color:var(--ink2);font-weight:700}
+select,input[type=text],textarea{width:100%;font:inherit;font-size:1.05rem;padding:.6rem .7rem;border:2px solid var(--line);
+  border-radius:10px;background:#fff;color:var(--ink)}
+textarea{min-height:4.8rem;resize:vertical}
+select:focus,input:focus,textarea:focus{outline:3px solid #bcd5f7;border-color:var(--accent)}
+.name{margin-top:.6rem}
+.choices{display:grid;grid-template-columns:repeat(3,1fr);gap:.5rem;margin-bottom:.7rem}
+.choices input{position:absolute;opacity:0;pointer-events:none}
+.choices label{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;
+  border:2px solid var(--line);border-radius:12px;padding:.6rem .3rem;cursor:pointer;background:#fff;min-height:5.2rem;
+  font-size:.82rem;color:var(--ink2);user-select:none}
+.choices label b{font-size:1.8rem;line-height:1.1;color:var(--ink)}
+.choices input:focus-visible+label{outline:3px solid #bcd5f7}
+.choices input[value=A]:checked+label{background:var(--a);border-color:var(--a);color:#fff}
+.choices input[value=B]:checked+label{background:var(--b);border-color:var(--b);color:#fff}
+.choices input[value=C]:checked+label{background:var(--c);border-color:var(--c);color:#fff}
+.choices input:checked+label b{color:#fff}
+.hint{font-size:.8rem;color:var(--ink2);margin:.25rem 0 0}
+.count{float:right}
+.btn{display:block;width:100%;background:var(--accent);color:#fff;border:none;border-radius:12px;padding:.9rem;
+  font:inherit;font-size:1.15rem;font-weight:700;cursor:pointer}
+.btn:disabled{opacity:.6;cursor:wait}
+.btn.sub{background:#fff;color:var(--accent);border:2px solid var(--accent);font-size:1rem;padding:.7rem}
+.msg{color:var(--err);font-weight:700;margin:.6rem 0 0;min-height:1.4em}
+.done{text-align:center}
+.done .big{font-size:3rem;line-height:1}
+.done dl{display:grid;grid-template-columns:auto 1fr;gap:.2rem .8rem;text-align:left;margin:1rem auto;max-width:28rem}
+.done dt{color:var(--ink2);font-weight:700}
+.done dd{margin:0;white-space:pre-wrap;word-break:break-word}
+.demo{background:#fff8e8;border-left:5px solid #ffbf00;border-radius:6px;padding:.5rem .8rem;font-size:.85rem;margin-bottom:1rem}
+.hidden{display:none !important}
+</style>
+</head>
+<body>
+<header>
+  <h1 id="title">授業ふりかえり</h1>
+  <p id="today"></p>
+</header>
+<main>
+  <div id="demoNote" class="demo hidden">【体験モード】Google Apps Script の外で開いています。送信内容はこの端末のブラウザにだけ保存されます。</div>
+
+  <form id="form" novalidate>
+    <section class="panel" id="secWho">
+      <h2>あなたのこと <span class="req">必須</span></h2>
+      <div class="row" id="whoRow">
+        <div><label class="f" for="grade">学年</label><select id="grade" required></select></div>
+        <div><label class="f" for="cls">組</label><select id="cls" required></select></div>
+        <div><label class="f" for="num">番号</label><select id="num" required></select></div>
+        <div id="periodBox"><label class="f" for="period">時限</label><select id="period" required></select></div>
+      </div>
+      <div class="name">
+        <label class="f" for="name">氏名（フルネーム）</label>
+        <input type="text" id="name" maxlength="40" autocomplete="name" placeholder="例）技術 太郎" required>
+      </div>
+      <p class="hint">学年・組・番号・氏名は、この端末に記憶されます。次回からは入力しなくてOKです。</p>
+    </section>
+
+    <section class="panel" id="secU">
+      <h2>① 本時の授業の理解度 <span class="req">必須</span></h2>
+      <div class="choices" role="radiogroup" aria-label="理解度">
+        <input type="radio" name="understand" id="u-A" value="A"><label for="u-A"><b>A</b>よく理解できた</label>
+        <input type="radio" name="understand" id="u-B" value="B"><label for="u-B"><b>B</b>だいたい理解できた</label>
+        <input type="radio" name="understand" id="u-C" value="C"><label for="u-C"><b>C</b>あまり理解できなかった</label>
+      </div>
+      <label class="f" for="uReason">そう思う理由 <span class="req">必須</span><span class="count" id="uCount"></span></label>
+      <textarea id="uReason" maxlength="1000" placeholder="例）〇〇のしくみは説明できるが、△△がまだよくわからないから"></textarea>
+    </section>
+
+    <section class="panel" id="secP">
+      <h2>② 本時の作業の進捗度 <span class="req">必須</span></h2>
+      <div class="choices" role="radiogroup" aria-label="進捗度">
+        <input type="radio" name="progress" id="p-A" value="A"><label for="p-A"><b>A</b>予定より進んだ</label>
+        <input type="radio" name="progress" id="p-B" value="B"><label for="p-B"><b>B</b>予定どおり進んだ</label>
+        <input type="radio" name="progress" id="p-C" value="C"><label for="p-C"><b>C</b>予定より遅れている</label>
+      </div>
+      <label class="f" for="pReason">そう思う理由 <span class="req">必須</span><span class="count" id="pCount"></span></label>
+      <textarea id="pReason" maxlength="1000" placeholder="例）〇〇まで完成した。次の時間は△△から始める"></textarea>
+    </section>
+
+    <section class="panel" id="secQ">
+      <h2>③ 質問・感想など <span class="opt">任意</span></h2>
+      <textarea id="question" maxlength="1000" placeholder="先生に聞きたいこと、困っていること、感想など"></textarea>
+    </section>
+
+    <button type="submit" class="btn" id="send">送信する</button>
+    <p class="msg" id="msg" role="alert"></p>
+  </form>
+
+  <section class="panel done hidden" id="done">
+    <div class="big">✅</div>
+    <h2>送信しました。おつかれさまでした！</h2>
+    <dl id="summary"></dl>
+    <button type="button" class="btn sub" id="again">まちがえたので、もう一度送る</button>
+  </section>
+</main>
+
+<script>
+var SETTINGS = (function(){
+  try { return JSON.parse('<?!= settings ?>'); } catch(e) {
+    // Apps Script の外で開いたとき（体験モード）
+    return { classes:{1:6,2:6,3:7}, maxNumber:35, maxPeriod:6, subject:'技術', demo:true };
+  }
+})();
+var DEMO = typeof google === 'undefined' || !google.script;
+var ME_KEY = 'furikaeri_me';
+var $ = function(id){ return document.getElementById(id); };
+
+function store(key, val){
+  try {
+    if (val === undefined) return JSON.parse(localStorage.getItem(key) || 'null');
+    localStorage.setItem(key, JSON.stringify(val));
+  } catch(e) { return null; }
+}
+
+function fillSelect(sel, n, unit, keep){
+  var prev = keep ? sel.value : '';
+  sel.innerHTML = '<option value="">選ぶ</option>';
+  for (var i = 1; i <= n; i++) {
+    var o = document.createElement('option');
+    o.value = i; o.textContent = i + unit;
+    sel.appendChild(o);
+  }
+  if (prev && Number(prev) <= n) sel.value = prev;
+}
+
+function setupForm(){
+  $('title').textContent = SETTINGS.subject + ' 授業ふりかえり';
+  var d = new Date(), w = '日月火水木金土'.charAt(d.getDay());
+  $('today').textContent = (d.getMonth()+1) + '月' + d.getDate() + '日（' + w + '）の授業';
+  if (DEMO) $('demoNote').classList.remove('hidden');
+
+  var g = $('grade');
+  g.innerHTML = '<option value="">選ぶ</option>';
+  Object.keys(SETTINGS.classes).forEach(function(k){
+    var o = document.createElement('option'); o.value = k; o.textContent = k + '年'; g.appendChild(o);
+  });
+  fillSelect($('cls'), 0, '組');
+  fillSelect($('num'), SETTINGS.maxNumber, '番');
+  if (SETTINGS.maxPeriod > 0) {
+    fillSelect($('period'), SETTINGS.maxPeriod, '時間目');
+  } else {
+    $('periodBox').remove();
+    $('whoRow').classList.add('three');
+  }
+  g.addEventListener('change', function(){
+    fillSelect($('cls'), SETTINGS.classes[g.value] || 0, '組', true);
+  });
+
+  var me = store(ME_KEY);
+  if (me) {
+    g.value = me.grade || '';
+    fillSelect($('cls'), SETTINGS.classes[g.value] || 0, '組');
+    $('cls').value = me.cls || '';
+    $('num').value = me.num || '';
+    $('name').value = me.name || '';
+  }
+
+  [['uReason','uCount'],['pReason','pCount']].forEach(function(p){
+    var t = $(p[0]), c = $(p[1]);
+    var upd = function(){ c.textContent = t.value.trim().length + '文字'; };
+    t.addEventListener('input', upd); upd();
+  });
+  document.querySelectorAll('select,input,textarea').forEach(function(el){
+    el.addEventListener('change', function(){ var s = el.closest('.panel'); if (s) s.classList.remove('bad'); });
+  });
+
+  $('form').addEventListener('submit', onSubmit);
+  $('again').addEventListener('click', function(){
+    $('done').classList.add('hidden');
+    $('form').classList.remove('hidden');
+    window.scrollTo(0, 0);
+  });
+}
+
+function radio(name){
+  var r = document.querySelector('input[name="' + name + '"]:checked');
+  return r ? r.value : '';
+}
+
+function collect(){
+  return {
+    grade: $('grade').value, cls: $('cls').value, num: $('num').value,
+    period: SETTINGS.maxPeriod > 0 ? $('period').value : '',
+    name: $('name').value.trim(),
+    understand: radio('understand'), understandReason: $('uReason').value.trim(),
+    progress: radio('progress'), progressReason: $('pReason').value.trim(),
+    question: $('question').value.trim()
+  };
+}
+
+function check(r){
+  if (!r.grade) return ['secWho','grade','学年を選んでください。'];
+  if (!r.cls) return ['secWho','cls','組を選んでください。'];
+  if (!r.num) return ['secWho','num','出席番号を選んでください。'];
+  if (SETTINGS.maxPeriod > 0 && !r.period) return ['secWho','period','何時間目の授業か選んでください。'];
+  if (!r.name) return ['secWho','name','氏名を入力してください。'];
+  if (!r.understand) return ['secU','u-A','① 理解度を A・B・C から選んでください。'];
+  if (!r.understandReason) return ['secU','uReason','① 理解度の理由を書いてください。'];
+  if (!r.progress) return ['secP','p-A','② 進捗度を A・B・C から選んでください。'];
+  if (!r.progressReason) return ['secP','pReason','② 進捗度の理由を書いてください。'];
+  return null;
+}
+
+function onSubmit(ev){
+  ev.preventDefault();
+  var r = collect();
+  var bad = check(r);
+  document.querySelectorAll('.panel.bad').forEach(function(p){ p.classList.remove('bad'); });
+  if (bad) {
+    $(bad[0]).classList.add('bad');
+    $('msg').textContent = bad[2];
+    $(bad[0]).scrollIntoView({ behavior:'smooth', block:'center' });
+    $(bad[1]).focus({ preventScroll:true });
+    return;
+  }
+  $('msg').textContent = '';
+  $('send').disabled = true;
+  $('send').textContent = '送信中…';
+  send(r, function(res){
+    $('send').disabled = false;
+    $('send').textContent = '送信する';
+    if (!res || !res.ok) {
+      $('msg').textContent = (res && res.message) || '送信できませんでした。もう一度ためしてください。';
+      return;
+    }
+    store(ME_KEY, { grade:r.grade, cls:r.cls, num:r.num, name:r.name });
+    showDone(r);
+  });
+}
+
+function send(r, cb){
+  if (DEMO) {
+    var rows = store('furikaeri_demo_rows') || [];
+    var d = new Date(), pad = function(n){ return ('0' + n).slice(-2); };
+    var day = d.getFullYear() + '-' + pad(d.getMonth()+1) + '-' + pad(d.getDate());
+    rows.push([day + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes()), day,
+      r.period ? Number(r.period) : '', Number(r.grade), Number(r.cls), Number(r.num), r.name,
+      r.understand, r.understandReason, r.progress, r.progressReason, r.question, '']);
+    store('furikaeri_demo_rows', rows);
+    setTimeout(function(){ cb({ ok:true }); }, 300);
+    return;
+  }
+  google.script.run
+    .withSuccessHandler(cb)
+    .withFailureHandler(function(e){ cb({ ok:false, message:'通信エラー：' + (e && e.message || e) + '　もう一度ためしてください。' }); })
+    .submitReflection(r);
+}
+
+function showDone(r){
+  var items = [
+    ['クラス', r.grade + '年' + r.cls + '組 ' + r.num + '番 ' + r.name + (r.period ? '（' + r.period + '時間目）' : '')],
+    ['理解度', r.understand + '　' + r.understandReason],
+    ['進捗度', r.progress + '　' + r.progressReason]
+  ];
+  if (r.question) items.push(['質問など', r.question]);
+  var dl = $('summary'); dl.innerHTML = '';
+  items.forEach(function(it){
+    var dt = document.createElement('dt'); dt.textContent = it[0];
+    var dd = document.createElement('dd'); dd.textContent = it[1];
+    dl.appendChild(dt); dl.appendChild(dd);
+  });
+  // 次の時間のために、回答欄だけ空にする（学年・組・番号・氏名は残す）
+  document.querySelectorAll('input[type=radio]').forEach(function(x){ x.checked = false; });
+  ['uReason','pReason','question'].forEach(function(id){ $(id).value = ''; $(id).dispatchEvent(new Event('input')); });
+  $('form').classList.add('hidden');
+  $('done').classList.remove('hidden');
+  window.scrollTo(0, 0);
+}
+
+setupForm();
+</script>
+</body>
+</html>
