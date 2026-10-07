@@ -4,14 +4,13 @@
  * ・生徒用フォーム   …… WebアプリのURL
  * ・先生用閲覧ページ …… WebアプリのURL + ?page=teacher
  * ・回答はこのスクリプトを入れたスプレッドシートの「回答」シートに1行ずつ蓄積されます
+ * ・先生用パスコードは、スプレッドシートのメニュー「ふりかえり」→「先生用パスコードを設定する」で設定します
  *
  * 設置方法は README.md を参照してください。
  */
 
-// ===================== 設定（ここだけ書きかえてください） =====================
+// ===================== 設定（ふつうは変更不要） =====================
 const CONFIG = {
-  // 先生用ページのパスコード。必ず変更してください（生徒からは見えません）
-  TEACHER_PASSCODE: 'change-me',
   // 学年ごとのクラス数（1年6クラス、2年6クラス、3年7クラス）
   CLASSES: { 1: 6, 2: 6, 3: 7 },
   // 出席番号の最大
@@ -25,6 +24,9 @@ const CONFIG = {
 };
 // ==========================================================================
 
+const TZ = 'Asia/Tokyo';
+const PASS_KEY = 'TEACHER_PASSCODE';
+
 const HEADERS = [
   '送信日時', '授業日', '時限', '学年', '組', '番号', '氏名',
   '理解度', '理解度の理由', '進捗度', '進捗度の理由', '質問・感想', 'アカウント',
@@ -34,7 +36,7 @@ const MAX_TEXT = 1000;
 
 function doGet(e) {
   const page = e && e.parameter && e.parameter.page === 'teacher' ? 'Teacher' : 'Form';
-  const t = HtmlService.createTemplateFromFile(page);
+  const t = HtmlService.createTemplate(page === 'Teacher' ? TEACHER_HTML : FORM_HTML);
   t.settings = JSON.stringify(publicSettings_());
   return t.evaluate()
     .setTitle(page === 'Teacher' ? 'ふりかえり 集計（先生用）' : CONFIG.SUBJECT + ' 授業ふりかえり')
@@ -65,13 +67,8 @@ function sheet_() {
   return sh;
 }
 
-/** 初回に1度だけエディタから実行すると、シートの作成と権限の許可が済みます */
-function setup() {
-  sheet_();
-}
-
 function today_() {
-  return Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd');
+  return Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd');
 }
 
 function clean_(s) {
@@ -144,8 +141,36 @@ function submitReflection(r) {
   return { ok: true, date: row[1] };
 }
 
+// ===================== スプレッドシートのメニュー =====================
+function onOpen() {
+  SpreadsheetApp.getUi()
+    .createMenu('ふりかえり')
+    .addItem('先生用パスコードを設定する', 'setPasscodeMenu')
+    .addToUi();
+}
+
+function setPasscodeMenu() {
+  const ui = SpreadsheetApp.getUi();
+  const res = ui.prompt('先生用パスコードの設定',
+    '先生用ページを開くときのパスコードを決めて入力してください（4文字以上）。\n生徒には教えないでください。',
+    ui.ButtonSet.OK_CANCEL);
+  if (res.getSelectedButton() !== ui.Button.OK) return;
+  const v = res.getResponseText().trim();
+  if (v.length < 4) {
+    ui.alert('4文字以上で入力してください。もう一度メニューから設定してください。');
+    return;
+  }
+  PropertiesService.getScriptProperties().setProperty(PASS_KEY, v);
+  sheet_();
+  ui.alert('パスコードを設定しました。\n「回答」シートも作成しました。\n\n次は Apps Script の画面で「デプロイ」をしてください。');
+}
+
 function checkPass_(pass) {
-  if (String(pass || '') !== String(CONFIG.TEACHER_PASSCODE)) {
+  const want = PropertiesService.getScriptProperties().getProperty(PASS_KEY);
+  if (!want) {
+    throw new Error('先生用パスコードがまだ設定されていません。スプレッドシートのメニュー「ふりかえり」→「先生用パスコードを設定する」で設定してください。');
+  }
+  if (String(pass || '') !== want) {
     throw new Error('パスコードが違います。');
   }
 }
@@ -221,12 +246,12 @@ function teacherLogin(pass) {
 }
 
 function cellDate_(v) {
-  if (v instanceof Date) return Utilities.formatDate(v, Session.getScriptTimeZone(), 'yyyy-MM-dd');
+  if (v instanceof Date) return Utilities.formatDate(v, TZ, 'yyyy-MM-dd');
   return String(v || '');
 }
 
 function cellStamp_(v) {
-  if (v instanceof Date) return Utilities.formatDate(v, Session.getScriptTimeZone(), 'yyyy-MM-dd HH:mm');
+  if (v instanceof Date) return Utilities.formatDate(v, TZ, 'yyyy-MM-dd HH:mm');
   return String(v || '');
 }
 
