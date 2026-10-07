@@ -58,6 +58,7 @@ select:focus,input:focus,textarea:focus{outline:3px solid #bcd5f7;border-color:v
 .done dt{color:var(--ink2);font-weight:700}
 .done dd{margin:0;white-space:pre-wrap;word-break:break-word}
 .demo{background:#fff8e8;border-left:5px solid #ffbf00;border-radius:6px;padding:.5rem .8rem;font-size:.85rem;margin-bottom:1rem}
+.word input{font-size:1.5rem;letter-spacing:.2em;text-align:center;max-width:14rem;display:block;margin:0 auto}
 .hidden{display:none !important}
 </style>
 </head>
@@ -112,6 +113,12 @@ select:focus,input:focus,textarea:focus{outline:3px solid #bcd5f7;border-color:v
       <textarea id="question" maxlength="1000" placeholder="先生に聞きたいこと、困っていること、感想など"></textarea>
     </section>
 
+    <section class="panel word hidden" id="secW">
+      <h2>🔑 合言葉 <span class="req">必須</span></h2>
+      <input type="text" id="word" maxlength="20" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="合言葉">
+      <p class="hint" style="text-align:center">先生が黒板（画面）に書いた合言葉を入力してください。</p>
+    </section>
+
     <button type="submit" class="btn" id="send">送信する</button>
     <p class="msg" id="msg" role="alert"></p>
   </form>
@@ -128,7 +135,9 @@ select:focus,input:focus,textarea:focus{outline:3px solid #bcd5f7;border-color:v
 var SETTINGS = (function(){
   try { return JSON.parse('<?!= settings ?>'); } catch(e) {
     // Apps Script の外で開いたとき（体験モード）
-    return { classes:{1:6,2:6,3:7}, maxNumber:35, maxPeriod:6, subject:'技術', demo:true };
+    var w = null;
+    try { w = JSON.parse(localStorage.getItem('furikaeri_demo_word') || 'null'); } catch(x) {}
+    return { classes:{1:6,2:6,3:7}, maxNumber:35, maxPeriod:6, subject:'技術', needWord: !w || w.mode !== 'off' };
   }
 })();
 var DEMO = typeof google === 'undefined' || !google.script;
@@ -158,6 +167,7 @@ function setupForm(){
   var d = new Date(), w = '日月火水木金土'.charAt(d.getDay());
   $('today').textContent = (d.getMonth()+1) + '月' + d.getDate() + '日（' + w + '）の授業';
   if (DEMO) $('demoNote').classList.remove('hidden');
+  if (SETTINGS.needWord) $('secW').classList.remove('hidden');
 
   var g = $('grade');
   g.innerHTML = '<option value="">選ぶ</option>';
@@ -214,7 +224,8 @@ function collect(){
     name: $('name').value.trim(),
     understand: radio('understand'), understandReason: $('uReason').value.trim(),
     progress: radio('progress'), progressReason: $('pReason').value.trim(),
-    question: $('question').value.trim()
+    question: $('question').value.trim(),
+    word: $('word').value.trim()
   };
 }
 
@@ -228,6 +239,7 @@ function check(r){
   if (!r.understandReason) return ['secU','uReason','① 理解度の理由を書いてください。'];
   if (!r.progress) return ['secP','p-A','② 進捗度を A・B・C から選んでください。'];
   if (!r.progressReason) return ['secP','pReason','② 進捗度の理由を書いてください。'];
+  if (SETTINGS.needWord && !r.word) return ['secW','word','合言葉を入力してください。'];
   return null;
 }
 
@@ -251,6 +263,14 @@ function onSubmit(ev){
     $('send').textContent = '送信する';
     if (!res || !res.ok) {
       $('msg').textContent = (res && res.message) || '送信できませんでした。もう一度ためしてください。';
+      if (res && res.field === 'word') {
+        // 先生が合言葉を使う設定にしたのが、このページを開いた後だった場合も入力欄を出す
+        SETTINGS.needWord = true;
+        $('secW').classList.remove('hidden');
+        $('secW').classList.add('bad');
+        $('word').select();
+        $('word').focus();
+      }
       return;
     }
     store(ME_KEY, { grade:r.grade, cls:r.cls, num:r.num, name:r.name });
@@ -260,6 +280,11 @@ function onSubmit(ev){
 
 function send(r, cb){
   if (DEMO) {
+    var want = demoWord();
+    if (want && demoNorm(r.word) !== demoNorm(want)) {
+      setTimeout(function(){ cb({ ok:false, field:'word', message:'合言葉がちがいます。先生が黒板に書いた合言葉を入力してください。' }); }, 300);
+      return;
+    }
     var rows = store('furikaeri_demo_rows') || [];
     var d = new Date(), pad = function(n){ return ('0' + n).slice(-2); };
     var day = d.getFullYear() + '-' + pad(d.getMonth()+1) + '-' + pad(d.getDate());
@@ -274,6 +299,21 @@ function send(r, cb){
     .withSuccessHandler(cb)
     .withFailureHandler(function(e){ cb({ ok:false, message:'通信エラー：' + (e && e.message || e) + '　もう一度ためしてください。' }); })
     .submitReflection(r);
+}
+
+// 体験モード用の合言葉（本番では Code.gs が判定する）
+function demoNorm(w){ return String(w || '').normalize('NFKC').replace(/\s+/g, '').toLowerCase(); }
+function demoDaily(day){
+  var h = 2166136261;
+  for (var i = 0; i < day.length; i++) { h ^= day.charCodeAt(i); h = Math.imul(h, 16777619) >>> 0; }
+  return ('000' + (h % 10000)).slice(-4);
+}
+function demoWord(){
+  var w = store('furikaeri_demo_word') || { mode:'daily', fixed:'' };
+  var d = new Date(), pad = function(n){ return ('0' + n).slice(-2); };
+  if (w.mode === 'off') return '';
+  if (w.mode === 'fixed') return w.fixed;
+  return demoDaily(d.getFullYear() + '-' + pad(d.getMonth()+1) + '-' + pad(d.getDate()));
 }
 
 function showDone(r){
@@ -291,7 +331,7 @@ function showDone(r){
   });
   // 次の時間のために、回答欄だけ空にする（学年・組・番号・氏名は残す）
   document.querySelectorAll('input[type=radio]').forEach(function(x){ x.checked = false; });
-  ['uReason','pReason','question'].forEach(function(id){ $(id).value = ''; $(id).dispatchEvent(new Event('input')); });
+  ['uReason','pReason','question','word'].forEach(function(id){ $(id).value = ''; $(id).dispatchEvent(new Event('input')); });
   $('form').classList.add('hidden');
   $('done').classList.remove('hidden');
   window.scrollTo(0, 0);

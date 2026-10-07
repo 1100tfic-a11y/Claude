@@ -47,6 +47,7 @@ function publicSettings_() {
     maxNumber: CONFIG.MAX_NUMBER,
     maxPeriod: CONFIG.MAX_PERIOD,
     subject: CONFIG.SUBJECT,
+    needWord: wordSettings_().mode !== 'off',
   };
 }
 
@@ -110,6 +111,9 @@ function submitReflection(r) {
   r = r || {};
   const err = validate_(r);
   if (err) return { ok: false, message: err };
+  if (!checkWord_(r.word)) {
+    return { ok: false, message: '合言葉がちがいます。先生が黒板に書いた合言葉を入力してください。', field: 'word' };
+  }
 
   let email = '';
   try { email = Session.getActiveUser().getEmail() || ''; } catch (e) { /* 取得できない環境では空欄 */ }
@@ -144,6 +148,70 @@ function checkPass_(pass) {
   if (String(pass || '') !== String(CONFIG.TEACHER_PASSCODE)) {
     throw new Error('パスコードが違います。');
   }
+}
+
+// ===================== 合言葉 =====================
+// 設定はスクリプトプロパティに保存し、先生用ページから変更する（コードの書きかえ・再デプロイ不要）
+//   mode: 'daily'（毎日自動でかわる4けたの数字）/ 'fixed'（先生が決めた言葉）/ 'off'（使わない）
+const WORD_KEY = 'WORD_SETTINGS';
+
+function wordSettings_() {
+  const props = PropertiesService.getScriptProperties();
+  let s = null;
+  try { s = JSON.parse(props.getProperty(WORD_KEY) || 'null'); } catch (e) { s = null; }
+  if (!s || !s.secret) {
+    s = { mode: (s && s.mode) || 'daily', fixed: (s && s.fixed) || '', secret: Utilities.getUuid() };
+    props.setProperty(WORD_KEY, JSON.stringify(s));
+  }
+  return s;
+}
+
+/** 全角→半角、大文字→小文字、前後の空白を除いて比べる */
+function normWord_(w) {
+  return String(w == null ? '' : w).normalize('NFKC').replace(/\s+/g, '').toLowerCase();
+}
+
+/** その日の合言葉（4けた）。日付と秘密の値から計算するので、日付が変わると自動で変わる */
+function dailyWord_(secret, day) {
+  const sig = Utilities.computeHmacSha256Signature(day, secret);
+  let n = 0;
+  for (let i = 0; i < 4; i++) n = n * 256 + (sig[i] & 255);
+  return ('000' + (n % 10000)).slice(-4);
+}
+
+function currentWord_(s) {
+  if (s.mode === 'fixed') return s.fixed;
+  if (s.mode === 'daily') return dailyWord_(s.secret, today_());
+  return '';
+}
+
+function checkWord_(w) {
+  const s = wordSettings_();
+  if (s.mode === 'off') return true;
+  const want = normWord_(currentWord_(s));
+  return want !== '' && normWord_(w) === want;
+}
+
+/** 先生用ページ：合言葉の設定と、今日の合言葉を返す */
+function getWordSettings(pass) {
+  checkPass_(pass);
+  const s = wordSettings_();
+  return { mode: s.mode, fixed: s.fixed, current: currentWord_(s), date: today_() };
+}
+
+/** 先生用ページ：合言葉の設定を変更する */
+function setWordSettings(pass, v) {
+  checkPass_(pass);
+  v = v || {};
+  if (['daily', 'fixed', 'off'].indexOf(v.mode) < 0) throw new Error('設定が正しくありません。');
+  const fixed = String(v.fixed || '').trim().slice(0, 20);
+  if (v.mode === 'fixed' && !normWord_(fixed)) throw new Error('合言葉を入力してください。');
+  const s = wordSettings_();
+  s.mode = v.mode;
+  if (v.mode === 'fixed') s.fixed = fixed;
+  if (v.renew) s.secret = Utilities.getUuid(); // 毎日の合言葉の並びを作り直す（漏れたとき用）
+  PropertiesService.getScriptProperties().setProperty(WORD_KEY, JSON.stringify(s));
+  return getWordSettings(pass);
 }
 
 /** 先生用ページ：パスコードの確認 */

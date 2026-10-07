@@ -62,6 +62,15 @@ td.c{text-align:center;white-space:nowrap}
 .chk{font-size:.85rem;display:inline-flex;align-items:center;gap:.25rem;margin-right:.8rem}
 .demo{background:#fff8e8;border-left:5px solid #ffbf00;border-radius:6px;padding:.5rem .8rem;font-size:.85rem;margin-bottom:1rem}
 #login{max-width:420px;margin:3rem auto}
+.wordbox{display:flex;gap:1.2rem;flex-wrap:wrap;align-items:center}
+.wordnow{border:2px dashed #9dbbe6;border-radius:12px;padding:.4rem 1.2rem;text-align:center;min-width:12rem;background:#f7fbff}
+.wordnow b{display:block;font-size:2.2rem;letter-spacing:.15em;line-height:1.2}
+.wordset{display:flex;flex-direction:column;gap:.25rem;font-size:.9rem}
+.wordset label{display:inline-flex;align-items:center;gap:.35rem}
+#wordFull{position:fixed;inset:0;background:#fff;z-index:100;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer}
+#wordFull p{font-size:4vw;margin:0;color:var(--ink2)}
+#wordFull b{font-size:22vw;line-height:1.1;letter-spacing:.1em;color:var(--ink)}
+#wordFull b.long{font-size:12vw}
 .hidden{display:none !important}
 @media print{
   header,nav,.noprint,.demo{display:none !important}
@@ -97,6 +106,25 @@ td.c{text-align:center;white-space:nowrap}
   </section>
 
   <div id="app" class="hidden">
+    <section class="panel noprint" id="wordPanel">
+      <h2>🔑 合言葉（生徒が送信するときに必要）</h2>
+      <div class="wordbox">
+        <div class="wordnow"><span class="muted" id="wordDate">今日の合言葉</span><b id="wordNow">…</b>
+          <button class="btn sub" id="wordShow" style="margin:.2rem 0 .3rem">大きく表示</button></div>
+        <div class="wordset">
+          <label><input type="radio" name="wmode" value="daily">毎日自動でかわる（4けたの数字・おすすめ）</label>
+          <label><input type="radio" name="wmode" value="fixed">自分で決める：<input type="text" id="wordFixed" maxlength="20" style="width:10rem" placeholder="例）はんだ"></label>
+          <label><input type="radio" name="wmode" value="off">使わない</label>
+          <div class="ctrl" style="margin-top:.3rem">
+            <button class="btn" id="wordSave">設定を保存</button>
+            <button class="btn sub" id="wordRenew" title="毎日の合言葉が外部に知られてしまったときに使います">毎日の合言葉を作り直す</button>
+          </div>
+          <span class="muted" id="wordMsg"></span>
+        </div>
+      </div>
+    </section>
+    <div id="wordFull" class="hidden" title="クリックで閉じる"><p id="wordFullDate"></p><b id="wordFullText"></b><p>（クリックで閉じる）</p></div>
+
     <section class="panel noprint">
       <div class="ctrl">
         <div><label for="fGrade">学年</label><select id="fGrade"></select></div>
@@ -197,6 +225,21 @@ function call(fn, args, ok, ng){
 }
 
 var demoApi = {
+  getWordSettings: function(p){
+    demoApi.teacherLogin(p);
+    var w = {};
+    try { w = JSON.parse(localStorage.getItem('furikaeri_demo_word') || '{}') || {}; } catch(e) {}
+    var mode = w.mode || 'daily', d = todayStr();
+    return { mode:mode, fixed:w.fixed || '', date:d,
+      current: mode === 'fixed' ? w.fixed : mode === 'daily' ? demoDaily(d) : '' };
+  },
+  setWordSettings: function(p, v){
+    demoApi.teacherLogin(p);
+    if (v.mode === 'fixed' && !String(v.fixed || '').trim()) throw new Error('合言葉を入力してください。');
+    var old = demoApi.getWordSettings(p);
+    localStorage.setItem('furikaeri_demo_word', JSON.stringify({ mode:v.mode, fixed: v.mode === 'fixed' ? String(v.fixed).trim() : old.fixed }));
+    return demoApi.getWordSettings(p);
+  },
   teacherLogin: function(p){ if (p !== 'demo') throw new Error('パスコードが違います。（体験モードは demo）'); return true; },
   getResponses: function(p, f){
     demoApi.teacherLogin(p);
@@ -208,6 +251,16 @@ var demoApi = {
     });
   }
 };
+function todayStr(){
+  var d = new Date(), pad = function(n){ return ('0' + n).slice(-2); };
+  return d.getFullYear() + '-' + pad(d.getMonth()+1) + '-' + pad(d.getDate());
+}
+// 体験モード用（Form.html と同じ計算。本番の合言葉は Code.gs が計算する）
+function demoDaily(day){
+  var h = 2166136261;
+  for (var i = 0; i < day.length; i++) { h ^= day.charCodeAt(i); h = Math.imul(h, 16777619) >>> 0; }
+  return ('000' + (h % 10000)).slice(-4);
+}
 function demoSample(){
   var seed = 7;
   var rnd = function(){ seed = (seed * 16807) % 2147483647; return seed / 2147483647; };
@@ -293,10 +346,42 @@ function initApp(){
   $('prevP').addEventListener('click', function(){ stepPerson(-1); });
   $('nextP').addEventListener('click', function(){ stepPerson(1); });
 
+  $('wordSave').addEventListener('click', function(){ saveWord(false); });
+  $('wordRenew').addEventListener('click', function(){
+    if (confirm('毎日の合言葉の並びを作り直します。今日の合言葉も変わります。よろしいですか？')) saveWord(true);
+  });
+  $('wordShow').addEventListener('click', function(){ $('wordFull').classList.remove('hidden'); });
+  $('wordFull').addEventListener('click', function(){ $('wordFull').classList.add('hidden'); });
+  $('wordFixed').addEventListener('focus', function(){ document.querySelector('input[name=wmode][value=fixed]').checked = true; });
+  call('getWordSettings', [PASS], showWord, function(e){ $('wordMsg').textContent = (e && e.message) || e; });
+
   try {
     var last = JSON.parse(localStorage.getItem('furikaeri_teacher_last') || 'null');
     if (last) { g.value = last.grade; fillCls(); $('fCls').value = last.cls; if ($('fCls').value) load(); }
   } catch(e) {}
+}
+
+// ---------------- 合言葉 ----------------
+function showWord(w){
+  var r = document.querySelector('input[name=wmode][value="' + w.mode + '"]');
+  if (r) r.checked = true;
+  $('wordFixed').value = w.fixed || '';
+  var d = w.date.split('-'), label = Number(d[1]) + '月' + Number(d[2]) + '日の合言葉';
+  var text = w.mode === 'off' ? 'なし' : w.current;
+  $('wordDate').textContent = w.mode === 'daily' ? label : '現在の合言葉';
+  $('wordNow').textContent = text;
+  $('wordShow').classList.toggle('hidden', w.mode === 'off');
+  $('wordFullDate').textContent = (w.mode === 'daily' ? label : '合言葉') + '（ふりかえりの送信に使います）';
+  $('wordFullText').textContent = text;
+  $('wordFullText').classList.toggle('long', String(text).length > 5);
+}
+function saveWord(renew){
+  var m = document.querySelector('input[name=wmode]:checked');
+  if (!m) { $('wordMsg').textContent = 'どれかを選んでください。'; return; }
+  $('wordMsg').textContent = '保存中…';
+  call('setWordSettings', [PASS, { mode:m.value, fixed:$('wordFixed').value, renew:renew }], function(w){
+    showWord(w); $('wordMsg').textContent = '保存しました。';
+  }, function(e){ $('wordMsg').textContent = (e && e.message) || e; });
 }
 
 function showTab(name){
