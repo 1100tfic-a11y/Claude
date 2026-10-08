@@ -26,6 +26,7 @@ const CONFIG = {
 
 const TZ = 'Asia/Tokyo';
 const PASS_KEY = 'TEACHER_PASSCODE';
+const TRASH_NAME = '削除済み';
 
 const HEADERS = [
   '送信日時', '授業日', '時限', '学年', '組', '番号', '氏名',
@@ -277,6 +278,7 @@ function getResponses(pass, filter) {
   const out = [];
   for (let i = 0; i < values.length; i++) {
     const v = values[i];
+    if (v[0] === '' && v[3] === '') continue; // 空行
     if (g && Number(v[3]) !== g) continue;
     if (c && Number(v[4]) !== c) continue;
     const d = cellDate_(v[1]);
@@ -285,7 +287,57 @@ function getResponses(pass, filter) {
     out.push([
       cellStamp_(v[0]), d, v[2] === '' ? '' : Number(v[2]), Number(v[3]), Number(v[4]), Number(v[5]),
       unquote_(v[6]), String(v[7]), unquote_(v[8]), String(v[9]), unquote_(v[10]), unquote_(v[11]), String(v[12] || ''),
+      i + 2, // 最後の要素：シートの行番号（削除に使う）
     ]);
   }
   return out;
+}
+
+/**
+ * 先生用ページ：回答を削除する
+ * items = [{ row, stamp, grade, cls, num }]（row はシートの行番号。他は取りちがえ防止の確認用）
+ * 消した行は「削除済み」シートに移すので、まちがえても元に戻せる
+ */
+function deleteResponses(pass, items) {
+  checkPass_(pass);
+  items = (items || []).slice().sort(function (a, b) { return b.row - a.row; }); // 下の行から消す
+  if (!items.length) return { deleted: 0 };
+  const lock = LockService.getScriptLock();
+  lock.waitLock(20000);
+  try {
+    const sh = sheet_();
+    const last = sh.getLastRow();
+    const rows = [];
+    items.forEach(function (it) {
+      const r = Number(it.row);
+      if (!(r >= 2 && r <= last)) throw new Error('データが変わっています。「表示する」を押して読み込み直してください。');
+      const v = sh.getRange(r, 1, 1, HEADERS.length).getValues()[0];
+      if (cellStamp_(v[0]) !== String(it.stamp) || Number(v[3]) !== Number(it.grade) ||
+          Number(v[4]) !== Number(it.cls) || Number(v[5]) !== Number(it.num)) {
+        throw new Error('データが変わっています。「表示する」を押して読み込み直してください。');
+      }
+      rows.push({ r: r, v: v });
+    });
+    const trash = trashSheet_();
+    const now = new Date();
+    rows.forEach(function (x) {
+      trash.appendRow(x.v.concat([now]));
+      sh.deleteRow(x.r);
+    });
+    return { deleted: rows.length };
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+function trashSheet_() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let sh = ss.getSheetByName(TRASH_NAME);
+  if (!sh) sh = ss.insertSheet(TRASH_NAME);
+  if (sh.getLastRow() === 0) {
+    sh.appendRow(HEADERS.concat(['削除した日時']));
+    sh.setFrozenRows(1);
+    sh.getRange(1, 1, 1, HEADERS.length + 1).setFontWeight('bold').setBackground('#f3e8e8');
+  }
+  return sh;
 }

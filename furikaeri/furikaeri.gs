@@ -37,6 +37,7 @@ const CONFIG = {
 
 const TZ = 'Asia/Tokyo';
 const PASS_KEY = 'TEACHER_PASSCODE';
+const TRASH_NAME = '削除済み';
 
 const HEADERS = [
   '送信日時', '授業日', '時限', '学年', '組', '番号', '氏名',
@@ -288,6 +289,7 @@ function getResponses(pass, filter) {
   const out = [];
   for (let i = 0; i < values.length; i++) {
     const v = values[i];
+    if (v[0] === '' && v[3] === '') continue; // 空行
     if (g && Number(v[3]) !== g) continue;
     if (c && Number(v[4]) !== c) continue;
     const d = cellDate_(v[1]);
@@ -296,9 +298,59 @@ function getResponses(pass, filter) {
     out.push([
       cellStamp_(v[0]), d, v[2] === '' ? '' : Number(v[2]), Number(v[3]), Number(v[4]), Number(v[5]),
       unquote_(v[6]), String(v[7]), unquote_(v[8]), String(v[9]), unquote_(v[10]), unquote_(v[11]), String(v[12] || ''),
+      i + 2, // 最後の要素：シートの行番号（削除に使う）
     ]);
   }
   return out;
+}
+
+/**
+ * 先生用ページ：回答を削除する
+ * items = [{ row, stamp, grade, cls, num }]（row はシートの行番号。他は取りちがえ防止の確認用）
+ * 消した行は「削除済み」シートに移すので、まちがえても元に戻せる
+ */
+function deleteResponses(pass, items) {
+  checkPass_(pass);
+  items = (items || []).slice().sort(function (a, b) { return b.row - a.row; }); // 下の行から消す
+  if (!items.length) return { deleted: 0 };
+  const lock = LockService.getScriptLock();
+  lock.waitLock(20000);
+  try {
+    const sh = sheet_();
+    const last = sh.getLastRow();
+    const rows = [];
+    items.forEach(function (it) {
+      const r = Number(it.row);
+      if (!(r >= 2 && r <= last)) throw new Error('データが変わっています。「表示する」を押して読み込み直してください。');
+      const v = sh.getRange(r, 1, 1, HEADERS.length).getValues()[0];
+      if (cellStamp_(v[0]) !== String(it.stamp) || Number(v[3]) !== Number(it.grade) ||
+          Number(v[4]) !== Number(it.cls) || Number(v[5]) !== Number(it.num)) {
+        throw new Error('データが変わっています。「表示する」を押して読み込み直してください。');
+      }
+      rows.push({ r: r, v: v });
+    });
+    const trash = trashSheet_();
+    const now = new Date();
+    rows.forEach(function (x) {
+      trash.appendRow(x.v.concat([now]));
+      sh.deleteRow(x.r);
+    });
+    return { deleted: rows.length };
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+function trashSheet_() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let sh = ss.getSheetByName(TRASH_NAME);
+  if (!sh) sh = ss.insertSheet(TRASH_NAME);
+  if (sh.getLastRow() === 0) {
+    sh.appendRow(HEADERS.concat(['削除した日時']));
+    sh.setFrozenRows(1);
+    sh.getRange(1, 1, 1, HEADERS.length + 1).setFontWeight('bold').setBackground('#f3e8e8');
+  }
+  return sh;
 }
 
 // ===================== 画面（HTML） =====================
@@ -711,6 +763,11 @@ td.c{text-align:center;white-space:nowrap}
 .strip span{width:1.4rem;height:1.4rem;border-radius:3px;font-size:.7rem;font-weight:700;display:grid;place-items:center}
 .legend{font-size:.8rem;color:var(--ink2)}
 .chk{font-size:.85rem;display:inline-flex;align-items:center;gap:.25rem;margin-right:.8rem}
+.btn.del{background:#fff;color:var(--err);border:2px solid var(--err);padding:.4rem .8rem}
+td.sel,th.sel{width:2rem;text-align:center}
+td.sel input,th.sel input{width:1.1rem;height:1.1rem}
+tr.picked td{background:#fff1f1}
+.delbar{display:flex;gap:.5rem;flex-wrap:wrap;align-items:center;margin:.6rem 0}
 .demo{background:#fff8e8;border-left:5px solid #ffbf00;border-radius:6px;padding:.5rem .8rem;font-size:.85rem;margin-bottom:1rem}
 #login{max-width:420px;margin:3rem auto}
 .wordbox{display:flex;gap:1.2rem;flex-wrap:wrap;align-items:center}
@@ -806,6 +863,11 @@ td.c{text-align:center;white-space:nowrap}
       <h2 id="lessonTitle"></h2>
       <div class="stats" id="lessonStats"></div>
       <p id="missing" class="muted"></p>
+      <div class="delbar noprint">
+        <button class="btn del" id="delLessonSel">選んだ回答を削除</button>
+        <button class="btn del" id="delLessonAll">この授業の回答をすべて削除</button>
+        <span class="muted">試しに取った回答などを消せます。消した回答はスプレッドシートの「削除済み」シートに移ります。</span>
+      </div>
       <div class="tablewrap" id="lessonTable"></div>
     </section>
 
@@ -818,7 +880,10 @@ td.c{text-align:center;white-space:nowrap}
       </div>
       <h2 id="personTitle"></h2>
       <div class="stats" id="personStats"></div>
-      <div class="tablewrap" id="personTable" style="margin-top:.8rem"></div>
+      <div class="delbar noprint">
+        <button class="btn del" id="delPersonSel">選んだ回答を削除</button>
+      </div>
+      <div class="tablewrap" id="personTable"></div>
     </section>
   </div>
 </main>
@@ -831,7 +896,7 @@ var SETTINGS = (function(){
 })();
 var DEMO = typeof google === 'undefined' || !google.script;
 var COLS = ['送信日時','授業日','時限','学年','組','番号','氏名','理解度','理解度の理由','進捗度','進捗度の理由','質問・感想','アカウント'];
-var I = { stamp:0, date:1, period:2, grade:3, cls:4, num:5, name:6, u:7, uR:8, p:9, pR:10, q:11, mail:12 };
+var I = { stamp:0, date:1, period:2, grade:3, cls:4, num:5, name:6, u:7, uR:8, p:9, pR:10, q:11, mail:12, row:13 };
 var SCORE = { A:3, B:2, C:1 };
 var PASS = '';
 var state = { rows:[], grade:0, cls:0, lessons:[], students:[] };
@@ -891,17 +956,30 @@ var demoApi = {
     localStorage.setItem('furikaeri_demo_word', JSON.stringify({ mode:v.mode, fixed: v.mode === 'fixed' ? String(v.fixed).trim() : old.fixed }));
     return demoApi.getWordSettings(p);
   },
+  deleteResponses: function(p, items){
+    demoApi.teacherLogin(p);
+    var gone = demoDeleted();
+    items.forEach(function(it){ gone[it.row] = true; });
+    localStorage.setItem('furikaeri_demo_deleted', JSON.stringify(gone));
+    return { deleted: items.length };
+  },
   teacherLogin: function(p){ if (p !== 'demo') throw new Error('パスコードが違います。（体験モードは demo）'); return true; },
   getResponses: function(p, f){
     demoApi.teacherLogin(p);
     var rows = demoSample();
     try { rows = rows.concat(JSON.parse(localStorage.getItem('furikaeri_demo_rows') || '[]')); } catch(e) {}
+    var gone = demoDeleted();
+    rows.forEach(function(r, i){ r[I.row] = 'd' + i; });
     return rows.filter(function(r){
+      if (gone[r[I.row]]) return false;
       return (!f.grade || r[I.grade] == f.grade) && (!f.cls || r[I.cls] == f.cls) &&
         (!f.from || r[I.date] >= f.from) && (!f.to || r[I.date] <= f.to);
     });
   }
 };
+function demoDeleted(){
+  try { return JSON.parse(localStorage.getItem('furikaeri_demo_deleted') || '{}') || {}; } catch(e) { return {}; }
+}
 function todayStr(){
   var d = new Date(), pad = function(n){ return ('0' + n).slice(-2); };
   return d.getFullYear() + '-' + pad(d.getMonth()+1) + '-' + pad(d.getDate());
@@ -996,6 +1074,24 @@ function initApp(){
   $('personSel').addEventListener('change', renderPerson);
   $('prevP').addEventListener('click', function(){ stepPerson(-1); });
   $('nextP').addEventListener('click', function(){ stepPerson(1); });
+  $('delLessonSel').addEventListener('click', function(){ deleteRows(picked('lessonTable', state.lessonShown)); });
+  $('delLessonAll').addEventListener('click', function(){
+    var k = $('lessonSel').value;
+    // 同じ生徒が2回以上送った分（一覧には最後の1件だけ表示）もまとめて消す
+    deleteRows(state.rows.filter(function(r){ return lessonKey(r) === k; }), lessonLabel(k) + ' の回答すべて');
+  });
+  $('delPersonSel').addEventListener('click', function(){ deleteRows(picked('personTable', state.personShown)); });
+  ['lessonTable','personTable'].forEach(function(id){
+    $(id).addEventListener('change', function(ev){
+      var t = ev.target;
+      if (!t.classList.contains('pick')) return;
+      if (t.hasAttribute('data-all')) {
+        $(id).querySelectorAll('input.pick[data-i]').forEach(function(c){ c.checked = t.checked; c.closest('tr').classList.toggle('picked', t.checked); });
+      } else {
+        t.closest('tr').classList.toggle('picked', t.checked);
+      }
+    });
+  });
 
   $('wordSave').addEventListener('click', function(){ saveWord(false); });
   $('wordRenew').addEventListener('click', function(){
@@ -1158,13 +1254,14 @@ function renderLesson(){
   var shown = rs.filter(function(r){
     return (!$('onlyQ').checked || r[I.q]) && (!$('onlyC').checked || r[I.u] === 'C' || r[I.p] === 'C');
   });
-  var h = '<table><thead><tr><th class="n">番号</th><th>氏名</th><th class="c">理解</th><th>理由</th><th class="c">進捗</th><th>理由</th><th>質問・感想</th></tr></thead><tbody>';
-  shown.forEach(function(r){
-    h += '<tr><td class="n">' + r[I.num] + '</td><td style="white-space:nowrap">' + esc(r[I.name]) + '</td><td class="c">' + L(r[I.u]) +
+  state.lessonShown = shown;
+  var h = '<table><thead><tr><th class="sel noprint"><input type="checkbox" class="pick" data-all title="すべて選ぶ"></th><th class="n">番号</th><th>氏名</th><th class="c">理解</th><th>理由</th><th class="c">進捗</th><th>理由</th><th>質問・感想</th></tr></thead><tbody>';
+  shown.forEach(function(r, i){
+    h += '<tr><td class="sel noprint"><input type="checkbox" class="pick" data-i="' + i + '"></td><td class="n">' + r[I.num] + '</td><td style="white-space:nowrap">' + esc(r[I.name]) + '</td><td class="c">' + L(r[I.u]) +
       '</td><td class="wrap">' + esc(r[I.uR]) + '</td><td class="c">' + L(r[I.p]) + '</td><td class="wrap">' + esc(r[I.pR]) +
       '</td><td class="wrap' + (r[I.q] ? ' q' : '') + '">' + esc(r[I.q]) + '</td></tr>';
   });
-  if (!shown.length) h += '<tr><td colspan="7" class="muted">該当する回答はありません。</td></tr>';
+  if (!shown.length) h += '<tr><td colspan="8" class="muted">該当する回答はありません。</td></tr>';
   $('lessonTable').innerHTML = h + '</tbody></table>';
 }
 
@@ -1195,22 +1292,53 @@ function renderPerson(){
       '<div class="muted">質問・感想の記入 ' + qn + '回</div></div>' +
     distHtml('理解度（左から古い順）', us).replace('</div></div>', '</div>' + strip(I.u) + '</div>') +
     distHtml('進捗度（左から古い順）', ps).replace('</div></div>', '</div>' + strip(I.p) + '</div>');
-  var h = '<table><thead><tr><th>授業</th><th class="c">理解</th><th>理由</th><th class="c">進捗</th><th>理由</th><th>質問・感想</th><th>送信日時</th></tr></thead><tbody>';
+  state.personShown = [];
+  var h = '<table><thead><tr><th class="sel noprint"><input type="checkbox" class="pick" data-all title="すべて選ぶ"></th><th>授業</th><th class="c">理解</th><th>理由</th><th class="c">進捗</th><th>理由</th><th>質問・感想</th><th>送信日時</th></tr></thead><tbody>';
   state.lessons.forEach(function(k){
     var r = s.byLesson[k];
-    if (!r) { h += '<tr><td style="white-space:nowrap">' + esc(lessonLabel(k)) + '</td><td colspan="6" class="muted">未提出</td></tr>'; return; }
-    h += '<tr><td style="white-space:nowrap">' + esc(lessonLabel(k)) + '</td><td class="c">' + L(r[I.u]) + '</td><td class="wrap">' + esc(r[I.uR]) +
+    if (!r) { h += '<tr><td class="sel noprint"></td><td style="white-space:nowrap">' + esc(lessonLabel(k)) + '</td><td colspan="6" class="muted">未提出</td></tr>'; return; }
+    h += '<tr><td class="sel noprint"><input type="checkbox" class="pick" data-i="' + state.personShown.length + '"></td><td style="white-space:nowrap">' + esc(lessonLabel(k)) + '</td><td class="c">' + L(r[I.u]) + '</td><td class="wrap">' + esc(r[I.uR]) +
       '</td><td class="c">' + L(r[I.p]) + '</td><td class="wrap">' + esc(r[I.pR]) + '</td><td class="wrap' + (r[I.q] ? ' q' : '') + '">' + esc(r[I.q]) +
       '</td><td class="muted" style="white-space:nowrap">' + esc(r[I.stamp]) + '</td></tr>';
+    state.personShown.push(r);
   });
   $('personTable').innerHTML = h + '</tbody></table>';
+}
+
+// ---------------- 削除 ----------------
+function picked(tableId, list){
+  var out = [];
+  $(tableId).querySelectorAll('input.pick[data-i]:checked').forEach(function(c){
+    var r = list[Number(c.getAttribute('data-i'))];
+    if (r) out.push(r);
+  });
+  return out;
+}
+
+function deleteRows(rows, label){
+  if (!rows.length) { alert('削除する回答にチェックを入れてください。'); return; }
+  var names = rows.slice(0, 8).map(function(r){
+    return '・' + lessonLabel(lessonKey(r)) + '　' + r[I.num] + '番 ' + r[I.name];
+  }).join('\\n') + (rows.length > 8 ? '\\n　ほか ' + (rows.length - 8) + '件' : '');
+  if (!confirm((label ? label + '（' + rows.length + '件）' : rows.length + '件の回答') + 'を削除します。\\n\\n' + names +
+      '\\n\\n消した回答はスプレッドシートの「削除済み」シートに移ります。よろしいですか？')) return;
+  $('status').textContent = '削除中…';
+  var items = rows.map(function(r){
+    return { row:r[I.row], stamp:r[I.stamp], grade:r[I.grade], cls:r[I.cls], num:r[I.num] };
+  });
+  call('deleteResponses', [PASS, items], function(res){
+    load();
+    setTimeout(function(){ alert(res.deleted + '件の回答を削除しました。'); }, 50);
+  }, function(e){
+    $('status').innerHTML = '<span class="err">' + esc((e && e.message) || e) + '</span>';
+  });
 }
 
 // ---------------- CSV ----------------
 function downloadCsv(){
   var q = function(v){ v = String(v == null ? '' : v); return /[",\\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; };
-  var lines = [COLS.map(q).join(',')].concat(state.rows.map(function(r){ return r.map(q).join(','); }));
-  var blob = new Blob(['﻿' + lines.join('\\r\\n')], { type:'text/csv' });
+  var lines = [COLS.map(q).join(',')].concat(state.rows.map(function(r){ return r.slice(0, COLS.length).map(q).join(','); }));
+  var blob = new Blob(['\\ufeff' + lines.join('\\r\\n')], { type:'text/csv' });
   var a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
   a.download = 'furikaeri_' + state.grade + '-' + state.cls + '.csv';
