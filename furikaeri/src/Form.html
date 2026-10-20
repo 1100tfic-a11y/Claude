@@ -74,16 +74,16 @@ select:focus,input:focus,textarea:focus{outline:3px solid #bcd5f7;border-color:v
 .petstage-area{position:relative;display:inline-block}
 .evo-flash::after{content:"";position:absolute;inset:-10%;border-radius:50%;background:radial-gradient(#fff 30%,rgba(255,255,255,0));animation:evoFlash 1s ease-out forwards}
 @keyframes evoFlash{0%{opacity:0;transform:scale(.4)}40%{opacity:1;transform:scale(1.1)}100%{opacity:0;transform:scale(1.4)}}
-.evo-shake svg{animation:evoShake .12s linear infinite}
+.evo-shake .pet-svg{animation:evoShake .12s linear infinite}
 @keyframes evoShake{0%,100%{transform:translateX(0)}50%{transform:translateX(4px)}}
-.evo-pop svg{animation:evoPop .6s cubic-bezier(.2,1.6,.4,1)}
+.evo-pop .pet-svg{animation:evoPop .6s cubic-bezier(.2,1.6,.4,1)}
 @keyframes evoPop{0%{transform:scale(.3)}100%{transform:scale(1)}}
 .eggs h3{font-size:1rem;margin:.8rem 0 .4rem;text-align:left}
 .eggs h3.cute{color:#d14d8b} .eggs h3.cool{color:#2f6fd0}
 .egg-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:.4rem}
 @media(max-width:520px){.egg-grid{grid-template-columns:repeat(3,1fr)}}
 .egg-btn{background:#fff;border:3px solid var(--line);border-radius:14px;padding:.3rem .2rem .4rem;cursor:pointer;font:inherit;font-size:.72rem;color:var(--ink);position:relative}
-.egg-btn svg{width:100%;height:auto;max-width:90px}
+.egg-btn .pet-svg{max-width:100%}
 .egg-btn.cute.sel{border-color:#ff6f9c;background:#fff0f6}
 .egg-btn.cool.sel{border-color:#3d7bf2;background:#eef4ff}
 .egg-btn:disabled{opacity:.45;cursor:not-allowed}
@@ -166,6 +166,7 @@ details.sent summary{cursor:pointer;font-weight:700;color:var(--ink2)}
   </section>
 </main>
 
+<script src="pet-images.js"></script>
 <script src="pets.js"></script>
 <script>
 var SETTINGS = (function(){
@@ -401,7 +402,7 @@ function loadTopPet(){
     if (my !== topReq) return; // 選びなおしたあとの古い返事は使わない
     box.classList.remove('hidden');
     if (!v || !v.current) {
-      box.innerHTML = '<div class="pic">' + PETS.svg('usa', 0, 80).replace('pet-svg', 'pet-svg" style="filter:grayscale(1);opacity:.35') + '</div>' +
+      box.innerHTML = '<div class="pic" style="filter:grayscale(1);opacity:.35">' + PETS.svg('inu', 0, 80) + '</div>' +
         '<div class="info"><p class="petname">キャラを育てよう！</p><div class="muted">ふりかえりを送信すると、タマゴを1つ選べます。' + SETTINGS.growPerStage + '回送信するごとに進化します。</div>' + (v ? zukanHtml(v) : '') + '</div>';
       return;
     }

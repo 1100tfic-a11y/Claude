@@ -11,6 +11,7 @@ p{margin:0 0 1rem;color:#55637a;font-size:.9rem}
 .row{display:grid;grid-template-columns:repeat(6,1fr);gap:.4rem;background:#fff;border:1px solid #d7dee9;border-radius:12px;padding:.5rem;margin-bottom:.6rem}
 .cell{text-align:center;font-size:.78rem}
 .cell svg{width:100%;height:auto;max-width:150px}
+.cell .pet-pic{margin-bottom:.3rem}
 .cell b{display:block}
 .cell span{color:#55637a}
 </style>
@@ -19,6 +20,7 @@ p{margin:0 0 1rem;color:#55637a;font-size:.9rem}
 <h1>キャラクター図鑑（全10種類 × 6段階）</h1>
 <p>先生の確認用ページです。このファイルをダブルクリックすると、すべてのキャラクターの成長を一覧で見られます。</p>
 <div id="list"></div>
+<script src="pet-images.js"></script>
 <script src="pets.js"></script>
 <script>
 document.head.insertAdjacentHTML('beforeend', '<style>' + PETS.css + '</style>');

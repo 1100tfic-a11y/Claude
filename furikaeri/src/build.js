@@ -4,11 +4,10 @@ const fs = require('fs');
 const path = require('path');
 const read = f => fs.readFileSync(path.join(__dirname, f), 'utf8');
 // <script src="pets.js"></script> を中身に置きかえる（Apps Script では別ファイルを読めないため）
-const inline = html => {
-  const tag = '<script src="pets.js"></script>';
-  if (!html.includes(tag)) return html;
-  return html.replace(tag, () => '<script>\n' + read('pets.js') + '</script>');
-};
+const inline = html => ['pet-images.js', 'pets.js'].reduce((h, f) => {
+  const tag = '<script src="' + f + '"></script>';
+  return h.includes(tag) ? h.replace(tag, () => '<script>\n' + read(f) + '</script>') : h;
+}, html);
 // テンプレート文字列に入れるため、\ ` ${ をエスケープする
 const lit = s => '`' + s.replace(/\\/g, '\\\\').replace(/`/g, '\\`').replace(/\$\{/g, '\\${') + '`';
 

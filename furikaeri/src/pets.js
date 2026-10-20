@@ -654,10 +654,21 @@ var PETS = (function(){
     return s + '</g>';
   }
 
+  // 絵の画像（pet-images.js）があればそれを使い、無いキャラは図形で描いた絵を使う
+  function picture(ch, st, size){
+    var imgs = typeof PET_IMAGES !== 'undefined' && PET_IMAGES[ch.id];
+    if (!imgs || !imgs[st]) return '';
+    var h = size || 160, w = Math.round(h * 0.75);
+    return '<span class="pet-svg pet-pic' + (st === 5 ? ' pet-ult' : '') + '" style="width:' + w + 'px;height:' + h + 'px" role="img" aria-label="' + ch.names[st] + '">' +
+      '<img src="' + imgs[st] + '" alt="" class="' + (st === 0 ? 'pet-wobble' : 'pet-bounce') + '" draggable="false"></span>';
+  }
+
   function svg(id, st, size){
     var ch = BY[id];
     if (!ch) return '';
     st = Math.max(0, Math.min(5, Number(st) || 0));
+    var pic = picture(ch, st, size);
+    if (pic) return pic;
     var inner = st === 0 ? eggSvg(ch) : creature(ch, st);
     return '<svg class="pet-svg" viewBox="0 0 200 200" width="' + (size || 160) + '" height="' + (size || 160) + '" role="img" aria-label="' + ch.names[st] + '">' + inner + '</svg>';
   }
@@ -669,7 +680,10 @@ var PETS = (function(){
     name: function(id, st){ var p = BY[id]; return p ? p.names[Math.max(0, Math.min(5, st))] : ''; },
     svg: svg,
     // アニメーション用のCSS（ページに1回だけ入れる）
-    css: '.pet-svg{overflow:visible}.pet-wobble{transform-origin:100px 184px;animation:petWob 2.4s ease-in-out infinite}' +
+    css: '.pet-pic{display:inline-block;position:relative;overflow:hidden;border-radius:14px;vertical-align:middle;box-shadow:0 3px 10px rgba(30,30,60,.25);background:#eee}' +
+      '.pet-pic img{width:100%;height:100%;object-fit:cover;display:block;animation:none}' +
+      '.pet-pic.pet-ult{box-shadow:0 0 0 3px #ffd23f,0 0 16px 4px rgba(255,200,40,.7)}' +
+      '.pet-svg{overflow:visible}.pet-wobble{transform-origin:100px 184px;animation:petWob 2.4s ease-in-out infinite}' +
       '.pet-bounce{transform-origin:100px 186px;animation:petBob 2s ease-in-out infinite}' +
       '@keyframes petWob{0%,100%{transform:rotate(0)}20%{transform:rotate(-6deg)}40%{transform:rotate(5deg)}60%{transform:rotate(-2deg)}}' +
       '@keyframes petBob{0%,100%{transform:translateY(0) scale(1,1)}50%{transform:translateY(-4px) scale(1.02,.98)}}' +
