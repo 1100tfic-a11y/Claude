@@ -5,60 +5,57 @@
  *   PETS.svg(id, st)   … 段階 st（0=タマゴ 〜 5=究極体）の絵（SVG文字列）
  *   PETS.STAGES        … 段階の名前
  * 画像ファイルは使わず、すべて図形で描いています。
+ * タマゴの色だけ「かわいい系＝ピンク」「かっこいい系＝青」で、生まれた後の色は自由です。
  * ========================================================================= */
 var PETS = (function(){
   var STAGES = ['タマゴ', '幼年期', '成長期', '成熟期', '完全体', '究極体'];
 
-  // type: cute（ピンクのタマゴ）/ cool（青のタマゴ）
-  // egg: タマゴの色 [こい色, うすい色]　c1: からだ　c2: おなか・明るい色　c3: アクセント　ink: 線
+  // type: cute（ピンクのタマゴ）/ cool（青のタマゴ）　egg: タマゴの色 [こい色, うすい色]　aura: 究極体の光の色
   var LIST = [
-    { id:'usa',  type:'cute', motif:'bunny',   pattern:'hearts',  egg:['#ff8fb1','#ffe3ec'],
-      c1:'#ffc4d6', c2:'#fff4f8', c3:'#ff6f9c', ink:'#6b2f45',
-      names:['ハートのタマゴ','ぴょこ','ぴょんりん','ラビリィ','ラビエンジェ','ムーンラビエル'] },
-    { id:'neko', type:'cute', motif:'cat',     pattern:'dots',    egg:['#ff9eb5','#fff0f3'],
-      c1:'#ffd0b8', c2:'#fff6ef', c3:'#ff7f8f', ink:'#6b3a2f',
-      names:['みずたまのタマゴ','にゃこ','にゃもん','ミャルル','ニャンティーヌ','ステラキャット'] },
-    { id:'hana', type:'cute', motif:'flower',  pattern:'flowers', egg:['#f78fb3','#ffe6f0'],
-      c1:'#ffd6e4', c2:'#fff7fa', c3:'#ff5c93', ink:'#6b2a4a',
-      names:['おはなのタマゴ','つぼみん','はなっこ','フルール','ローズフェアリ','フローラクイーン'] },
-    { id:'moko', type:'cute', motif:'sheep',   pattern:'clouds',  egg:['#f6a6d0','#fdeef7'],
-      c1:'#f3d9ff', c2:'#ffffff', c3:'#d58cff', ink:'#55346b',
-      names:['くものタマゴ','もこ','もこもこ','メリーぬ','ドリームメリー','ゆめくもヒツジ'] },
-    { id:'yuni', type:'cute', motif:'unicorn', pattern:'stars',   egg:['#ee8fd0','#fde8f6'],
-      c1:'#fff0fb', c2:'#ffffff', c3:'#c77dff', ink:'#5b2f6b',
-      names:['ほしのタマゴ','ユニぽん','ユニコロ','ユニリィ','ペガユニ','スターユニコーン'] },
+    { id:'inu',     type:'cute', pattern:'paws',     egg:['#ff8fb1','#ffe3ec'], ink:'#4a2a10', aura:'#ffb347',
+      names:['にくきゅうのタマゴ','こしば','しばまる','ワンダフル','ヒーローわんこ','聖獣こまいぬ'] },
+    { id:'neko',    type:'cute', pattern:'stars',    egg:['#ee8fd0','#fde8f6'], ink:'#16141f', aura:'#b388ff',
+      names:['ほしのタマゴ','くろにゃん','ノワール','まほうねこ','ムーンウィッチ','星の大魔女ルナ'] },
+    { id:'usagi',   type:'cute', pattern:'hearts',   egg:['#ff9eb5','#fff0f3'], ink:'#5a3442', aura:'#ffd6f0',
+      names:['ハートのタマゴ','ちびうさ','ぴょんた','はなうさぎ','フラワープリンセス','月のうさぎ姫'] },
+    { id:'panda',   type:'cute', pattern:'dots',     egg:['#f78fb3','#ffe6f0'], ink:'#1c1c1c', aura:'#9be15d',
+      names:['みずたまのタマゴ','ころぱん','パンパン','ささパンダ','カンフーパンダ','パンダ大王'] },
+    { id:'hamu',    type:'cute', pattern:'flowers',  egg:['#f6a6d0','#fdeef7'], ink:'#5c3a1a', aura:'#ffd23f',
+      names:['ひまわりのタマゴ','ちびハム','ほっぺハム','もぐもぐハム','どんぐり探検家','ひまわり女王ハム'] },
 
-    { id:'dora', type:'cool', motif:'dragon',  pattern:'scales',  egg:['#3d7bf2','#d9e8ff'],
-      c1:'#5b9dff', c2:'#d8ecff', c3:'#1f4fbf', ink:'#132a5c',
-      names:['うろこのタマゴ','ドラピ','ドラグル','ドラグナー','アズールドラゴン','蒼龍ラグナロク'] },
-    { id:'garu', type:'cool', motif:'wolf',    pattern:'zigzag',  egg:['#2f5fbf','#dbe6fb'],
-      c1:'#7f95c9', c2:'#e8eefb', c3:'#2c3f7a', ink:'#1a2447',
-      names:['ギザギザのタマゴ','ガルコ','ガルフ','ウルフガー','シルバーウルフ','天狼フェンリル'] },
-    { id:'meka', type:'cool', motif:'robot',   pattern:'gears',   egg:['#4a86c8','#dfeaf6'],
-      c1:'#9fb8d6', c2:'#e6eef7', c3:'#2f6db5', ink:'#1d2f45',
-      names:['ギアのタマゴ','メカピ','メカボ','ロボガード','メタルナイト','ギガメカオー'] },
-    { id:'raiga', type:'cool', motif:'thunder', pattern:'bolts',  egg:['#2a8be0','#dcefff'],
-      c1:'#4cc3ff', c2:'#e3f6ff', c3:'#ffd23f', ink:'#0f3352',
-      names:['いなずまのタマゴ','ピリコ','ライコ','ライガー','ボルトタイガ','雷神ライジン'] },
-    { id:'aqua', type:'cool', motif:'shark',   pattern:'waves',   egg:['#1f8fb8','#d8f1f8'],
-      c1:'#48b7d6', c2:'#e6f8fc', c3:'#16708f', ink:'#0d3442',
-      names:['なみのタマゴ','アクピ','シャクル','アクアシャーク','タイダルシャーク','海王リヴァイア'] }
+    { id:'dragon',  type:'cool', pattern:'scales',   egg:['#3d7bf2','#d9e8ff'], ink:'#3d0f06', aura:'#ff7a29',
+      names:['りゅうのタマゴ','チビドラ','ボルカドラ','フレアドラゴン','インフェルノドラゴン','紅蓮竜王バハムーン'] },
+    { id:'samurai', type:'cool', pattern:'zigzag',   egg:['#2f5fbf','#dbe6fb'], ink:'#1d1b2e', aura:'#ffc9de',
+      names:['かたなのタマゴ','わかまる','けんたろう','サムライ剣士','鎧武者','天下無双の将軍'] },
+    { id:'knight',  type:'cool', pattern:'shields',  egg:['#4a86c8','#dfeaf6'], ink:'#232836', aura:'#fff3a8',
+      names:['たてのタマゴ','みならいナイト','ナイトくん','シルバーナイト','ロイヤルナイト','聖騎士パラディオン'] },
+    { id:'ninja',   type:'cool', pattern:'shuriken', egg:['#2a6fd0','#dcebff'], ink:'#120f1c', aura:'#b46bff',
+      names:['しゅりけんのタマゴ','ちびにん','にんまる','シノビ','影丸','忍頭ハンゾウ'] },
+    { id:'robo',    type:'cool', pattern:'gears',    egg:['#1f8fb8','#d8f1f8'], ink:'#1b1f24', aura:'#5ff2ff',
+      names:['ギアのタマゴ','ポコボ','メカボックス','ガードロボ','バトルメカ','超機神ギガブレイバー'] }
   ];
   var BY = {};
   LIST.forEach(function(p){ BY[p.id] = p; });
 
   // ------------------------------------------------------------ 小さな道具
+  var K = 1; // いま描いている縮尺（線の太さをそろえるため）
+  var INK = '#222';
   function at(o){ var s = ''; for (var k in o) if (o[k] != null) s += ' ' + k + '="' + o[k] + '"'; return s; }
-  function ln(ch, w){ return 'stroke="' + ch.ink + '" stroke-width="' + (w || 3) + '" stroke-linejoin="round" stroke-linecap="round"'; }
+  function L(w){ return 'stroke="' + INK + '" stroke-width="' + ((w || 3) / K).toFixed(2) + '" stroke-linejoin="round" stroke-linecap="round"'; }
+  function S(color, w){ return 'fill="none" stroke="' + color + '" stroke-width="' + (w / K).toFixed(2) + '" stroke-linecap="round" stroke-linejoin="round"'; }
   function circle(x, y, r, fill, extra){ return '<circle' + at({ cx:x, cy:y, r:r, fill:fill }) + ' ' + (extra || '') + '/>'; }
   function ell(x, y, rx, ry, fill, extra, rot){
     return '<ellipse' + at({ cx:x, cy:y, rx:rx, ry:ry, fill:fill, transform: rot ? 'rotate(' + rot + ' ' + x + ' ' + y + ')' : null }) + ' ' + (extra || '') + '/>';
   }
-  // 中心 (cx, cy) のまわりに角度 deg だけ回した花びら
+  function rect(x, y, w, h, r, fill, extra, rot){
+    return '<rect' + at({ x:x, y:y, width:w, height:h, rx:r, fill:fill, transform: rot ? 'rotate(' + rot + ')' : null }) + ' ' + (extra || '') + '/>';
+  }
+  function path(d, fill, extra){ return '<path d="' + d + '" fill="' + fill + '" ' + (extra || '') + '/>'; }
+  function g(tf, inner){ return '<g transform="' + tf + '">' + inner + '</g>'; }
+  function both(fn){ return fn(-1) + fn(1); }
   function petal(cx, cy, dist, rx, ry, deg, fill, extra){
     return '<ellipse' + at({ cx:cx, cy:cy - dist, rx:rx, ry:ry, fill:fill, transform:'rotate(' + deg + ' ' + cx + ' ' + cy + ')' }) + ' ' + (extra || '') + '/>';
   }
-  function path(d, fill, extra){ return '<path d="' + d + '" fill="' + fill + '" ' + (extra || '') + '/>'; }
   function starPts(x, y, r, n, inner){
     n = n || 5; inner = inner || 0.45; var p = [];
     for (var i = 0; i < n * 2; i++) {
@@ -67,7 +64,7 @@ var PETS = (function(){
     }
     return p.join(' ');
   }
-  function star(x, y, r, fill, extra){ return '<polygon points="' + starPts(x, y, r) + '" fill="' + fill + '" ' + (extra || '') + '/>'; }
+  function star(x, y, r, fill, extra, n, inner){ return '<polygon points="' + starPts(x, y, r, n, inner) + '" fill="' + fill + '" ' + (extra || '') + '/>'; }
   function heart(x, y, s, fill, extra){
     return '<path transform="translate(' + x + ' ' + y + ') scale(' + s + ')" d="M0 4C0-2-9-2-9 4C-9 9-3 12 0 15C3 12 9 9 9 4C9-2 0-2 0 4Z" fill="' + fill + '" ' + (extra || '') + '/>';
   }
@@ -78,7 +75,40 @@ var PETS = (function(){
     return '<path d="M' + x + ' ' + (y - r) + 'Q' + x + ' ' + y + ' ' + (x + r) + ' ' + y + 'Q' + x + ' ' + y + ' ' + x + ' ' + (y + r) +
       'Q' + x + ' ' + y + ' ' + (x - r) + ' ' + y + 'Q' + x + ' ' + y + ' ' + x + ' ' + (y - r) + 'Z" fill="' + fill + '"/>';
   }
+  function flower(x, y, r, petalColor, center){
+    var s = '';
+    for (var i = 0; i < 5; i++) s += petal(x, y, r * 0.62, r * 0.42, r * 0.6, i * 72, petalColor, L(1.6));
+    return s + circle(x, y, r * 0.38, center || '#ffd23f', L(1.6));
+  }
+  function flame(x, y, s, outer, inner){
+    return g('translate(' + x + ' ' + y + ') scale(' + s + ')',
+      path('M0 0C-14 0-20-12-14-24C-12-16-6-16-6-16C-10-28-2-38 6-44C4-34 14-30 16-20C18-24 18-28 16-32C26-22 24 0 0 0Z', outer || '#ff7a29', L(2.2)) +
+      path('M0-4C-7-4-9-12-5-18C-4-12 0-12 0-12C-1-20 4-24 8-28C8-20 13-16 10-8C9-5 6-4 0-4Z', inner || '#ffd23f'));
+  }
   var uid = 0;
+
+  // ------------------------------------------------------------ 顔のパーツ
+  function eyesCute(cx, cy, gap, s, col){
+    return both(function(d){
+      var x = cx + d * gap;
+      return ell(x, cy, 6 * s, 7.5 * s, col || '#2b1a10') + circle(x - 2 * s, cy - 3 * s, 2.4 * s, '#fff') + circle(x + 2.2 * s, cy + 2.6 * s, 1.2 * s, '#fff');
+    });
+  }
+  function blush(cx, cy, gap, s){ return both(function(d){ return ell(cx + d * gap, cy, 6 * s, 3.4 * s, '#ff8fab', 'opacity=".6"'); }); }
+  function catMouth(cx, cy, s){ return path('M' + (cx - 6 * s) + ' ' + cy + 'q' + (3 * s) + ' ' + (4 * s) + ' ' + (6 * s) + ' 0q' + (3 * s) + ' ' + (4 * s) + ' ' + (6 * s) + ' 0', 'none', L(2.2)); }
+  // かっこいい系の目（白目＋色のついた瞳＋きりっとした眉）
+  function eyesHero(cx, cy, gap, s, iris, noBrow){
+    return both(function(d){
+      var x = cx + d * gap;
+      return ell(x, cy, 7 * s, 8.5 * s, '#fff', L(2)) + ell(x + d * 0.8 * s, cy + 1 * s, 4.6 * s, 6 * s, iris) +
+        circle(x + d * 0.8 * s, cy + 1.5 * s, 2.4 * s, '#111') + circle(x - 1.5 * s, cy - 2 * s, 1.6 * s, '#fff') +
+        (noBrow ? '' : path('M' + (x - d * 8 * s) + ' ' + (cy - 11 * s) + 'L' + (x + d * 9 * s) + ' ' + (cy - 15 * s), 'none', L(3.4)));
+    });
+  }
+  function grin(cx, cy, s){
+    return path('M' + (cx - 7 * s) + ' ' + cy + 'Q' + cx + ' ' + (cy + 10 * s) + ' ' + (cx + 7 * s) + ' ' + cy + 'Z', '#7a1f1f', L(2)) +
+      path('M' + (cx - 4 * s) + ' ' + (cy + 4.5 * s) + 'Q' + cx + ' ' + (cy + 2 * s) + ' ' + (cx + 4 * s) + ' ' + (cy + 4.5 * s), '#ff8a8a');
+  }
 
   // ------------------------------------------------------------ タマゴ
   var EGG = 'M100 30C140 30 162 92 162 124C162 160 134 184 100 184C66 184 38 160 38 124C38 92 60 30 100 30Z';
@@ -98,10 +128,10 @@ var PETS = (function(){
           s += circle(f[0], f[1], 4 * f[2], '#ffe680');
         });
         break;
-      case 'clouds':
-        [[78,84],[124,112],[74,150]].forEach(function(q){
-          s += '<g fill="' + c + '">' + circle(q[0] - 12, q[1] + 3, 9, c) + circle(q[0], q[1] - 3, 12, c) + circle(q[0] + 13, q[1] + 3, 9, c) +
-            '<rect x="' + (q[0] - 21) + '" y="' + (q[1] + 2) + '" width="42" height="10" rx="5"/></g>';
+      case 'paws':
+        [[76,82,1],[124,100,1.2],[82,142,1.1],[130,156,0.8]].forEach(function(f){
+          s += ell(f[0], f[1] + 4 * f[2], 8 * f[2], 6.5 * f[2], c);
+          [[-8,-6],[-3,-10],[3,-10],[8,-6]].forEach(function(t){ s += circle(f[0] + t[0] * f[2], f[1] + t[1] * f[2], 2.8 * f[2], c); });
         });
         break;
       case 'stars':
@@ -119,19 +149,17 @@ var PETS = (function(){
           s += '<path d="' + d + '" fill="none" stroke="' + c + '" stroke-width="7" stroke-linejoin="round"/>';
         });
         break;
-      case 'gears':
-        [[78,86,16],[124,122,20],[80,152,12]].forEach(function(g){
-          s += circle(g[0], g[1], g[2], 'none', 'stroke="' + c + '" stroke-width="7" stroke-dasharray="6 5"') + circle(g[0], g[1], g[2] * 0.45, c);
+      case 'shields':
+        [[76,84,1],[126,108,1.1],[84,146,0.9]].forEach(function(f){
+          s += g('translate(' + f[0] + ' ' + f[1] + ') scale(' + f[2] + ')', path('M-11-12H11V0C11 8 4 13 0 15C-4 13-11 8-11 0Z', c) + path('M0-9V11M-7-2H7', 'none', 'stroke="#fff" stroke-width="2.5"'));
         });
         break;
-      case 'bolts':
-        [[76,80,1.3],[126,96,1.1],[92,136,1.6],[136,154,1]].forEach(function(b){ s += bolt(b[0], b[1], b[2], c); });
-        s += bolt(64, 160, 0.9, '#ffd23f');
+      case 'shuriken':
+        [[74,80,10],[124,72,8],[100,116,13],[64,148,9],[134,140,10]].forEach(function(t){ s += star(t[0], t[1], t[2], c, '', 4, 0.32) + circle(t[0], t[1], t[2] * 0.2, w); });
         break;
-      case 'waves':
-        [72, 104, 136, 166].forEach(function(y, k){
-          var d = 'M30 ' + y; for (var x = 30; x < 175; x += 24) d += 'q6 -9 12 0t12 0';
-          s += '<path d="' + d + '" fill="none" stroke="' + (k % 2 ? w : c) + '" stroke-width="6" stroke-linecap="round"/>';
+      case 'gears':
+        [[78,86,16],[124,122,20],[80,152,12]].forEach(function(q){
+          s += circle(q[0], q[1], q[2], 'none', 'stroke="' + c + '" stroke-width="7" stroke-dasharray="6 5"') + circle(q[0], q[1], q[2] * 0.45, c);
         });
         break;
     }
@@ -151,280 +179,394 @@ var PETS = (function(){
       '</g>';
   }
 
-  // ------------------------------------------------------------ 顔
-  function face(ch, P){
-    var x = P.hx, y = P.hy + P.hr * 0.12, sp = P.hr * 0.42, k = P.hr / 40, s = '';
-    if (ch.motif === 'robot') {
-      s += '<rect' + at({ x: x - P.hr * 0.72, y: y - 12 * k, width: P.hr * 1.44, height: 22 * k, rx: 11 * k, fill:'#183049' }) + ' ' + ln(ch, 2.5) + '/>';
-      s += ell(x - sp * 0.8, y - 1 * k, 7 * k, 5 * k, '#5ff2ff') + ell(x + sp * 0.8, y - 1 * k, 7 * k, 5 * k, '#5ff2ff');
-      s += path('M' + (x - 7 * k) + ' ' + (y + 20 * k) + 'H' + (x + 7 * k), 'none', ln(ch, 2.5));
+  // ==================================================================
+  //  キャラクターごとの絵（足もとを (0,0) として上向きに描く。高さはおよそ 150）
+  // ==================================================================
+
+  // ---------------------------------------------- 柴犬
+  function drawInu(st){
+    var holy = st === 5;
+    var fur = holy ? '#fff4dc' : '#f0a04b', white = '#fffaf2', s = '';
+    // しっぽ（くるん）
+    s += circle(30, -46, 15, 'none', S(INK, 15)) + circle(30, -46, 15, 'none', S(holy ? '#ffd27a' : fur, 9)) + circle(30, -46, 6, white, L(2));
+    if (holy) {
+      // 翼
+      s += both(function(d){ return g('scale(' + d + ' 1)', path('M18-60C40-92 76-100 92-88C80-82 88-74 80-68C88-62 78-56 70-56C72-48 58-48 52-50C44-44 30-48 22-52Z', '#fff', L(2.5))); });
+    }
+    if (st >= 4) s += path('M-26-66Q0-74 26-66L40-6Q0 4-40-6Z', holy ? '#ffcf4d' : '#e03131', L(2.5)); // マント
+    // うしろ足
+    s += both(function(d){ return ell(d * 25, -12, 15, 12, fur, L()); });
+    // からだ
+    s += ell(0, -40, 29, 34, fur, L()) + ell(0, -40, 16, 24, white);
+    // まえ足
+    s += both(function(d){ return rect(d * 11 - 7, -32, 14, 32, 7, fur, L()) + ell(d * 11, -3, 8, 5, white, L(2)); });
+    if (st >= 2 && st < 4) s += path('M-20-68Q0-58 20-68', 'none', S(INK, 9)) + path('M-20-68Q0-58 20-68', 'none', S('#e64980', 6)) + circle(0, -61, 5.5, '#ffd23f', L(2));
+    if (st >= 3 && st < 5) s += path('M-24-70Q0-58 24-70L4-44Z', '#2f80ed', L(2.5)) + circle(-8, -62, 2, '#fff') + circle(8, -64, 2, '#fff'); // バンダナ
+    if (st === 4) s += star(0, -46, 8, '#ffd23f', L(2));
+    // 頭
+    var hy = -88;
+    s += both(function(d){ return path('M' + (d * 12) + ' ' + (hy - 24) + 'L' + (d * 30) + ' ' + (hy - 44) + 'L' + (d * 34) + ' ' + (hy - 12) + 'Z', fur, L()) + path('M' + (d * 18) + ' ' + (hy - 24) + 'L' + (d * 28) + ' ' + (hy - 36) + 'L' + (d * 29) + ' ' + (hy - 18) + 'Z', '#ffc2a8'); });
+    s += ell(0, hy, 36, 30, fur, L());
+    s += path('M-28 ' + (hy + 6) + 'Q-26 ' + (hy - 8) + ' -12 ' + (hy - 6) + 'Q0 ' + (hy - 2) + ' 12 ' + (hy - 6) + 'Q26 ' + (hy - 8) + ' 28 ' + (hy + 6) + 'Q20 ' + (hy + 28) + ' 0 ' + (hy + 28) + 'Q-20 ' + (hy + 28) + ' -28 ' + (hy + 6) + 'Z', white);
+    s += both(function(d){ return ell(d * 13, hy - 15, 5, 3, white); }); // まろまゆ
+    if (holy) s += path('M-10 ' + (hy - 22) + 'Q0 ' + (hy - 32) + ' 10 ' + (hy - 22), 'none', S('#ff7a29', 3)) + circle(0, hy - 24, 3, '#ff7a29');
+    s += eyesCute(0, hy - 4, 13, 1.05);
+    s += ell(0, hy + 6, 5, 3.6, INK) + catMouth(-6 + 6, hy + 11, 1);
+    if (st >= 2) s += path('M-3 ' + (hy + 15) + 'q3 7 6 0', '#ff6b81', L(1.6));
+    s += blush(0, hy + 6, 22, 1);
+    if (holy) s += ell(0, hy - 40, 26, 7, 'none', S('#ffd23f', 4));
+    return s;
+  }
+
+  // ---------------------------------------------- 黒ねこ
+  function drawNeko(st){
+    var fur = '#3a3850', s = '', hy = -84;
+    // しっぽ
+    s += path('M22-14C52-16 58-50 42-70C36-78 44-90 52-84', 'none', S(INK, 15)) + path('M22-14C52-16 58-50 42-70C36-78 44-90 52-84', 'none', S(fur, 10));
+    if (st >= 4) s += path('M-28-66Q0-76 28-66L46-2Q0 8-46-2Z', st === 5 ? '#24206b' : '#7b3fbf', L(2.5)) +
+      (st === 5 ? [[-34,-20],[30,-30],[-20,-44],[38,-10],[-40,-6]].map(function(p){ return star(p[0], p[1], 3.5, '#ffe066'); }).join('') : '');
+    s += ell(0, -36, 27, 34, fur, L()) + ell(0, -40, 11, 16, '#5a5876');
+    s += both(function(d){ return ell(d * 12, -5, 10, 7, fur, L()); });
+    if (st >= 2) s += path('M-18-62Q0-54 18-62', 'none', S(INK, 8)) + path('M-18-62Q0-54 18-62', 'none', S('#e8364e', 5)) + circle(0, -56, 5, '#ffd23f', L(1.8));
+    // 魔法のつえ
+    if (st === 3) s += path('M-30-30L-40-74', 'none', S('#8a5a2b', 5)) + star(-41, -78, 10, '#ffe066', L(2));
+    if (st === 5) s += path('M-34-6L-46-110', 'none', S('#c9a2ff', 5)) + path('M-50-122A14 14 0 1 0-36-104A10 10 0 1 1-50-122Z', '#ffe066', L(2)) + sparkle(-28, -122, 6, '#fff');
+    // 頭
+    s += both(function(d){ return path('M' + (d * 8) + ' ' + (hy - 22) + 'L' + (d * 26) + ' ' + (hy - 46) + 'L' + (d * 32) + ' ' + (hy - 6) + 'Z', fur, L()) + path('M' + (d * 15) + ' ' + (hy - 20) + 'L' + (d * 24) + ' ' + (hy - 36) + 'L' + (d * 27) + ' ' + (hy - 12) + 'Z', '#ff9fc0'); });
+    s += ell(0, hy, 34, 29, fur, L());
+    s += both(function(d){
+      var x = d * 13, y = hy - 2;
+      return ell(x, y, 8, 9.5, '#c6f36b', L(2)) + ell(x, y + 1, 2.6, 7.5, '#16141f') + circle(x - 2.5, y - 4, 2.2, '#fff');
+    });
+    s += path('M-4 ' + (hy + 9) + 'H4L0 ' + (hy + 13) + 'Z', '#ff8fb1') + catMouth(0, hy + 14, 0.8);
+    s += both(function(d){ return path('M' + (d * 20) + ' ' + (hy + 8) + 'l' + (d * 18) + ' -3M' + (d * 20) + ' ' + (hy + 13) + 'l' + (d * 18) + ' 2', 'none', S('#e9e6ff', 2)); });
+    s += blush(0, hy + 10, 21, 1);
+    // ぼうし
+    if (st >= 4) {
+      var tall = st === 5 ? 1.35 : 1;
+      s += ell(0, hy - 22, 42, 9, st === 5 ? '#2c2680' : '#5b2a9e', L()) +
+        path('M-24 ' + (hy - 24) + 'Q-10 ' + (hy - 50 * tall) + ' 8 ' + (hy - 76 * tall) + 'Q16 ' + (hy - 70 * tall) + ' 24 ' + (hy - 64 * tall) + 'Q16 ' + (hy - 50) + ' 24 ' + (hy - 24) + 'Z', st === 5 ? '#2c2680' : '#5b2a9e', L()) +
+        rect(-24, hy - 34, 48, 9, 3, st === 5 ? '#ffd23f' : '#e8364e', L(2)) +
+        (st === 5 ? star(4, hy - 48, 6, '#ffe066', L(1.5)) + path('M14 ' + (hy - 62) + 'A6 6 0 1 0 20 ' + (hy - 54) + 'A4 4 0 1 1 14 ' + (hy - 62) + 'Z', '#ffe066') : star(0, hy - 29, 4, '#ffe066'));
+    }
+    return s;
+  }
+
+  // ---------------------------------------------- うさぎ
+  function drawUsagi(st){
+    var fur = '#ffffff', s = '', hy = -86;
+    if (st === 5) s += path('M-40-150A62 62 0 1 0 40-40A48 48 0 1 1-40-150Z', '#ffe9a8', L(2)); // 三日月
+    s += circle(26, -26, 10, fur, L()); // しっぽ
+    if (st >= 4) {
+      var dress = st === 5 ? '#c7a6ff' : '#ffe680';
+      s += path('M-18-56H18L36-10Q0 0-36-10Z', dress, L()) + path('M-30-16Q0-8 30-16', 'none', S('#fff', 3));
+      if (st === 5) s += path('M-36-10Q0 0 36-10L30 0H-30Z', '#9b7bff', L(2));
+    } else s += ell(0, -36, 25, 30, fur, L());
+    s += both(function(d){ return ell(d * 14, -4, 15, 7, fur, L()); });
+    s += both(function(d){ return ell(d * 22, -44, 7, 11, fur, L(), d * -20); });
+    if (st >= 2 && st <= 3) s += g('translate(-22 -40) rotate(-30)', path('M0-14C5-14 7-8 6 0L0 18L-6 0C-7-8-5-14 0-14Z', '#ff8c2b', L(2)) + path('M0-14L-6-24M0-14L0-26M0-14L6-24', 'none', S('#3fae49', 3)));
+    if (st === 5) s += path('M24-30L40-104', 'none', S('#fff', 4)) + star(41, -110, 9, '#ffe066', L(2));
+    // 耳
+    s += both(function(d){
+      var tilt = st >= 3 && d === 1 ? 35 : d * 8;
+      return g('rotate(' + tilt + ' ' + (d * 12) + ' ' + (hy - 20) + ')', ell(d * 12, hy - 52, 10, 30, fur, L()) + ell(d * 12, hy - 50, 5, 22, '#ffb3c8'));
+    });
+    s += circle(0, hy, 30, fur, L());
+    s += eyesCute(0, hy - 2, 12, 1, '#a23b5c');
+    s += path('M-3 ' + (hy + 7) + 'H3L0 ' + (hy + 10) + 'Z', '#ff8fb1') + catMouth(0, hy + 11, 0.7) + rect(-3, hy + 12, 6, 5, 1, '#fff', L(1.4));
+    s += blush(0, hy + 8, 19, 1);
+    if (st >= 3) s += flower(-18, hy - 26, 7, '#ff9cc0') + flower(0, hy - 30, 8, '#ffe066', '#ff8c2b') + flower(18, hy - 26, 7, '#b6e3ff');
+    if (st === 5) s += path('M-14 ' + (hy - 34) + 'L-10 ' + (hy - 48) + 'L-4 ' + (hy - 38) + 'L0 ' + (hy - 52) + 'L4 ' + (hy - 38) + 'L10 ' + (hy - 48) + 'L14 ' + (hy - 34) + 'Z', '#ffd23f', L(2));
+    return s;
+  }
+
+  // ---------------------------------------------- パンダ
+  function drawPanda(st){
+    var K2 = '#1c1c1c', W = '#ffffff', s = '', hy = -92;
+    if (st === 5) s += path('M-44-70Q0-82 44-70L52-2Q0 8-52-2Z', '#d62828', L()) + path('M-44-70Q0-82 44-70', 'none', S('#ffd23f', 4));
+    s += both(function(d){ return ell(d * 22, -10, 15, 12, K2, L()) + ell(d * 22, -8, 7, 5, '#555'); });
+    s += ell(0, -40, 35, 36, W, L());
+    if (st === 4) s += path('M-30-60Q0-44 30-60L26-14Q0-6-26-14Z', '#ff8c2b', L()) + rect(-30, -34, 60, 9, 3, '#1c1c1c');
+    s += path('M-30-62Q0-48 30-62', 'none', S(K2, 12));
+    // 竹
+    if (st === 2 || st === 3) s += g('translate(30 -40) rotate(15)', rect(-5, -46, 10, 64, 4, '#6abf4b', L(2)) + path('M-5-20H5M-5 2H5', 'none', S(INK, 2)) +
+      (st === 3 ? ell(10, -44, 12, 4, '#8fd36b', L(1.6), -30) + ell(12, -34, 10, 3.5, '#8fd36b', L(1.6), -10) : ''));
+    if (st === 5) s += g('translate(34 -30) rotate(12)', rect(-5, -70, 10, 90, 4, '#ffd23f', L(2)) + path('M-5-40H5M-5-10H5', 'none', S(INK, 2)) + circle(0, -74, 8, '#d62828', L(2)));
+    s += both(function(d){ return ell(d * 30, -46, 12, 17, K2, L(), d * (st === 4 ? 40 : -25)); });
+    if (st === 4) s += both(function(d){ return circle(d * 40, -58, 9, K2, L()); });
+    // 頭
+    s += both(function(d){ return circle(d * 24, hy - 24, 11, K2, L()); });
+    s += ell(0, hy, 36, 31, W, L());
+    s += both(function(d){ return ell(d * 13, hy, 9, 12, K2, '', d * 25) + circle(d * 13, hy - 1, 4.2, '#fff') + circle(d * 13 - 1, hy - 2.5, 1.4, K2); });
+    s += ell(0, hy + 11, 5, 3.4, K2) + catMouth(0, hy + 15, 0.8);
+    s += blush(0, hy + 10, 22, 1);
+    if (st === 3) s += ell(-6, hy - 30, 14, 5, '#8fd36b', L(1.6), -20);
+    if (st === 4) s += path('M-34 ' + (hy - 10) + 'Q0 ' + (hy - 22) + ' 34 ' + (hy - 10), 'none', S(INK, 9)) + path('M-34 ' + (hy - 10) + 'Q0 ' + (hy - 22) + ' 34 ' + (hy - 10), 'none', S('#e03131', 6)) +
+      path('M32 ' + (hy - 10) + 'q14 2 20 14M32 ' + (hy - 10) + 'q16-4 24 4', 'none', S('#e03131', 4));
+    if (st === 5) s += g('translate(0 ' + (hy - 28) + ')', path('M-22 6L-26-18L-12-6L0-24L12-6L26-18L22 6Z', '#ffd23f', L(2)) + circle(0, -8, 4, '#d62828'));
+    return s;
+  }
+
+  // ---------------------------------------------- ハムスター
+  function drawHamu(st){
+    var fur = '#f4b860', W = '#fff8ec', s = '';
+    var cheek = st >= 3 ? 1.45 : st === 2 ? 1.2 : 1;
+    if (st === 5) {
+      for (var i = 0; i < 16; i++) s += petal(0, -58, 62, 10, 22, i * 22.5, '#ffd23f', L(2));
+      s += circle(0, -58, 52, '#8a5a2b', L());
+      s += path('M-44-80Q0-90 44-80L54-4Q0 6-54-4Z', '#e03131', L());
+    }
+    s += both(function(d){ return ell(d * 18, -4, 11, 6, '#ffb3a8', L(2)); });
+    s += path('M0-104C40-104 50-70 50-48C50-18 30 0 0 0C-30 0-50-18-50-48C-50-70-40-104 0-104Z', fur, L());
+    s += path('M-36-54C-36-36-24-6 0-6C24-6 36-36 36-54C26-46 14-44 0-44C-14-44-26-46-36-54Z', W);
+    s += both(function(d){ return circle(d * 30, -96, 12, fur, L()) + circle(d * 30, -96, 6, '#ffb3a8'); });
+    s += both(function(d){ return ell(d * 30, -54, 13 * cheek, 11 * cheek, W, L(2)); });
+    s += eyesCute(0, -72, 15, 1.05);
+    s += ell(0, -60, 3.5, 2.6, '#c25b4b') + catMouth(0, -56, 0.7);
+    s += blush(0, -62, 28, 1);
+    // ひまわりのたね
+    if (st >= 2 && st <= 4) s += g('translate(0 -36)', ell(0, 0, 8, 12, '#333', L(2)) + path('M-3-8V8M3-8V8', 'none', S('#ddd', 1.6))) + both(function(d){ return ell(d * 9, -36, 6, 5, fur, L(2)); });
+    if (st === 4) {
+      s += g('translate(0 -104)', ell(0, 0, 26, 9, '#9a6a3a', L()) + path('M-22-2Q0-28 22-2Z', '#9a6a3a', L()) + path('M-18-6L18-6M-14-12L14-12', 'none', S('#7a4f25', 2)) + path('M0-16V-24', 'none', S('#5c3a1a', 3)));
+      s += path('M-34-46Q0-34 34-46L30-36Q0-26-30-36Z', '#3fae49', L(2));
+    }
+    if (st === 5) s += g('translate(0 -104)', path('M-20 4L-24-18L-10-6L0-24L10-6L24-18L20 4Z', '#ffd23f', L(2)) + circle(0, -6, 4, '#e03131'));
+    return s;
+  }
+
+  // ---------------------------------------------- ドラゴン
+  function drawDragon(st){
+    var gold = st === 5, body = '#e8432b', belly = '#ffd36b', mem = gold ? '#ffb02e' : '#ff8a3d', horn = gold ? '#ffd23f' : '#fff1c9', s = '', hy = -98;
+    var wk = [0, 0.35, 0.55, 0.8, 1.0, 1.15][st];
+    // つばさ
+    s += both(function(d){
+      return g('translate(' + (d * 14) + ' -70) scale(' + (d * wk) + ' ' + wk + ')',
+        path('M0 0C16-44 58-62 92-52C84-38 86-26 92-14C78-18 70-12 68 0C60-8 48-6 44 6C36-2 24-2 18 10C12 4 6 4 0 8Z', mem, L(3 * wk)) +
+        path('M4 2L60-46M20 6L78-30M38 6L88-18', 'none', S(INK, 2 * wk)));
+    });
+    // しっぽ
+    s += path('M14-24C44-14 64-4 86-34C80-14 60 6 10-8Z', body, L());
+    if (st >= 3) [[40,-18],[56,-16],[70,-22]].forEach(function(p){ s += path('M' + p[0] + ' ' + p[1] + 'l5-12 5 11Z', horn, L(1.8)); });
+    if (st >= 4) s += flame(88, -34, 0.7, '#ff7a29', '#ffd23f');
+    // 足
+    s += both(function(d){ return ell(d * 18, -10, 14, 14, body, L()) + [-6, 0, 6].map(function(t){ return path('M' + (d * 18 + t - 2) + ' 1L' + (d * 18 + t) + ' 6L' + (d * 18 + t + 2) + ' 1Z', '#fff', L(1.4)); }).join(''); });
+    // からだ
+    s += ell(0, -46, 33, 36, body, L());
+    s += ell(0, -42, 21, 28, belly, L(2)) + [-56, -46, -36, -26].map(function(y){ return path('M-17 ' + y + 'Q0 ' + (y + 4) + ' 17 ' + y, 'none', S(INK, 1.6)); }).join('');
+    if (gold) s += path('M-24-70L0-60L24-70L22-28Q0-16-22-28Z', '#ffd23f', L()) + path('M0-60V-20', 'none', S('#c98a00', 2)) + circle(0, -48, 6, '#e8432b', L(2));
+    s += both(function(d){ return ell(d * 31, -52, 8, 13, body, L(), d * -30); });
+    // 頭
+    s += both(function(d){
+      var len = [0, 10, 16, 22, 28, 36][st];
+      return path('M' + (d * 14) + ' ' + (hy - 22) + 'Q' + (d * (22 + len * 0.3)) + ' ' + (hy - 36 - len * 0.6) + ' ' + (d * (26 + len * 0.7)) + ' ' + (hy - 40 - len) + 'Q' + (d * 26) + ' ' + (hy - 30) + ' ' + (d * 26) + ' ' + (hy - 16) + 'Z', horn, L(2.5));
+    });
+    if (st >= 3) [[-8, -32], [0, -36], [8, -32]].forEach(function(p){ s += path('M' + (p[0] - 5) + ' ' + (hy - 26) + 'L' + p[0] + ' ' + (hy + p[1] - 2) + 'L' + (p[0] + 5) + ' ' + (hy - 26) + 'Z', mem, L(2)); });
+    s += ell(0, hy, 36, 30, body, L());
+    s += ell(0, hy + 14, 22, 13, '#f2664f', L(2)) + both(function(d){ return ell(d * 7, hy + 10, 2.4, 3, INK); });
+    if (st <= 1) s += eyesCute(0, hy - 6, 14, 1.15, '#3d0f06');
+    else s += both(function(d){
+      var x = d * 15, y = hy - 6;
+      return ell(x, y, 8, 8.5, '#fff', L(2)) + ell(x, y, 6, 7, '#ffcf3f') + ell(x, y, 1.8, 6, '#111') + circle(x - 2, y - 3, 1.5, '#fff') +
+        path('M' + (x - d * 9) + ' ' + (y - 9) + 'L' + (x + d * 10) + ' ' + (y - 13), 'none', L(3.2));
+    });
+    s += path('M-12 ' + (hy + 22) + 'Q0 ' + (hy + 27) + ' 12 ' + (hy + 22), 'none', L(2.2)) + (st >= 2 ? path('M7 ' + (hy + 23) + 'l2 5 2-5.5', '#fff', L(1.4)) : '');
+    if (st >= 4) s += flame(-48, hy + 30, 0.9, '#ff7a29', '#ffd23f') + flame(-66, hy + 24, 0.6, '#ff7a29', '#ffd23f');
+    if (gold) s += g('translate(0 ' + (hy - 26) + ')', path('M-18 4L-20-14L-8-4L0-20L8-4L20-14L18 4Z', '#ffd23f', L(2)) + circle(0, -4, 3.5, '#3d7bf2'));
+    return s;
+  }
+
+  // ---------------------------------------------- 人型（侍・騎士・忍者）の共通の体
+  // o = { skin, top, bottom, shoes, back, body, arms, head, headBack, front, weapon, face, hair }
+  function humanoid(o){
+    var s = '', hy = -96;
+    s += o.back || '';
+    // 足
+    s += both(function(d){ return rect(d * 10 - 8, -26, 16, 24, 6, o.bottom, L()) + ell(d * 10, -2, 11, 5.5, o.shoes, L(2)); });
+    // 胴
+    s += path('M-20-64H20L24-22H-24Z', o.top, L());
+    s += o.body || '';
+    // 腕（左手は前、右手は武器を持つ）
+    s += rect(-34, -62, 13, 32, 6.5, o.sleeve || o.top, L(), null) + circle(-27, -30, 7, o.skin, L(2));
+    s += rect(21, -62, 13, 30, 6.5, o.sleeve || o.top, L()) + circle(28, -32, 7, o.skin, L(2));
+    s += o.arms || '';
+    // 頭
+    s += o.headBack || '';
+    s += circle(0, hy, 32, o.skin, L());
+    s += o.hair || '';
+    s += o.face != null ? o.face : eyesHero(0, hy + 2, 12, 1, o.iris || '#3b2a1a') + grin(0, hy + 16, 1) + blush(0, hy + 12, 21, 0.9);
+    s += o.head || '';
+    s += o.weapon || '';
+    s += o.front || '';
+    return s;
+  }
+  function katana(x, y, rot, len, gold){
+    return g('translate(' + x + ' ' + y + ') rotate(' + rot + ')',
+      rect(-3, -len, 6, len, 2, '#e6edf5', L(2)) + path('M-1.5-' + (len - 4) + 'V-6', 'none', S('#ffffff', 1.5)) +
+      ell(0, 0, 8, 3, gold ? '#ffd23f' : '#333', L(1.6)) + rect(-3, 1, 6, 18, 2, '#2a1f3d', L(1.6)) + path('M-3 6L3 10M-3 12L3 16', 'none', S('#e8e1ff', 1.4)));
+  }
+
+  // ---------------------------------------------- 侍
+  function drawSamurai(st){
+    var o = { skin:'#ffdcb8', top:'#3a4fa8', bottom:'#2c2c44', shoes:'#8a5a2b', iris:'#2b1d14' }, hy = -96;
+    var hairTop = path('M-31 ' + (hy - 4) + 'Q-30 ' + (hy - 34) + ' 0 ' + (hy - 34) + 'Q30 ' + (hy - 34) + ' 31 ' + (hy - 4) + 'Q22 ' + (hy - 20) + ' 6 ' + (hy - 18) + 'L0 ' + (hy - 10) + 'L-6 ' + (hy - 18) + 'Q-22 ' + (hy - 20) + ' -31 ' + (hy - 4) + 'Z', '#2b2b3a', L());
+    o.hair = st <= 3 ? hairTop + ell(0, hy - 38, 7, 9, '#2b2b3a', L(2)) + rect(-6, hy - 34, 12, 4, 1, '#e03131') : '';
+    o.body = path('M-10-64L0-46L10-64', 'none', S('#ffffff', 4));
+    if (st === 1) o.weapon = g('translate(28 -32) rotate(20)', rect(-3, -52, 6, 52, 3, '#c8925a', L(2)) + ell(0, -2, 6, 2.5, '#6d4523'));
+    if (st === 2) {
+      o.weapon = g('translate(28 -32) rotate(-15)', rect(-3, -56, 6, 56, 3, '#c8925a', L(2)) + ell(0, -2, 6, 2.5, '#6d4523'));
+      o.head = path('M-32 ' + (hy - 10) + 'Q0 ' + (hy - 20) + ' 32 ' + (hy - 10), 'none', S(INK, 9)) + path('M-32 ' + (hy - 10) + 'Q0 ' + (hy - 20) + ' 32 ' + (hy - 10), 'none', S('#fff', 6)) +
+        circle(0, hy - 15, 4, '#e03131') + path('M-30 ' + (hy - 8) + 'q-14 4-18 16M-30 ' + (hy - 8) + 'q-16-2-22 6', 'none', S('#fff', 4));
+    }
+    if (st >= 3) {
+      o.sleeve = st >= 4 ? '#3a4fa8' : '#7fb3ff';
+      o.weapon = katana(28, -32, st === 5 ? -35 : -20, st === 5 ? 70 : 58, st === 5);
+      o.front = katana(-16, -26, 60, 40, st === 5).replace('#e6edf5', '#2a1f3d');
+    }
+    if (st === 3) o.body += path('M-24-22L-20-64H-8L-6-22Z', '#7fb3ff', L(2)) + path('M24-22L20-64H8L6-22Z', '#7fb3ff', L(2)) + path('M-22-30L-12-36L-8-28M22-30L12-36L8-28', 'none', S('#fff', 2));
+    if (st >= 4) {
+      var red = '#c0392b';
+      o.body += path('M-22-64H22L25-30H-25Z', red, L()) + [-56, -48, -40].map(function(y){ return path('M-21 ' + y + 'H21', 'none', S('#ffd23f', 2)); }).join('') +
+        path('M-26-30H26L30-16H-30Z', red, L(2)) + path('M-26-24H26', 'none', S('#ffd23f', 2));
+      o.arms = both(function(d){ return path('M' + (d * 18) + ' -66L' + (d * 40) + ' -60L' + (d * 38) + ' -44L' + (d * 22) + ' -48Z', red, L(2)) + path('M' + (d * 22) + ' -58L' + (d * 38) + ' -53', 'none', S('#ffd23f', 2)); });
+      var crest = st === 5 ? path('M-6 ' + (hy - 32) + 'C-20 ' + (hy - 50) + ' -34 ' + (hy - 70) + ' -30 ' + (hy - 86) + 'C-22 ' + (hy - 66) + ' -10 ' + (hy - 54) + ' 0 ' + (hy - 40) + 'C10 ' + (hy - 54) + ' 22 ' + (hy - 66) + ' 30 ' + (hy - 86) + 'C34 ' + (hy - 70) + ' 20 ' + (hy - 50) + ' 6 ' + (hy - 32) + 'Z', '#ffd23f', L(2.4)) + circle(0, hy - 34, 6, '#e03131', L(2))
+        : path('M-4 ' + (hy - 32) + 'L-14 ' + (hy - 48) + 'L0 ' + (hy - 38) + 'L14 ' + (hy - 48) + 'L4 ' + (hy - 32) + 'Z', '#ffd23f', L(2));
+      o.headBack = path('M-40 ' + (hy + 10) + 'L-34 ' + (hy - 6) + 'H34L40 ' + (hy + 10) + 'L30 ' + (hy + 6) + 'H-30Z', '#2c2c44', L(2));
+      o.head = path('M-34 ' + (hy - 4) + 'Q-32 ' + (hy - 36) + ' 0 ' + (hy - 36) + 'Q32 ' + (hy - 36) + ' 34 ' + (hy - 4) + 'Z', '#2c2c44', L()) + path('M-34 ' + (hy - 6) + 'H34', 'none', S('#ffd23f', 3)) + crest;
+    }
+    if (st === 5) o.back = path('M-26-66L-46-4Q0 10 46-4L26-66Z', '#8e1b1b', L()) + path('M-30-50Q0-44 30-50', 'none', S('#ffd23f', 3)) +
+      [[-60,-120],[56,-130],[-70,-60],[66,-70],[48,-24]].map(function(p){ return flower(p[0], p[1], 6, '#ffc9de', '#ff8fb1'); }).join('');
+    return humanoid(o);
+  }
+
+  // ---------------------------------------------- 騎士
+  function drawKnight(st){
+    var gold = st === 5, metal = gold ? '#ffd86b' : '#cfd8e3', dark = gold ? '#c98a00' : '#8a98ab', hy = -96;
+    var o = { skin:'#ffe0c4', top: st >= 3 ? metal : '#3f7be0', bottom: st >= 3 ? metal : '#7a5230', shoes: st >= 3 ? dark : '#5a3b20', iris:'#1f6feb' };
+    o.hair = path('M-30 ' + (hy - 2) + 'Q-28 ' + (hy - 30) + ' 0 ' + (hy - 30) + 'Q28 ' + (hy - 30) + ' 30 ' + (hy - 2) + 'Q14 ' + (hy - 14) + ' 0 ' + (hy - 12) + 'Q-14 ' + (hy - 14) + ' -30 ' + (hy - 2) + 'Z', '#f2c14e', L());
+    // かぶと
+    var helm = path('M-34 ' + (hy - 2) + 'Q-34 ' + (hy - 40) + ' 0 ' + (hy - 40) + 'Q34 ' + (hy - 40) + ' 34 ' + (hy - 2) + 'L28 ' + (hy + 2) + 'Q0 ' + (hy - 12) + ' -28 ' + (hy + 2) + 'Z', metal, L()) +
+      path('M0 ' + (hy - 40) + 'V' + (hy - 8), 'none', S(dark, 3));
+    if (st === 1) o.head = path('M-32 ' + (hy - 6) + 'Q-32 ' + (hy - 40) + ' 0 ' + (hy - 40) + 'Q32 ' + (hy - 40) + ' 32 ' + (hy - 6) + 'Z', '#b8c2cc', L()) + rect(-34, hy - 10, 68, 7, 3, '#8a98ab', L(2));
+    if (st >= 2) o.head = helm + (st >= 3 ? rect(-3, hy - 12, 6, 16, 2, metal, L(2)) : '');
+    if (st >= 4) o.head += path('M0 ' + (hy - 40) + 'C10 ' + (hy - 66) + ' 30 ' + (hy - 66) + ' 40 ' + (hy - 50) + 'C26 ' + (hy - 54) + ' 16 ' + (hy - 48) + ' 6 ' + (hy - 38) + 'Z', gold ? '#ffffff' : '#e03131', L(2));
+    if (gold) o.head += ell(0, hy - 54, 24, 6, 'none', S('#ffe066', 4));
+    // 胴よろい
+    if (st >= 3) o.body = path('M-20-64H20L22-34Q0-26-22-34Z', metal, L()) + path('M-12-58Q0-52 12-58M-14-46Q0-40 14-46', 'none', S(dark, 2)) + rect(-24, -34, 48, 7, 2, '#7a5230', L(2)) + circle(0, -30, 4, '#ffd23f', L(1.4));
+    else o.body = rect(-24, -32, 48, 6, 2, '#7a5230', L(2));
+    if (st >= 3) o.arms = both(function(d){ return circle(d * 26, -60, 12, metal, L()); });
+    // 剣
+    if (st === 1) o.weapon = g('translate(28 -32) rotate(-10)', rect(-3, -40, 6, 40, 2, '#c8925a', L(2)) + rect(-10, -4, 20, 5, 2, '#8a5a2b', L(1.6)));
+    else {
+      var len = [0, 0, 46, 60, 70, 82][st];
+      o.weapon = g('translate(28 -32) rotate(-12)',
+        (gold ? path('M0-' + (len + 8) + 'L-9-10H9Z', '#bff4ff', 'opacity=".55"') : '') +
+        path('M-4-4V-' + (len - 6) + 'L0-' + len + 'L4-' + (len - 6) + 'V-4Z', gold ? '#e8fbff' : '#e6edf5', L(2)) + path('M0-' + (len - 8) + 'V-8', 'none', S(gold ? '#7fe0ff' : '#aab6c4', 1.6)) +
+        rect(-14, -6, 28, 6, 3, '#ffd23f', L(1.8)) + rect(-3, 0, 6, 14, 2, '#5a3b20', L(1.6)) + circle(0, 16, 4, '#ffd23f', L(1.4)));
+    }
+    // 盾
+    if (st === 2) o.front = circle(-30, -40, 16, '#a0703f', L()) + circle(-30, -40, 16, 'none', S('#b8c2cc', 4)) + circle(-30, -40, 4, '#b8c2cc', L(1.4));
+    if (st >= 3) {
+      var sc = gold ? '#ffffff' : '#2f6fd0';
+      o.front = g('translate(-32 -42) scale(' + (st >= 4 ? 1.2 : 1) + ')',
+        path('M-17-20H17V0C17 13 6 21 0 24C-6 21-17 13-17 0Z', sc, L()) + path('M-17-20H17V0C17 13 6 21 0 24C-6 21-17 13-17 0Z', 'none', S(gold ? '#ffd23f' : '#cfd8e3', 3)) +
+        (st >= 4 ? path('M-8-2L-8-12L-3-6L0-14L3-6L8-12L8-2Z', '#ffd23f', L(1.4)) : path('M0-14V16M-10-3H10', 'none', S('#ffd23f', 4))));
+    }
+    if (st >= 4) o.back = path('M-22-66L-40-2Q0 8 40-2L22-66Z', gold ? '#ffffff' : '#c92a2a', L());
+    if (gold) o.back = both(function(d){ return g('scale(' + d + ' 1)', path('M16-64C30-110 78-130 98-110C86-106 92-98 84-92C94-86 82-78 74-78C80-70 66-66 58-68C56-58 40-58 34-62C28-56 18-58 14-62Z', '#ffffff', L(2.5)) +
+      path('M30-86Q60-100 84-104M34-74Q60-84 76-86', 'none', S('#d7e3f0', 2))); }) + o.back;
+    return humanoid(o);
+  }
+
+  // ---------------------------------------------- 忍者
+  function drawNinja(st){
+    var suit = st === 5 ? '#1a1530' : '#2d2a4a', scarf = '#e03131', hy = -96;
+    var o = { skin:'#ffdcb8', top:suit, bottom:suit, shoes:'#15131f', iris:'#8b5cf6' };
+    if (st === 5) o.back = flame(-38, -10, 1.6, '#7b2ff7', '#c9a2ff') + flame(40, -6, 1.4, '#7b2ff7', '#c9a2ff') + flame(0, -110, 1.1, '#7b2ff7', '#c9a2ff');
+    if (st >= 4) o.back = (o.back || '') + katana(18, -30, -40, 66, st === 5).replace(/#e6edf5/g, '#2a1f3d');
+    if (st === 5) o.back += g('translate(-6 -70) rotate(20)', star(0, 0, 44, '#b8c2cc', L(), 4, 0.3) + circle(0, 0, 8, suit, L(2)));
+    // 頭巾と口あて
+    o.hair = '';
+    o.face = path('M-32 ' + (hy + 2) + 'Q-34 ' + (hy - 34) + ' 0 ' + (hy - 34) + 'Q34 ' + (hy - 34) + ' 32 ' + (hy + 2) + 'Z', suit, L()) +
+      path('M-32 ' + (hy + 6) + 'H32Q30 ' + (hy + 32) + ' 0 ' + (hy + 32) + 'Q-30 ' + (hy + 32) + ' -32 ' + (hy + 6) + 'Z', suit, L()) +
+      eyesHero(0, hy - 2, 12, 1, '#8b5cf6', st <= 1);
+    if (st >= 2) o.face += rect(-24, hy - 24, 48, 10, 3, '#b8c2cc', L(2)) + path('M-8 ' + (hy - 19) + 'H8', 'none', S('#556', 2));
+    if (st === 5) o.face += rect(-24, hy - 24, 48, 10, 3, '#ffd23f', L(2)) + star(0, hy - 19, 4, '#7b2ff7');
+    o.body = path('M-24-30H24', 'none', S(scarf === '#e03131' && st >= 3 ? '#b8c2cc' : '#4a4570', 6));
+    // マフラー
+    var sl = [0, 0, 26, 40, 58, 72][st];
+    if (st >= 2) o.headBack = path('M18 ' + (hy + 28) + 'C' + (40 + sl * 0.3) + ' ' + (hy + 20) + ' ' + (50 + sl * 0.6) + ' ' + (hy + 40) + ' ' + (60 + sl * 0.5) + ' ' + (hy + 30) + 'L' + (56 + sl * 0.5) + ' ' + (hy + 44) + 'C' + (44 + sl * 0.4) + ' ' + (hy + 50) + ' ' + 34 + ' ' + (hy + 40) + ' 16 ' + (hy + 38) + 'Z', scarf, L(2));
+    if (st >= 2) o.body += path('M-22-64Q0-56 22-64L20-56Q0-48-20-56Z', scarf, L(2));
+    if (st === 3 || st === 4) o.weapon = g('translate(30 -34) rotate(15)', star(0, 0, 13, '#b8c2cc', L(2), 4, 0.32) + circle(0, 0, 3, suit));
+    if (st >= 4) o.front = [[-58,-30],[-46,-12],[56,-14]].map(function(p){ return circle(p[0], p[1], 9, '#e9e6ff', 'opacity=".75"') + circle(p[0] + 8, p[1] + 2, 7, '#e9e6ff', 'opacity=".75"'); }).join('');
+    return humanoid(o);
+  }
+
+  // ---------------------------------------------- ロボット
+  function drawRobo(st){
+    var W = '#f1f3f5', B = '#1c7ed6', R = '#e03131', Y = '#fcc419', D = '#495057', s = '';
+    if (st === 1) {
+      s += both(function(d){ return circle(d * 20, -8, 9, D, L()); });
+      s += circle(0, -42, 34, W, L()) + path('M-34-42H34', 'none', S(B, 8)) + ell(0, -48, 14, 13, '#183049', L(2)) + circle(0, -48, 7, '#5ff2ff') + circle(-3, -51, 2.5, '#fff');
+      s += path('M0-76V-90', 'none', L(3)) + circle(0, -92, 5, R, L(2));
       return s;
     }
-    if (ch.type === 'cute') {
-      [-1, 1].forEach(function(d){
-        var ex = x + d * sp;
-        s += ell(ex, y, 7.5 * k, 9.5 * k, ch.ink);
-        s += circle(ex - 2.4 * k, y - 3.5 * k, 3 * k, '#fff') + circle(ex + 2.6 * k, y + 3.5 * k, 1.5 * k, '#fff');
-        s += ell(x + d * (sp + 9 * k), y + 13 * k, 7 * k, 4 * k, '#ff8fab', 'opacity=".55"');
-      });
-      s += path('M' + (x - 6 * k) + ' ' + (y + 11 * k) + 'q3 4 6 0q3 4 6 0', 'none', ln(ch, 2.4));
-    } else {
-      [-1, 1].forEach(function(d){
-        var ex = x + d * sp;
-        s += path('M' + (ex - 9 * k * d) + ' ' + (y - 3 * k) + 'Q' + ex + ' ' + (y - 9 * k) + ' ' + (ex + 8 * k * d) + ' ' + (y - 4 * k) +
-          'Q' + (ex + 6 * k * d) + ' ' + (y + 8 * k) + ' ' + ex + ' ' + (y + 8 * k) + 'Q' + (ex - 8 * k * d) + ' ' + (y + 7 * k) + ' ' + (ex - 9 * k * d) + ' ' + (y - 3 * k) + 'Z', '#fff', ln(ch, 2.2));
-        s += circle(ex + 1.5 * k * d, y + 1.5 * k, 4.2 * k, ch.ink) + circle(ex + 0.2 * k * d, y - 0.2 * k, 1.4 * k, '#fff');
-        s += path('M' + (ex - 10 * k * d) + ' ' + (y - 13 * k) + 'L' + (ex + 8 * k * d) + ' ' + (y - 9 * k), 'none', ln(ch, 3));
-      });
-      s += path('M' + (x - 7 * k) + ' ' + (y + 14 * k) + 'Q' + x + ' ' + (y + 19 * k) + ' ' + (x + 8 * k) + ' ' + (y + 12 * k), 'none', ln(ch, 2.6));
-      s += path('M' + (x + 3 * k) + ' ' + (y + 16 * k) + 'l2 4 2-4.5', '#fff', ln(ch, 1.5));
+    if (st === 2) {
+      s += rect(-34, -16, 68, 16, 8, D, L()) + [-22, -8, 6, 20].map(function(x){ return circle(x, -8, 4, '#868e96'); }).join('');
+      s += rect(-28, -62, 56, 48, 8, W, L()) + rect(-16, -52, 32, 22, 4, B, L(2)) + circle(-6, -41, 3, Y) + circle(6, -41, 3, R);
+      s += both(function(d){ return rect(d * 30 - (d < 0 ? 10 : 0), -56, 10, 26, 5, '#adb5bd', L(2)); });
+      s += rect(-24, -104, 48, 40, 10, W, L()) + rect(-18, -94, 36, 16, 8, '#183049', L(2)) + circle(-8, -86, 4, '#5ff2ff') + circle(8, -86, 4, '#5ff2ff');
+      s += path('M-14-104L-20-120M14-104L20-120', 'none', L(3)) + circle(-20, -122, 4, Y, L(2)) + circle(20, -122, 4, Y, L(2));
+      return s;
     }
+    // 人型メカ（成熟期〜）
+    var big = st >= 4, k = st === 5 ? 1 : 1, hy = -110;
+    if (st === 5) s += both(function(d){ return g('scale(' + d + ' 1)',
+      path('M18-90L84-128L96-108L60-84L92-78L88-60L40-64Z', W, L()) + path('M30-84L84-120M36-72L86-72', 'none', S(B, 5)) + flame(70, -52, 0.5, '#5ff2ff', '#ffffff')); });
+    if (big) s += both(function(d){ return rect(d * 30 - 9, -96, 18, 30, 4, D, L(2)) + flame(d * 30, -62, 0.45, '#ff7a29', Y); });
+    // 足
+    s += both(function(d){ return rect(d * 13 - 10, -40, 20, 36, 5, W, L()) + rect(d * 13 - 13, -8, 26, 10, 3, B, L(2)) + rect(d * 13 - 6, -32, 12, 8, 2, '#adb5bd'); });
+    s += rect(-24, -48, 48, 12, 4, R, L()) + rect(-6, -48, 12, 12, 2, Y, L(1.6));
+    // 胴
+    s += path('M-28-92H28L24-48H-24Z', B, L()) + rect(-20, -86, 14, 10, 2, Y, L(1.6)) + rect(6, -86, 14, 10, 2, Y, L(1.6)) +
+      path('M-20-82H-6M6-82H20', 'none', S(D, 1.6)) + circle(0, -66, 7, '#5ff2ff', L(2));
+    // 肩と腕
+    s += both(function(d){ return rect(d * 36 - 13, -100, 26, 20, 6, W, L()) + rect(d * 36 - 8, -80, 16, 30, 5, '#dee2e6', L()) + circle(d * 36, -48, 8, '#adb5bd', L(2)); });
+    // 武器：ビームの剣
+    if (big) s += g('translate(40 -48) rotate(-25)', rect(-4, -4, 8, 16, 2, D, L(1.6)) + rect(-5, -70, 10, 66, 5, '#ff6bd6', 'opacity=".55"') + rect(-2.5, -68, 5, 64, 2.5, '#fff'));
+    // 頭
+    s += rect(-20, hy - 22, 40, 34, 9, W, L()) + rect(-15, hy - 12, 30, 12, 4, '#183049', L(2)) + both(function(d){ return circle(d * 7, hy - 6, 3.2, st === 5 ? '#ffe066' : '#5ff2ff'); });
+    s += path('M-6 ' + (hy + 6) + 'H6', 'none', S(R, 3));
+    var fin = st === 3 ? 10 : st === 4 ? 22 : 34;
+    s += path('M0 ' + (hy - 20) + 'L' + (-fin) + ' ' + (hy - 20 - fin) + 'L-4 ' + (hy - 24) + 'L0 ' + (hy - 30) + 'L4 ' + (hy - 24) + 'L' + fin + ' ' + (hy - 20 - fin) + 'Z', Y, L(2)) + circle(0, hy - 22, 3.5, R, L(1.4));
     return s;
   }
 
-  // ------------------------------------------------------------ 特徴（キャラごと）
-  // 返り値 { back:体の後ろ, behind:頭の後ろ, deco:体の上, front:頭の上 }
-  function motif(ch, st, P){
-    var o = { back:'', behind:'', deco:'', front:'' }, x = P.hx, y = P.hy, r = P.hr, L = ln(ch), g = Math.max(1, st);
-    var bx = P.bx, by = P.by, brx = P.brx, bry = P.bry;
-    switch (ch.motif) {
-      case 'bunny':
-        var eh = r * (0.55 + 0.13 * g);
-        [-1, 1].forEach(function(d){
-          var ex = x + d * r * 0.42, ey = y - r * 0.75 - eh * 0.75, rot = d * (8 + g * 2);
-          o.behind += ell(ex, ey, r * 0.26, eh, ch.c1, L, rot) + ell(ex, ey + eh * 0.1, r * 0.13, eh * 0.75, ch.c3, 'opacity=".55"', rot);
-        });
-        if (st >= 3) o.back += circle(bx + brx * 0.95, by + bry * 0.35, 13 + st * 2, ch.c2, L);
-        if (st >= 4) o.deco += bow(ch, bx, by - bry * 0.42, 1 + (st - 4) * 0.2);
-        if (st >= 5) o.back += wings(ch, bx, by - bry * 0.3, 1.25, 'feather');
-        break;
-      case 'cat':
-        [-1, 1].forEach(function(d){
-          var ex = x + d * r * 0.62;
-          o.behind += path('M' + (ex - d * r * 0.42) + ' ' + (y - r * 0.55) + 'L' + (ex + d * r * 0.12) + ' ' + (y - r * (1.05 + 0.05 * g)) + 'L' + (ex + d * r * 0.4) + ' ' + (y - r * 0.4) + 'Z', ch.c1, L);
-          o.behind += path('M' + (ex - d * r * 0.22) + ' ' + (y - r * 0.6) + 'L' + (ex + d * r * 0.1) + ' ' + (y - r * (0.9 + 0.05 * g)) + 'L' + (ex + d * r * 0.25) + ' ' + (y - r * 0.5) + 'Z', ch.c3, 'opacity=".55"');
-          for (var i = -1; i <= 1; i++) o.front += path('M' + (x + d * r * 0.62) + ' ' + (y + r * 0.32 + i * 5) + 'l' + (d * r * 0.42) + ' ' + (i * 5), 'none', ln(ch, 2));
-        });
-        if (st >= 2) o.back += path('M' + (bx + brx * 0.8) + ' ' + (by + bry * 0.6) + 'C' + (bx + brx * 1.8) + ' ' + (by + bry * 0.6) + ' ' + (bx + brx * 1.2) + ' ' + (by - bry * 1.2) + ' ' + (bx + brx * 1.7) + ' ' + (by - bry * 1.3), 'none', 'stroke="' + ch.ink + '" stroke-width="' + (13 + st) + '" stroke-linecap="round"') +
-          path('M' + (bx + brx * 0.8) + ' ' + (by + bry * 0.6) + 'C' + (bx + brx * 1.8) + ' ' + (by + bry * 0.6) + ' ' + (bx + brx * 1.2) + ' ' + (by - bry * 1.2) + ' ' + (bx + brx * 1.7) + ' ' + (by - bry * 1.3), 'none', 'stroke="' + ch.c1 + '" stroke-width="' + (8 + st) + '" stroke-linecap="round"');
-        if (st >= 4) o.deco += path('M' + (bx - brx * 0.7) + ' ' + (by - bry * 0.8) + 'Q' + bx + ' ' + (by - bry * 0.55) + ' ' + (bx + brx * 0.7) + ' ' + (by - bry * 0.8), 'none', 'stroke="' + ch.c3 + '" stroke-width="7" stroke-linecap="round"') + circle(bx, by - bry * 0.62, 7, '#ffd84a', ln(ch, 2));
-        if (st >= 5) o.back += wings(ch, bx, by - bry * 0.3, 1.2, 'feather');
-        break;
-      case 'flower':
-        var n = 5 + g, pr = r * (0.3 + 0.03 * g);
-        for (var i = 0; i < n; i++) {
-          var a = -Math.PI / 2 + (i - (n - 1) / 2) * (Math.PI * 1.25 / n);
-          var px = x + Math.cos(a) * r * 0.95, py = y + Math.sin(a) * r * 0.95;
-          o.behind += ell(px, py, pr * 0.7, pr * 1.15, i % 2 ? ch.c3 : '#ff9cc0', L, (a * 180 / Math.PI + 90).toFixed(0));
-        }
-        if (st <= 2) o.front += path('M' + x + ' ' + (y - r) + 'q-2 -10 4 -16', 'none', 'stroke="#4caf50" stroke-width="3"') + ell(x + 9, y - r - 14, 7, 4, '#7bd389', ln(ch, 2), -30);
-        if (st >= 3) o.back += wings(ch, bx, by - bry * 0.4, 0.75 + st * 0.12, 'butterfly');
-        if (st >= 4) o.deco += flowerMark(bx, by - bry * 0.1, 11, ch);
-        break;
-      case 'sheep':
-        var m = 6 + g * 2;
-        for (var i = 0; i < m; i++) {
-          var a = Math.PI + (i / (m - 1)) * Math.PI;
-          o.behind += circle(x + Math.cos(a) * r * 0.92, y + Math.sin(a) * r * 0.8, r * 0.3, ch.c2, L);
-        }
-        if (st >= 3) [-1, 1].forEach(function(d){
-          o.front += path('M' + (x + d * r * 0.75) + ' ' + (y - r * 0.35) + 'c' + (d * 14) + ' -6 ' + (d * 18) + ' 12 ' + (d * 6) + ' 14c' + (d * -6) + ' 1 ' + (d * -6) + ' -6 ' + (d * -1) + ' -6', 'none', 'stroke="#f2c14e" stroke-width="5" stroke-linecap="round"');
-        });
-        if (st >= 3) for (var i = 0; i < 7; i++) {
-          var a = (i / 6) * Math.PI;
-          o.deco += circle(bx + Math.cos(a) * brx * 0.85, by + bry * 0.15 + Math.sin(a) * bry * 0.6, brx * 0.22, ch.c2, L);
-        }
-        if (st >= 4) o.back += cloudWings(ch, bx, by - bry * 0.5, 0.8 + (st - 4) * 0.35);
-        break;
-      case 'unicorn':
-        var hh = r * (0.35 + 0.1 * g);
-        o.front += path('M' + (x - r * 0.13) + ' ' + (y - r * 0.82) + 'L' + x + ' ' + (y - r * 0.82 - hh) + 'L' + (x + r * 0.13) + ' ' + (y - r * 0.82) + 'Z', '#ffe27a', L) +
-          path('M' + (x - r * 0.08) + ' ' + (y - r * 0.82 - hh * 0.3) + 'l' + (r * 0.16) + ' -5M' + (x - r * 0.05) + ' ' + (y - r * 0.82 - hh * 0.6) + 'l' + (r * 0.1) + ' -4', 'none', ln(ch, 2));
-        [-1, 1].forEach(function(d){
-          o.behind += path('M' + (x + d * r * 0.35) + ' ' + (y - r * 0.7) + 'L' + (x + d * r * 0.6) + ' ' + (y - r * 1.12) + 'L' + (x + d * r * 0.72) + ' ' + (y - r * 0.55) + 'Z', ch.c1, L);
-        });
-        if (st >= 2) {
-          // たてがみ：頭の右上から後ろへ、虹色の巻き毛
-          var mc = ['#ff9cc0', '#c99cff', '#8fd3ff', '#ffd27f', '#ff9cc0'], mn = 2 + st;
-          for (var i = 0; i < mn; i++) {
-            var a = -Math.PI * 0.45 + i * (Math.PI * 0.75 / (mn - 1));
-            o.behind += circle(x + Math.cos(a) * r * 1.0, y + Math.sin(a) * r * 1.0, r * 0.28, mc[i % mc.length], L);
-          }
-        }
-        if (st >= 3) o.back += path('M' + (bx + brx * 0.85) + ' ' + (by + bry * 0.2) + 'q' + (30 + st * 4) + ' -10 ' + (24 + st * 4) + ' 30q-4 -18 -22 -12', '#c99cff', L);
-        if (st >= 4) o.back += wings(ch, bx, by - bry * 0.4, 0.95 + (st - 4) * 0.3, 'feather');
-        break;
-      case 'dragon':
-        [-1, 1].forEach(function(d){
-          var hx = x + d * r * 0.5;
-          o.front += path('M' + (hx - d * 5) + ' ' + (y - r * 0.78) + 'Q' + (hx + d * r * 0.1) + ' ' + (y - r * (1.15 + 0.08 * g)) + ' ' + (hx + d * r * (0.35 + 0.05 * g)) + ' ' + (y - r * (1.25 + 0.1 * g)) + 'Q' + (hx + d * 4) + ' ' + (y - r * 0.95) + ' ' + (hx + d * 9) + ' ' + (y - r * 0.65) + 'Z', '#fff3c4', L);
-        });
-        if (st >= 2) o.back += tail(ch, bx, by, brx, bry, st, true);
-        if (st >= 3) o.back += wings(ch, bx, by - bry * 0.5, 0.7 + st * 0.13, 'bat');
-        o.deco += belly(ch, bx, by, brx, bry, true);
-        break;
-      case 'wolf':
-        [-1, 1].forEach(function(d){
-          var ex = x + d * r * 0.55;
-          o.behind += path('M' + (ex - d * r * 0.3) + ' ' + (y - r * 0.6) + 'L' + (ex + d * r * 0.08) + ' ' + (y - r * (1.2 + 0.07 * g)) + 'L' + (ex + d * r * 0.42) + ' ' + (y - r * 0.38) + 'Z', ch.c1, L) +
-            path('M' + (ex - d * r * 0.12) + ' ' + (y - r * 0.6) + 'L' + (ex + d * r * 0.06) + ' ' + (y - r * (1.0 + 0.06 * g)) + 'L' + (ex + d * r * 0.22) + ' ' + (y - r * 0.5) + 'Z', ch.c3, 'opacity=".6"');
-        });
-        if (st >= 2) o.back += path('M' + (bx + brx * 0.7) + ' ' + (by + bry * 0.5) + 'Q' + (bx + brx * 2) + ' ' + (by + bry * 0.4) + ' ' + (bx + brx * 1.6) + ' ' + (by - bry * (0.6 + st * 0.15)) + 'Q' + (bx + brx * 1.3) + ' ' + (by - bry * 0.1) + ' ' + (bx + brx * 0.7) + ' ' + (by + bry * 0.1) + 'Z', ch.c1, L);
-        if (st >= 3) {
-          var sp = '';
-          for (var i = 0; i < 9; i++) {
-            var a = Math.PI * 0.15 + i * Math.PI * 0.7 / 8;
-            var mx = x + Math.cos(a) * r * 0.95, my = y + Math.sin(a) * r * 0.85;
-            sp += 'L' + (x + Math.cos(a) * r * (1.25 + st * 0.04)).toFixed(1) + ' ' + (y + Math.sin(a) * r * 1.15).toFixed(1) + 'L' + mx.toFixed(1) + ' ' + my.toFixed(1);
-          }
-          o.behind += path('M' + (x + r * 0.9) + ' ' + (y + r * 0.2) + sp + 'Z', ch.c2, L);
-        }
-        if (st >= 4) o.deco += path('M' + (bx - brx * 0.8) + ' ' + (by - bry * 0.75) + 'Q' + bx + ' ' + (by - bry * 0.45) + ' ' + (bx + brx * 0.8) + ' ' + (by - bry * 0.75) + 'L' + (bx + brx * 0.55) + ' ' + (by - bry * 0.2) + 'L' + (bx + brx * 0.35) + ' ' + (by - bry * 0.6) + 'Z', '#e94e5b', L);
-        o.deco += belly(ch, bx, by, brx, bry, false);
-        if (st >= 5) o.back += wings(ch, bx, by - bry * 0.4, 1.2, 'bat');
-        break;
-      case 'robot':
-        var ah = 14 + g * 5;
-        o.front += path('M' + x + ' ' + (y - r * 0.85) + 'V' + (y - r * 0.85 - ah), 'none', ln(ch, 3)) + circle(x, y - r * 0.85 - ah, 6 + st * 0.6, st >= 4 ? '#ff5c5c' : '#5ff2ff', ln(ch, 2.5));
-        [-1, 1].forEach(function(d){ o.behind += circle(x + d * r * 0.98, y, r * 0.24, ch.c3, L) + circle(x + d * r * 0.98, y, r * 0.09, '#fff'); });
-        o.deco += '<rect' + at({ x: bx - brx * 0.45, y: by - bry * 0.4, width: brx * 0.9, height: bry * 0.7, rx: 6, fill: ch.c2 }) + ' ' + L + '/>' +
-          circle(bx - brx * 0.18, by - bry * 0.05, 4, '#ff5c5c') + circle(bx + brx * 0.18, by - bry * 0.05, 4, '#5ff2ff');
-        if (st >= 4) [-1, 1].forEach(function(d){
-          o.back += path('M' + (bx + d * brx * 0.6) + ' ' + (by - bry * 0.6) + 'L' + (bx + d * brx * (1.7 + (st - 4) * 0.4)) + ' ' + (by - bry * (1.3 + (st - 4) * 0.3)) + 'L' + (bx + d * brx * (1.5 + (st - 4) * 0.4)) + ' ' + (by + bry * 0.1) + 'Z', ch.c3, L) +
-            path('M' + (bx + d * brx * 0.9) + ' ' + (by - bry * 0.45) + 'L' + (bx + d * brx * 1.4) + ' ' + (by - bry * 0.75), 'none', 'stroke="#5ff2ff" stroke-width="3" stroke-linecap="round"');
-        });
-        break;
-      case 'thunder':
-        [-1, 1].forEach(function(d){
-          var ex = x + d * r * 0.55, k2 = 0.8 + g * 0.12;
-          o.behind += '<path transform="translate(' + ex + ' ' + (y - r * 0.95) + ') scale(' + (d * 1.4 * k2) + ' ' + (1.6 * k2) + ')" d="M2-12L-7 2H0L-3 13L8-3H1Z" fill="' + ch.c3 + '" ' + ln(ch, 2) + '/>';
-        });
-        if (st >= 2) {
-          var d2 = 'M' + (bx + brx * 0.8) + ' ' + (by + bry * 0.4), tx = bx + brx * 0.8, ty = by + bry * 0.4;
-          for (var i = 0; i < 2 + st; i++) { tx += 9; ty -= (i % 2 ? -10 : 18); d2 += 'L' + tx + ' ' + ty; }
-          o.back += path(d2, 'none', 'stroke="' + ch.ink + '" stroke-width="12" stroke-linejoin="round" stroke-linecap="round"') + path(d2, 'none', 'stroke="' + ch.c3 + '" stroke-width="7" stroke-linejoin="round" stroke-linecap="round"');
-        }
-        for (var i = -1; i <= 1; i++) o.deco += path('M' + (bx + i * brx * 0.45 - 6) + ' ' + (by - bry * 0.3) + 'l6 10-6 10', 'none', 'stroke="' + ch.ink + '" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" opacity=".55"');
-        if (st >= 4) [-1, 1].forEach(function(d){ o.back += bolt(bx + d * brx * 1.55, by - bry * 0.7, 1.5 + (st - 4) * 0.4, ch.c3, ln(ch, 2)); });
-        break;
-      case 'shark':
-        o.front += path('M' + (x - r * 0.25) + ' ' + (y - r * 0.85) + 'Q' + (x + r * 0.05) + ' ' + (y - r * (1.25 + 0.08 * g)) + ' ' + (x + r * (0.35 + 0.04 * g)) + ' ' + (y - r * (1.35 + 0.08 * g)) + 'Q' + (x + r * 0.2) + ' ' + (y - r * 1.05) + ' ' + (x + r * 0.3) + ' ' + (y - r * 0.8) + 'Z', ch.c3, L);
-        [-1, 1].forEach(function(d){
-          o.behind += path('M' + (x + d * r * 0.85) + ' ' + (y + r * 0.1) + 'q' + (d * r * 0.5) + ' -' + (r * 0.1) + ' ' + (d * r * 0.55) + ' -' + (r * 0.45) + 'q-' + (d * r * 0.1) + ' ' + (r * 0.35) + ' -' + (d * r * 0.45) + ' ' + (r * 0.6) + 'Z', ch.c3, L);
-          o.front += path('M' + (x + d * r * 0.6) + ' ' + (y + r * 0.45) + 'l' + (d * 3) + ' 6M' + (x + d * r * 0.68) + ' ' + (y + r * 0.38) + 'l' + (d * 3) + ' 6', 'none', ln(ch, 2));
-        });
-        if (st >= 2) o.back += path('M' + (bx + brx * 0.75) + ' ' + (by + bry * 0.3) + 'L' + (bx + brx * (1.55 + st * 0.08)) + ' ' + (by - bry * 0.4) + 'L' + (bx + brx * (1.3 + st * 0.05)) + ' ' + (by + bry * 0.3) + 'L' + (bx + brx * (1.55 + st * 0.08)) + ' ' + (by + bry * 0.9) + 'Z', ch.c3, L);
-        o.deco += belly(ch, bx, by, brx, bry, false);
-        if (st >= 4) [-1, 1].forEach(function(d){
-          o.back += path('M' + (bx + d * brx * 1.1) + ' ' + (by + bry * 0.8) + 'q' + (d * 18) + ' -20 0 -40q' + (d * -16) + ' -16 ' + (d * 4) + ' -34', 'none', 'stroke="#7fdcf2" stroke-width="' + (6 + (st - 4) * 3) + '" stroke-linecap="round" opacity=".8"');
-        });
-        break;
-    }
-    return o;
-  }
+  var DRAW = { inu:drawInu, neko:drawNeko, usagi:drawUsagi, panda:drawPanda, hamu:drawHamu,
+    dragon:drawDragon, samurai:drawSamurai, knight:drawKnight, ninja:drawNinja, robo:drawRobo };
+  var SCALE = [1, 0.58, 0.72, 0.85, 0.94, 1.0];
+  // 幼年期（からの中）で顔がかくれないよう、背の低いキャラは少し持ち上げる
+  var LIFT = { hamu:30, robo:44 };
 
-  function bow(ch, x, y, k){
-    return '<g transform="translate(' + x + ' ' + y + ') scale(' + k + ')">' +
-      path('M0 0L-16-9V9Z', ch.c3, ln(ch, 2.5)) + path('M0 0L16-9V9Z', ch.c3, ln(ch, 2.5)) + circle(0, 0, 5, '#ff9cc0', ln(ch, 2.5)) + '</g>';
-  }
-  function flowerMark(x, y, r, ch){
-    var s = '';
-    for (var i = 0; i < 5; i++) s += petal(x, y, r * 0.6, r * 0.42, r * 0.65, i * 72, '#ff9cc0', ln(ch, 2));
-    return s + circle(x, y, r * 0.35, '#ffe680', ln(ch, 2));
-  }
-  function belly(ch, bx, by, brx, bry, lines){
-    var s = ell(bx, by + bry * 0.12, brx * 0.6, bry * 0.66, ch.c2);
-    if (lines) for (var i = 0; i < 3; i++) s += path('M' + (bx - brx * 0.4) + ' ' + (by - bry * 0.15 + i * bry * 0.3) + 'Q' + bx + ' ' + (by - bry * 0.02 + i * bry * 0.3) + ' ' + (bx + brx * 0.4) + ' ' + (by - bry * 0.15 + i * bry * 0.3), 'none', ln(ch, 2) + ' opacity=".4"');
-    return s;
-  }
-  function tail(ch, bx, by, brx, bry, st, spikes){
-    var tx = bx + brx * (1.4 + st * 0.12), ty = by - bry * 0.1;
-    var s = path('M' + (bx + brx * 0.6) + ' ' + (by + bry * 0.75) + 'Q' + (bx + brx * 1.5) + ' ' + (by + bry * 0.9) + ' ' + tx + ' ' + ty + 'Q' + (bx + brx * 1.2) + ' ' + (by + bry * 0.4) + ' ' + (bx + brx * 0.6) + ' ' + (by + bry * 0.2) + 'Z', ch.c1, ln(ch));
-    if (spikes) s += path('M' + (tx - 4) + ' ' + (ty + 6) + 'l6 -14 4 12Z', '#fff3c4', ln(ch, 2));
-    return s;
-  }
-  function wings(ch, x, y, k, kind){
-    var s = '';
-    [-1, 1].forEach(function(d){
-      var t = 'translate(' + x + ' ' + y + ') scale(' + (d * k) + ' ' + k + ')';
-      if (kind === 'bat') {
-        s += '<path transform="' + t + '" d="M20 0C40-30 70-40 92-30C84-18 84-6 88 4C76 0 66 2 62 12C54 6 42 8 38 18C32 10 26 8 20 12Z" fill="' + ch.c3 + '" ' + ln(ch, 3 / k) + '/>';
-      } else if (kind === 'butterfly') {
-        s += '<g transform="' + t + '" opacity=".92"><path d="M14-4C30-44 78-46 70-10C66 6 40 6 14 2Z" fill="#ffd6ec" ' + ln(ch, 2.5 / k) + '/>' +
-          '<path d="M14 4C40 8 62 18 52 36C40 50 20 30 12 10Z" fill="#ffb3d6" ' + ln(ch, 2.5 / k) + '/>' + circle(48, -16, 7, '#fff', '') + '</g>';
-      } else {
-        s += '<path transform="' + t + '" d="M18 0C30-30 64-44 90-38C80-28 86-22 78-16C86-10 78-4 72 0C76 6 66 10 60 10C60 18 46 18 40 16C32 18 24 12 18 8Z" fill="#ffffff" ' + ln(ch, 3 / k) + '/>';
-      }
-    });
-    return s;
-  }
-  function cloudWings(ch, x, y, k){
-    var s = '';
-    [-1, 1].forEach(function(d){
-      s += '<g transform="translate(' + x + ' ' + y + ') scale(' + (d * k) + ' ' + k + ')">' + circle(44, -6, 16, '#fff', ln(ch, 2.5)) + circle(64, -16, 14, '#fff', ln(ch, 2.5)) + circle(70, 4, 12, '#fff', ln(ch, 2.5)) + circle(50, 10, 12, '#fff', ln(ch, 2.5)) + '</g>';
-    });
-    return s;
-  }
-  function crown(ch, x, y, k){
-    var gem = ch.type === 'cute' ? '#ff5c93' : '#3d7bf2';
-    return '<g transform="translate(' + x + ' ' + y + ') scale(' + k + ')">' +
-      path('M-22 0L-26-24L-12-12L0-30L12-12L26-24L22 0Z', '#ffd84a', ln(ch, 2.5 / k)) +
-      circle(0, -10, 4.5, gem, ln(ch, 1.5)) + circle(-26, -24, 3.5, gem) + circle(26, -24, 3.5, gem) + circle(0, -30, 3.5, gem) + '</g>';
-  }
-
-  // ------------------------------------------------------------ からだ
   function creature(ch, st){
-    // 段階ごとの大きさ（頭 hx,hy,hr と からだ bx,by,brx,bry）
-    var P = [null,
-      { hx:100, hy:132, hr:38 },
-      { hx:100, hy:114, hr:44, bx:100, by:150, brx:40, bry:28 },
-      { hx:100, hy:84,  hr:40, bx:100, by:146, brx:36, bry:34 },
-      { hx:100, hy:80,  hr:39, bx:100, by:142, brx:42, bry:38 },
-      { hx:100, hy:78,  hr:40, bx:100, by:140, brx:45, bry:40 }][st];
-    var robot = ch.motif === 'robot', L = ln(ch), s = '';
-    if (st === 1) { P.bx = 100; P.by = 160; P.brx = 30; P.bry = 20; }
-    var M = motif(ch, st, P), gid = 'p' + (++uid);
-
-    s += '<defs><radialGradient id="' + gid + 'a"><stop offset="0" stop-color="' + (ch.type === 'cute' ? '#ffe3f1' : '#d9ecff') + '"/><stop offset=".6" stop-color="' + (ch.type === 'cute' ? '#ffd0e6' : '#bfe0ff') + '" stop-opacity=".7"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient></defs>';
+    var s = '', gid = 'p' + (++uid), k = SCALE[st];
     if (st === 5) {
-      s += circle(100, 105, 98, 'url(#' + gid + 'a)');
+      s += '<defs><radialGradient id="' + gid + 'a"><stop offset="0" stop-color="' + ch.aura + '" stop-opacity=".55"/><stop offset=".65" stop-color="' + ch.aura + '" stop-opacity=".25"/><stop offset="1" stop-color="' + ch.aura + '" stop-opacity="0"/></radialGradient></defs>';
+      s += circle(100, 100, 99, 'url(#' + gid + 'a)');
       for (var i = 0; i < 12; i++) {
         var a = i * Math.PI / 6;
-        s += path('M' + (100 + Math.cos(a) * 60).toFixed(1) + ' ' + (105 + Math.sin(a) * 60).toFixed(1) + 'L' + (100 + Math.cos(a) * 95).toFixed(1) + ' ' + (105 + Math.sin(a) * 95).toFixed(1), 'none', 'stroke="' + (ch.type === 'cute' ? '#ffb3d1' : '#9cc9ff') + '" stroke-width="4" stroke-linecap="round" opacity=".55"');
+        s += path('M' + (100 + Math.cos(a) * 66).toFixed(1) + ' ' + (100 + Math.sin(a) * 66).toFixed(1) + 'L' + (100 + Math.cos(a) * 96).toFixed(1) + ' ' + (100 + Math.sin(a) * 96).toFixed(1), 'none', 'stroke="' + ch.aura + '" stroke-width="4" stroke-linecap="round" opacity=".5"');
       }
     }
-    s += ell(100, 188, 46 + st * 4, 7, 'rgba(0,0,0,.13)');
-    s += '<g class="pet-bounce">';
-    s += M.back;
-
+    s += ell(100, 188, 30 + st * 8, 7, 'rgba(0,0,0,.13)');
+    INK = ch.ink; K = k;
+    s += '<g class="pet-bounce"><g transform="translate(100 ' + (184 - (st === 1 ? LIFT[ch.id] || 0 : 0)) + ') scale(' + k + ')">' + DRAW[ch.id](st) + '</g>';
+    K = 1;
     if (st === 1) {
-      // タマゴのからに入った赤ちゃん
-      s += M.behind;
-      s += robot ? '<rect' + at({ x: P.hx - P.hr, y: P.hy - P.hr * 0.9, width: P.hr * 2, height: P.hr * 1.9, rx: P.hr * 0.6, fill: ch.c1 }) + ' ' + L + '/>' : circle(P.hx, P.hy, P.hr, ch.c1, L);
-      s += face(ch, P) + M.front;
+      // 生まれたて：タマゴのからに入っている
       s += path('M50 150L62 140L72 152L84 138L96 150L108 138L120 152L132 140L146 150C150 172 130 186 100 186C70 186 48 172 50 150Z', ch.egg[1], 'stroke="' + ch.egg[0] + '" stroke-width="3.5" stroke-linejoin="round"');
       s += '<g opacity=".7">' + (ch.type === 'cute' ? heart(80, 160, 0.7, ch.egg[0]) + heart(122, 164, 0.6, ch.egg[0]) : star(80, 166, 6, ch.egg[0]) + star(122, 168, 5, ch.egg[0])) + '</g>';
-      return s + '</g>';
     }
-
-    // 足
-    [-1, 1].forEach(function(d){ s += ell(P.bx + d * P.brx * 0.5, P.by + P.bry * 0.9, 12 + st, 8 + st * 0.6, ch.c1, L); });
-    // からだ
-    s += robot ? '<rect' + at({ x: P.bx - P.brx, y: P.by - P.bry, width: P.brx * 2, height: P.bry * 2, rx: P.brx * 0.35, fill: ch.c1 }) + ' ' + L + '/>' : ell(P.bx, P.by, P.brx, P.bry, ch.c1, L);
-    s += M.deco;
-    // うで
-    if (st >= 3) [-1, 1].forEach(function(d){ s += ell(P.bx + d * P.brx * 0.95, P.by - P.bry * 0.05, 9 + st, 15 + st * 1.5, ch.c1, L, d * -25); });
-    else [-1, 1].forEach(function(d){ s += ell(P.bx + d * P.brx * 0.92, P.by, 7, 10, ch.c1, L, d * -30); });
-    // 頭
-    s += M.behind;
-    s += robot ? '<rect' + at({ x: P.hx - P.hr, y: P.hy - P.hr * 0.85, width: P.hr * 2, height: P.hr * 1.75, rx: P.hr * 0.45, fill: ch.c1 }) + ' ' + L + '/>' : circle(P.hx, P.hy, P.hr, ch.c1, L);
-    s += face(ch, P) + M.front;
-    if (st === 5) {
-      s += crown(ch, P.hx, P.hy - P.hr * (ch.motif === 'unicorn' || ch.motif === 'robot' || ch.motif === 'shark' ? 0.92 : 0.9), 0.9);
-      [[32,52,10],[168,60,8],[40,150,7],[166,146,9],[150,28,6]].forEach(function(q){ s += sparkle(q[0], q[1], q[2], ch.type === 'cute' ? '#ff8fc0' : '#6fb6ff'); });
-    } else if (st === 4) {
-      [[40,60,7],[162,70,6]].forEach(function(q){ s += sparkle(q[0], q[1], q[2], ch.type === 'cute' ? '#ffb3d1' : '#9cc9ff'); });
-    }
+    if (st >= 4) [[30,46,st === 5 ? 9 : 6],[172,58,st === 5 ? 8 : 5],[26,150,7],[174,140,8],[150,22,6]].slice(0, st === 5 ? 5 : 2).forEach(function(q){ s += sparkle(q[0], q[1], q[2], ch.aura); });
     return s + '</g>';
   }
 

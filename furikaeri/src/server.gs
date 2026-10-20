@@ -35,7 +35,7 @@ const PASS_KEY = 'TEACHER_PASSCODE';
 const TRASH_NAME = '削除済み';
 const PET_SHEET = 'キャラ';
 // src/pets.js の list と同じ並び（id）
-const PET_IDS = ['usa', 'neko', 'hana', 'moko', 'yuni', 'dora', 'garu', 'meka', 'raiga', 'aqua'];
+const PET_IDS = ['inu', 'neko', 'usagi', 'panda', 'hamu', 'dragon', 'samurai', 'knight', 'ninja', 'robo'];
 const PET_HEADERS = ['キー', '学年', '組', '番号', '氏名', '育成中のキャラ', '育成ポイント', '最後に育てた日', 'その日に数えた授業', '育て上げたキャラ', '更新日時'];
 
 const HEADERS = [
@@ -179,11 +179,15 @@ function loadPet_(sh, key) {
     for (let i = 0; i < vals.length; i++) {
       if (String(vals[i][0]) === key) {
         const v = vals[i];
+        let current = String(v[5] || '');
+        let points = Number(v[6]) || 0;
+        // 昔のキャラ（今は無いもの）を育てていた場合は、タマゴ選びからやり直し
+        if (current && PET_IDS.indexOf(current) < 0) { current = ''; points = 0; }
         return {
           row: i + 2, key: key, grade: v[1], cls: v[2], num: v[3], name: String(v[4]),
-          current: String(v[5] || ''), points: Number(v[6]) || 0, day: cellDate_(v[7]),
+          current: current, points: points, day: cellDate_(v[7]),
           lessons: String(v[8] || '').split(',').filter(String),
-          done: String(v[9] || '').split(',').filter(String),
+          done: String(v[9] || '').split(',').filter(function (x) { return PET_IDS.indexOf(x) >= 0; }),
         };
       }
     }
