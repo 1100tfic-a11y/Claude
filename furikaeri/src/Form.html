@@ -59,6 +59,38 @@ select:focus,input:focus,textarea:focus{outline:3px solid #bcd5f7;border-color:v
 .done dd{margin:0;white-space:pre-wrap;word-break:break-word}
 .demo{background:#fff8e8;border-left:5px solid #ffbf00;border-radius:6px;padding:.5rem .8rem;font-size:.85rem;margin-bottom:1rem}
 .word input{font-size:1.5rem;letter-spacing:.2em;text-align:center;max-width:14rem;display:block;margin:0 auto}
+/* ---- キャラ育成 ---- */
+.petcard{display:flex;gap:1rem;align-items:center;background:linear-gradient(135deg,#fff,#fff5fa 50%,#f1f7ff)}
+.petcard .pic{flex:0 0 auto}
+.petcard .info{flex:1;min-width:0}
+.petname{font-size:1.25rem;font-weight:800;margin:0}
+.petstage{display:inline-block;font-size:.78rem;font-weight:700;background:#eef3fa;border-radius:99px;padding:.05rem .6rem;margin-left:.3rem;vertical-align:middle}
+.dots{display:flex;gap:.3rem;align-items:center;margin:.35rem 0;font-size:.85rem;color:var(--ink2)}
+.dots i{width:1rem;height:1rem;border-radius:50%;background:#e3e9f2;border:2px solid #c9d3e2;display:inline-block}
+.dots i.on{background:#ffcc33;border-color:#e0a800}
+.zukan{display:flex;flex-wrap:wrap;gap:.2rem;align-items:center;font-size:.78rem;color:var(--ink2);margin-top:.2rem}
+.petmsg{font-weight:700;color:#d14d8b;margin:.3rem 0;min-height:1.4em}
+.petmsg.cool{color:#2f6fd0}
+.petstage-area{position:relative;display:inline-block}
+.evo-flash::after{content:"";position:absolute;inset:-10%;border-radius:50%;background:radial-gradient(#fff 30%,rgba(255,255,255,0));animation:evoFlash 1s ease-out forwards}
+@keyframes evoFlash{0%{opacity:0;transform:scale(.4)}40%{opacity:1;transform:scale(1.1)}100%{opacity:0;transform:scale(1.4)}}
+.evo-shake svg{animation:evoShake .12s linear infinite}
+@keyframes evoShake{0%,100%{transform:translateX(0)}50%{transform:translateX(4px)}}
+.evo-pop svg{animation:evoPop .6s cubic-bezier(.2,1.6,.4,1)}
+@keyframes evoPop{0%{transform:scale(.3)}100%{transform:scale(1)}}
+.eggs h3{font-size:1rem;margin:.8rem 0 .4rem;text-align:left}
+.eggs h3.cute{color:#d14d8b} .eggs h3.cool{color:#2f6fd0}
+.egg-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:.4rem}
+@media(max-width:520px){.egg-grid{grid-template-columns:repeat(3,1fr)}}
+.egg-btn{background:#fff;border:3px solid var(--line);border-radius:14px;padding:.3rem .2rem .4rem;cursor:pointer;font:inherit;font-size:.72rem;color:var(--ink);position:relative}
+.egg-btn svg{width:100%;height:auto;max-width:90px}
+.egg-btn.cute.sel{border-color:#ff6f9c;background:#fff0f6}
+.egg-btn.cool.sel{border-color:#3d7bf2;background:#eef4ff}
+.egg-btn:disabled{opacity:.45;cursor:not-allowed}
+.egg-btn .badge{position:absolute;top:.2rem;right:.2rem;background:#ffcc33;border-radius:99px;font-size:.65rem;padding:0 .35rem;font-weight:700}
+.btn.pet{background:linear-gradient(90deg,#ff6f9c,#c77dff,#3d7bf2);margin-top:.8rem}
+details.sent{text-align:left;margin-top:1rem;border:1px solid var(--line);border-radius:10px;padding:.4rem .8rem;background:#fbfcfe}
+details.sent summary{cursor:pointer;font-weight:700;color:var(--ink2)}
 .hidden{display:none !important}
 </style>
 </head>
@@ -69,6 +101,8 @@ select:focus,input:focus,textarea:focus{outline:3px solid #bcd5f7;border-color:v
 </header>
 <main>
   <div id="demoNote" class="demo hidden">【体験モード】Google Apps Script の外で開いています。送信内容はこの端末のブラウザにだけ保存されます。</div>
+
+  <section class="panel petcard hidden" id="petTop" aria-live="polite"></section>
 
   <form id="form" novalidate>
     <section class="panel" id="secWho">
@@ -126,18 +160,20 @@ select:focus,input:focus,textarea:focus{outline:3px solid #bcd5f7;border-color:v
   <section class="panel done hidden" id="done">
     <div class="big">✅</div>
     <h2>送信しました。おつかれさまでした！</h2>
-    <dl id="summary"></dl>
-    <button type="button" class="btn sub" id="again">まちがえたので、もう一度送る</button>
+    <div id="petDone" class="hidden"></div>
+    <details class="sent" id="sentBox"><summary>送信した内容を見る</summary><dl id="summary"></dl></details>
+    <button type="button" class="btn sub" id="again" style="margin-top:1rem">まちがえたので、もう一度送る</button>
   </section>
 </main>
 
+<script src="pets.js"></script>
 <script>
 var SETTINGS = (function(){
   try { return JSON.parse('<?!= settings ?>'); } catch(e) {
     // Apps Script の外で開いたとき（体験モード）
     var w = null;
     try { w = JSON.parse(localStorage.getItem('furikaeri_demo_word') || 'null'); } catch(x) {}
-    return { classes:{1:6,2:6,3:7}, maxNumber:35, maxPeriod:6, subject:'技術', needWord: !w || w.mode !== 'off' };
+    return { classes:{1:6,2:6,3:7}, maxNumber:35, maxPeriod:6, subject:'技術', needWord: !w || w.mode !== 'off', pets:true, growPerStage:3 };
   }
 })();
 var DEMO = typeof google === 'undefined' || !google.script;
@@ -194,6 +230,11 @@ function setupForm(){
     $('num').value = me.num || '';
     $('name').value = me.name || '';
   }
+  if (SETTINGS.pets) {
+    document.head.insertAdjacentHTML('beforeend', '<style>' + PETS.css + '</style>');
+    ['grade','cls','num'].forEach(function(id){ $(id).addEventListener('change', loadTopPet); });
+    loadTopPet();
+  }
 
   [['uReason','uCount'],['pReason','pCount']].forEach(function(p){
     var t = $(p[0]), c = $(p[1]);
@@ -208,6 +249,7 @@ function setupForm(){
   $('again').addEventListener('click', function(){
     $('done').classList.add('hidden');
     $('form').classList.remove('hidden');
+    if (SETTINGS.pets) loadTopPet();
     window.scrollTo(0, 0);
   });
 }
@@ -275,6 +317,7 @@ function onSubmit(ev){
     }
     store(ME_KEY, { grade:r.grade, cls:r.cls, num:r.num, name:r.name });
     showDone(r);
+    if (SETTINGS.pets && res.pet) showPetAfterSend(res.pet);
   });
 }
 
@@ -292,7 +335,8 @@ function send(r, cb){
       r.period ? Number(r.period) : '', Number(r.grade), Number(r.cls), Number(r.num), r.name,
       r.understand, r.understandReason, r.progress, r.progressReason, r.question, '']);
     store('furikaeri_demo_rows', rows);
-    setTimeout(function(){ cb({ ok:true }); }, 300);
+    var pet = demoPet.grow(r, day + '#' + (r.period || ''));
+    setTimeout(function(){ cb({ ok:true, pet:pet }); }, 300);
     return;
   }
   google.script.run
@@ -316,6 +360,195 @@ function demoWord(){
   return demoDaily(d.getFullYear() + '-' + pad(d.getMonth()+1) + '-' + pad(d.getDate()));
 }
 
+// ======================= キャラ育成 =======================
+function serverCall(fn, args, ok, ng){
+  if (DEMO) {
+    setTimeout(function(){ try { ok(demoPet[fn].apply(null, args)); } catch(e) { ng(e); } }, 200);
+    return;
+  }
+  var run = google.script.run.withSuccessHandler(ok).withFailureHandler(ng);
+  run[fn].apply(run, args);
+}
+
+function esc(s){
+  return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){
+    return { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c];
+  });
+}
+
+// 進化までの ●●○
+function progressHtml(v){
+  if (v.stage >= 5) return '<div class="dots">🎉 究極体まで育て上げた！</div>';
+  var n = SETTINGS.growPerStage, have = v.points % n, dots = '';
+  for (var i = 0; i < n; i++) dots += '<i class="' + (i < have ? 'on' : '') + '"></i>';
+  return '<div class="dots">' + dots + '<span>あと<b>' + (n - have) + '回</b>で' + (v.stage === 0 ? 'うまれる！' : '進化！') + '</span></div>';
+}
+
+function zukanHtml(v){
+  if (!v.done || !v.done.length) return '';
+  return '<div class="zukan">図鑑：' + v.done.map(function(id){
+    return '<span title="' + esc(PETS.name(id, 5)) + '">' + PETS.svg(id, 5, 40) + '</span>';
+  }).join('') + '</div>';
+}
+
+// フォーム上の「わたしのキャラ」
+var topReq = 0;
+function loadTopPet(){
+  var g = $('grade').value, c = $('cls').value, n = $('num').value, box = $('petTop');
+  if (!g || !c || !n) { box.classList.add('hidden'); return; }
+  var my = ++topReq;
+  serverCall('getPet', [g, c, n], function(v){
+    if (my !== topReq) return; // 選びなおしたあとの古い返事は使わない
+    box.classList.remove('hidden');
+    if (!v || !v.current) {
+      box.innerHTML = '<div class="pic">' + PETS.svg('usa', 0, 80).replace('pet-svg', 'pet-svg" style="filter:grayscale(1);opacity:.35') + '</div>' +
+        '<div class="info"><p class="petname">キャラを育てよう！</p><div class="muted">ふりかえりを送信すると、タマゴを1つ選べます。' + SETTINGS.growPerStage + '回送信するごとに進化します。</div>' + (v ? zukanHtml(v) : '') + '</div>';
+      return;
+    }
+    box.innerHTML = '<div class="pic">' + PETS.svg(v.current, v.stage, 120) + '</div><div class="info">' +
+      '<p class="petname">' + esc(PETS.name(v.current, v.stage)) + '<span class="petstage">' + PETS.STAGES[v.stage] + '</span></p>' +
+      progressHtml(v) + (v.stage >= 5 ? '<div class="muted">次にふりかえりを送信すると、新しいタマゴを選べます。</div>' : '') + zukanHtml(v) + '</div>';
+  }, function(){ box.classList.add('hidden'); });
+}
+
+var COUNT_MSG = {
+  ok: '育成ポイント +1！',
+  same: '同じ授業の2回目の送信なので、育成ポイントは増えません。',
+  limit: '今日はもう育成ポイントをもらったので、続きは次の授業で！'
+};
+
+function showPetAfterSend(v){
+  var box = $('petDone');
+  box.classList.remove('hidden');
+  $('sentBox').open = false;
+  if (v.needEgg) {
+    var head = '';
+    if (v.current && v.stage >= 5) {
+      head = '<div class="petstage-area" id="evoArea">' + PETS.svg(v.current, v.evolved ? v.from : 5, 150) + '</div>' +
+        '<p class="petmsg" id="evoMsg"></p>';
+    }
+    box.innerHTML = head + eggChooserHtml(v);
+    bindEggChooser(v);
+    if (v.current && v.evolved) runEvolution(v.current, v.from, 5, function(){ $('evoMsg').textContent = '究極体まで育て上げた！ 新しいタマゴを選べるよ（次回でもOK）'; });
+    else if (v.current) $('evoMsg').textContent = '究極体まで育て上げた！ 新しいタマゴを選ぼう';
+    return;
+  }
+  var cool = (PETS.get(v.current) || {}).type === 'cool' ? ' cool' : '';
+  box.innerHTML = '<div class="petstage-area" id="evoArea">' + PETS.svg(v.current, v.evolved ? v.from : v.stage, 150) + '</div>' +
+    '<p class="petname" id="evoName">' + esc(PETS.name(v.current, v.evolved ? v.from : v.stage)) + '<span class="petstage">' + PETS.STAGES[v.evolved ? v.from : v.stage] + '</span></p>' +
+    '<p class="petmsg' + cool + '" id="evoMsg">' + esc(COUNT_MSG[v.counted] || '') + '</p>' +
+    '<div id="evoProg">' + progressHtml(v) + '</div>';
+  if (v.evolved) {
+    $('evoProg').style.visibility = 'hidden';
+    runEvolution(v.current, v.from, v.stage, function(){
+      $('evoName').innerHTML = esc(PETS.name(v.current, v.stage)) + '<span class="petstage">' + PETS.STAGES[v.stage] + '</span>';
+      $('evoMsg').textContent = v.from === 0
+        ? 'タマゴがかえって「' + PETS.name(v.current, v.stage) + '」がうまれた！'
+        : '「' + PETS.name(v.current, v.from) + '」は「' + PETS.name(v.current, v.stage) + '」に進化した！';
+      $('evoProg').style.visibility = '';
+    });
+  }
+}
+
+// 進化の演出：ぶるぶる → ピカッ → 新しい姿
+function runEvolution(id, from, to, done){
+  var a = $('evoArea');
+  a.classList.add('evo-shake');
+  setTimeout(function(){
+    a.classList.remove('evo-shake');
+    a.classList.add('evo-flash');
+    setTimeout(function(){
+      a.innerHTML = PETS.svg(id, to, 150);
+      a.classList.remove('evo-flash');
+      a.classList.add('evo-pop');
+      done();
+    }, 450);
+  }, 1100);
+}
+
+function eggChooserHtml(v){
+  var done = v.done || [], cur = v.current && v.stage >= 5 ? done.concat([v.current]) : done;
+  var all = PETS.list.every(function(p){ return cur.indexOf(p.id) >= 0; });
+  var group = function(type, title){
+    return '<h3 class="' + type + '">' + title + '</h3><div class="egg-grid">' + PETS.list.filter(function(p){ return p.type === type; }).map(function(p){
+      var finished = cur.indexOf(p.id) >= 0;
+      return '<button type="button" class="egg-btn ' + type + '" data-id="' + p.id + '"' + (finished && !all ? ' disabled' : '') + '>' +
+        (finished ? '<span class="badge">育てた！</span>' : '') + PETS.svg(p.id, 0, 90) + '<br>' + esc(p.names[0]) + '</button>';
+    }).join('') + '</div>';
+  };
+  return '<div class="eggs"><h2 style="margin-top:.6rem">🥚 タマゴを1つ選んでね</h2>' +
+    group('cute', '💗 かわいい系（ピンクのタマゴ）') + group('cool', '💙 かっこいい系（青のタマゴ）') +
+    '<button type="button" class="btn pet" id="eggGo" disabled>タマゴを選んでね</button><p class="msg" id="eggMsg"></p></div>';
+}
+
+function bindEggChooser(v){
+  var chosen = '';
+  document.querySelectorAll('.egg-btn').forEach(function(b){
+    b.addEventListener('click', function(){
+      document.querySelectorAll('.egg-btn').forEach(function(x){ x.classList.remove('sel'); });
+      b.classList.add('sel');
+      chosen = b.getAttribute('data-id');
+      $('eggGo').disabled = false;
+      $('eggGo').textContent = '「' + PETS.name(chosen, 0) + '」を育てる！';
+    });
+  });
+  $('eggGo').addEventListener('click', function(){
+    if (!chosen) return;
+    $('eggGo').disabled = true;
+    $('eggGo').textContent = '準備中…';
+    serverCall('chooseEgg', [v.token, chosen], function(nv){
+      var box = $('petDone');
+      box.innerHTML = '<div class="petstage-area evo-pop">' + PETS.svg(nv.current, 0, 150) + '</div>' +
+        '<p class="petname">' + esc(PETS.name(nv.current, 0)) + '<span class="petstage">タマゴ</span></p>' +
+        '<p class="petmsg' + ((PETS.get(nv.current) || {}).type === 'cool' ? ' cool' : '') + '">タマゴを手に入れた！' + (nv.counted === 'ok' ? '（今回の送信も育成ポイントに入ったよ）' : '') + '</p>' + progressHtml(nv);
+    }, function(e){
+      $('eggGo').disabled = false;
+      $('eggGo').textContent = 'もう一度ためす';
+      $('eggMsg').textContent = (e && e.message) || String(e);
+    });
+  });
+}
+
+// 体験モード用（本番では Apps Script 側で同じことをします）
+var demoPet = (function(){
+  var KEY = 'furikaeri_demo_pets';
+  function all(){ return store(KEY) || {}; }
+  function view(p){
+    var st = p.current ? Math.min(5, Math.floor(p.points / SETTINGS.growPerStage)) : 0;
+    return { current:p.current, points:p.points, stage:st, done:p.done.slice(), needEgg: !p.current || st === 5 };
+  }
+  function count(p, lesson){
+    var day = lesson.split('#')[0];
+    if (p.day !== day) { p.day = day; p.lessons = []; }
+    if (p.lessons.indexOf(lesson) >= 0) return 'same';
+    if (p.lessons.length >= 2) return 'limit';
+    p.lessons.push(lesson); return 'ok';
+  }
+  return {
+    grow: function(r, lesson){
+      var db = all(), key = r.grade + '-' + r.cls + '-' + r.num;
+      var p = db[key] || { current:'', points:0, day:'', lessons:[], done:[] };
+      var before = p.current ? Math.min(5, Math.floor(p.points / SETTINGS.growPerStage)) : -1, counted = 'none';
+      if (p.current && before < 5) { counted = count(p, lesson); if (counted === 'ok') p.points++; }
+      db[key] = p; store(KEY, db);
+      var v = view(p);
+      v.counted = counted; v.from = before; v.evolved = before >= 0 && v.stage > before;
+      if (v.needEgg) v.token = key + '|' + lesson;
+      return v;
+    },
+    chooseEgg: function(token, id){
+      var t = token.split('|'), db = all(), p = db[t[0]];
+      if (!p || !view(p).needEgg) throw new Error('もうタマゴを選んでいます。');
+      if (p.current) p.done.push(p.current);
+      p.current = id; p.points = 0;
+      var c = count(p, t[1]); if (c === 'ok') p.points = 1;
+      store(KEY, db);
+      var v = view(p); v.counted = c; return v;
+    },
+    getPet: function(g, c, n){ var p = all()[g + '-' + c + '-' + n]; return p ? view(p) : null; }
+  };
+})();
+
 function showDone(r){
   var items = [
     ['クラス', r.grade + '年' + r.cls + '組 ' + r.num + '番 ' + r.name + (r.period ? '（' + r.period + '時間目）' : '')],
@@ -323,6 +556,9 @@ function showDone(r){
     ['進捗度', r.progress + '　' + r.progressReason]
   ];
   if (r.question) items.push(['質問など', r.question]);
+  $('petDone').classList.add('hidden');
+  $('petTop').classList.add('hidden'); // 送信後は下の結果にキャラを出す
+  $('sentBox').open = true;
   var dl = $('summary'); dl.innerHTML = '';
   items.forEach(function(it){
     var dt = document.createElement('dt'); dt.textContent = it[0];

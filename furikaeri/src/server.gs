@@ -21,12 +21,22 @@ const CONFIG = {
   SUBJECT: '技術',
   // 回答を保存するシート名
   SHEET_NAME: '回答',
+  // キャラ育成：false にすると育成の機能を止めます
+  PETS: true,
+  // 何回提出すると1段階進化するか
+  GROW_PER_STAGE: 3,
+  // 1日に育成ポイントがもらえる回数の上限（2時間続きの授業でも2回まで）
+  GROW_MAX_PER_DAY: 2,
 };
 // ==========================================================================
 
 const TZ = 'Asia/Tokyo';
 const PASS_KEY = 'TEACHER_PASSCODE';
 const TRASH_NAME = '削除済み';
+const PET_SHEET = 'キャラ';
+// src/pets.js の list と同じ並び（id）
+const PET_IDS = ['usa', 'neko', 'hana', 'moko', 'yuni', 'dora', 'garu', 'meka', 'raiga', 'aqua'];
+const PET_HEADERS = ['キー', '学年', '組', '番号', '氏名', '育成中のキャラ', '育成ポイント', '最後に育てた日', 'その日に数えた授業', '育て上げたキャラ', '更新日時'];
 
 const HEADERS = [
   '送信日時', '授業日', '時限', '学年', '組', '番号', '氏名',
@@ -50,6 +60,8 @@ function publicSettings_() {
     maxNumber: CONFIG.MAX_NUMBER,
     maxPeriod: CONFIG.MAX_PERIOD,
     subject: CONFIG.SUBJECT,
+    pets: CONFIG.PETS,
+    growPerStage: CONFIG.GROW_PER_STAGE,
     needWord: wordSettings_().mode !== 'off',
   };
 }
@@ -134,12 +146,145 @@ function submitReflection(r) {
 
   const lock = LockService.getScriptLock();
   lock.waitLock(20000);
+  let pet = null;
   try {
     sheet_().appendRow(row);
+    if (CONFIG.PETS) pet = growPet_(row[3], row[4], row[5], row[6], row[1] + '#' + row[2]);
   } finally {
     lock.releaseLock();
   }
-  return { ok: true, date: row[1] };
+  return { ok: true, date: row[1], pet: pet };
+}
+
+// ===================== キャラ育成 =====================
+// 「キャラ」シートに、生徒1人につき1行で記録する（学年-組-番号がキー）
+function petSheet_() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let sh = ss.getSheetByName(PET_SHEET);
+  if (!sh) sh = ss.insertSheet(PET_SHEET);
+  if (sh.getLastRow() === 0) {
+    sh.appendRow(PET_HEADERS);
+    sh.setFrozenRows(1);
+    sh.getRange(1, 1, 1, PET_HEADERS.length).setFontWeight('bold').setBackground('#fdeef7');
+  }
+  return sh;
+}
+
+function petKey_(g, c, n) { return g + '-' + c + '-' + n; }
+
+function loadPet_(sh, key) {
+  const n = sh.getLastRow() - 1;
+  if (n > 0) {
+    const vals = sh.getRange(2, 1, n, PET_HEADERS.length).getValues();
+    for (let i = 0; i < vals.length; i++) {
+      if (String(vals[i][0]) === key) {
+        const v = vals[i];
+        return {
+          row: i + 2, key: key, grade: v[1], cls: v[2], num: v[3], name: String(v[4]),
+          current: String(v[5] || ''), points: Number(v[6]) || 0, day: cellDate_(v[7]),
+          lessons: String(v[8] || '').split(',').filter(String),
+          done: String(v[9] || '').split(',').filter(String),
+        };
+      }
+    }
+  }
+  return null;
+}
+
+function savePet_(sh, p) {
+  const v = [p.key, p.grade, p.cls, p.num, p.name, p.current, p.points, p.day, p.lessons.join(','), p.done.join(','), new Date()];
+  if (p.row) sh.getRange(p.row, 1, 1, v.length).setValues([v]);
+  else { sh.appendRow(v); p.row = sh.getLastRow(); }
+}
+
+function petStage_(points) {
+  return Math.min(5, Math.floor(points / CONFIG.GROW_PER_STAGE));
+}
+
+/** 生徒の画面に返す情報 */
+function petView_(p) {
+  const stage = p.current ? petStage_(p.points) : 0;
+  return {
+    current: p.current, points: p.points, stage: stage, done: p.done,
+    needEgg: !p.current || stage === 5,
+  };
+}
+
+/** この授業を育成ポイントとして数えてよいか（同じ授業は1回、1日の上限あり）。数えるなら記録する */
+function countLesson_(p, lesson) {
+  const day = lesson.split('#')[0];
+  if (p.day !== day) { p.day = day; p.lessons = []; }
+  if (p.lessons.indexOf(lesson) >= 0) return 'same';
+  if (p.lessons.length >= CONFIG.GROW_MAX_PER_DAY) return 'limit';
+  p.lessons.push(lesson);
+  return 'ok';
+}
+
+/** 送信のたびに呼ぶ。育成中のキャラがいればポイントを1増やす */
+function growPet_(g, c, n, name, lesson) {
+  const sh = petSheet_();
+  const key = petKey_(g, c, n);
+  const p = loadPet_(sh, key) || { key: key, grade: g, cls: c, num: n, current: '', points: 0, day: '', lessons: [], done: [] };
+  p.name = name;
+  const before = p.current ? petStage_(p.points) : -1;
+  let counted = 'none';
+  if (p.current && before < 5) {
+    counted = countLesson_(p, lesson);
+    if (counted === 'ok') p.points++;
+  }
+  savePet_(sh, p);
+  const view = petView_(p);
+  view.counted = counted;
+  view.from = before;
+  view.evolved = before >= 0 && view.stage > before;
+  if (view.needEgg) {
+    // タマゴを選ぶための合札（30分有効）。この送信の分を、選んだタマゴのポイントにする
+    view.token = Utilities.getUuid();
+    CacheService.getScriptCache().put('egg_' + view.token, JSON.stringify({ key: key, lesson: lesson }), 1800);
+  }
+  return view;
+}
+
+/** 送信後のタマゴ選び */
+function chooseEgg(token, id) {
+  if (!CONFIG.PETS) throw new Error('キャラ育成は使われていません。');
+  const cache = CacheService.getScriptCache();
+  const raw = cache.get('egg_' + String(token || ''));
+  if (!raw) throw new Error('時間がたちすぎました。次にふりかえりを送信したときに選んでください。');
+  if (PET_IDS.indexOf(id) < 0) throw new Error('タマゴを選んでください。');
+  const t = JSON.parse(raw);
+  const lock = LockService.getScriptLock();
+  lock.waitLock(20000);
+  try {
+    const sh = petSheet_();
+    const p = loadPet_(sh, t.key);
+    if (!p) throw new Error('記録が見つかりません。');
+    const v = petView_(p);
+    if (!v.needEgg) throw new Error('もうタマゴを選んでいます。');
+    if (p.current) p.done.push(p.current); // 究極体まで育てたキャラは図鑑へ
+    const all = PET_IDS.every(function (x) { return p.done.indexOf(x) >= 0; });
+    if (!all && p.done.indexOf(id) >= 0) throw new Error('そのキャラはもう育て上げました。ほかのタマゴを選んでください。');
+    p.current = id;
+    p.points = 0;
+    const counted = countLesson_(p, t.lesson);
+    if (counted === 'ok') p.points = 1;
+    savePet_(sh, p);
+    cache.remove('egg_' + token);
+    const view = petView_(p);
+    view.counted = counted;
+    return view;
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+/** フォームを開いたときに、自分のキャラを表示する */
+function getPet(g, c, n) {
+  if (!CONFIG.PETS) return null;
+  g = toInt_(g); c = toInt_(c); n = toInt_(n);
+  if (!CONFIG.CLASSES[g] || !(c >= 1 && c <= CONFIG.CLASSES[g]) || !(n >= 1 && n <= CONFIG.MAX_NUMBER)) return null;
+  const p = loadPet_(petSheet_(), petKey_(g, c, n));
+  return p ? petView_(p) : null;
 }
 
 // ===================== スプレッドシートのメニュー =====================

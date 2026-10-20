@@ -1,8 +1,14 @@
-// src/ の3ファイルから、Apps Script に貼りつける1ファイル（../furikaeri.gs）を作る
+// src/ のファイルから、Apps Script に貼りつける1ファイル（../furikaeri.gs）を作る
 //   使い方： node src/build.js
 const fs = require('fs');
 const path = require('path');
 const read = f => fs.readFileSync(path.join(__dirname, f), 'utf8');
+// <script src="pets.js"></script> を中身に置きかえる（Apps Script では別ファイルを読めないため）
+const inline = html => {
+  const tag = '<script src="pets.js"></script>';
+  if (!html.includes(tag)) return html;
+  return html.replace(tag, () => '<script>\n' + read('pets.js') + '</script>');
+};
 // テンプレート文字列に入れるため、\ ` ${ をエスケープする
 const lit = s => '`' + s.replace(/\\/g, '\\\\').replace(/`/g, '\\`').replace(/\$\{/g, '\\${') + '`';
 
@@ -21,7 +27,7 @@ ${read('server.gs').trim()}
 
 // ===================== 画面（HTML） =====================
 // 生徒用フォーム
-const FORM_HTML = ${lit(read('Form.html'))};
+const FORM_HTML = ${lit(inline(read('Form.html')))};
 
 // 先生用ページ
 const TEACHER_HTML = ${lit(read('Teacher.html'))};

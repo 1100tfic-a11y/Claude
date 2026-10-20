@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>キャラクター図鑑（確認用）</title>
+<style>
+body{margin:0;padding:1rem;background:#f4f7fb;color:#1c2430;font-family:"BIZ UDPGothic","Hiragino Kaku Gothic ProN","Yu Gothic UI","Meiryo",system-ui,sans-serif}
+h1{font-size:1.2rem;margin:0 0 .3rem}
+p{margin:0 0 1rem;color:#55637a;font-size:.9rem}
+.row{display:grid;grid-template-columns:repeat(6,1fr);gap:.4rem;background:#fff;border:1px solid #d7dee9;border-radius:12px;padding:.5rem;margin-bottom:.6rem}
+.cell{text-align:center;font-size:.78rem}
+.cell svg{width:100%;height:auto;max-width:150px}
+.cell b{display:block}
+.cell span{color:#55637a}
+</style>
+</head>
+<body>
+<h1>キャラクター図鑑（全10種類 × 6段階）</h1>
+<p>先生の確認用ページです。このファイルをダブルクリックすると、すべてのキャラクターの成長を一覧で見られます。</p>
+<div id="list"></div>
+<script src="pets.js"></script>
+<script>
+document.head.insertAdjacentHTML('beforeend', '<style>' + PETS.css + '</style>');
+document.getElementById('list').innerHTML = PETS.list.map(function(p){
+  return '<div class="row">' + [0,1,2,3,4,5].map(function(st){
+    return '<div class="cell">' + PETS.svg(p.id, st) + '<b>' + p.names[st] + '</b><span>' + PETS.STAGES[st] + '</span></div>';
+  }).join('') + '</div>';
+}).join('');
+</script>
+</body>
+</html>
