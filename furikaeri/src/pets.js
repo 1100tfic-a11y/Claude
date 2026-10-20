@@ -88,21 +88,27 @@ var PETS = (function(){
   var uid = 0;
 
   // ------------------------------------------------------------ 顔のパーツ
+  // 動物の目：色のついた虹彩・瞳孔・光の反射・上まぶた
   function eyesCute(cx, cy, gap, s, col){
     return both(function(d){
       var x = cx + d * gap;
-      return ell(x, cy, 6 * s, 7.5 * s, col || '#2b1a10') + circle(x - 2 * s, cy - 3 * s, 2.4 * s, '#fff') + circle(x + 2.2 * s, cy + 2.6 * s, 1.2 * s, '#fff');
+      return ell(x, cy, 5.6 * s, 6 * s, col || '#5a3418', L(1.2)) +
+        path('M' + (x - 4.6 * s) + ' ' + (cy + 1.5 * s) + 'Q' + x + ' ' + (cy + 7 * s) + ' ' + (x + 4.6 * s) + ' ' + (cy + 1.5 * s), '#ffffff', 'opacity=".22"') +
+        ell(x, cy + 0.3 * s, 2.7 * s, 3.2 * s, '#0b0705') +
+        circle(x - 1.9 * s, cy - 2.3 * s, 1.5 * s, '#fff') + circle(x + 1.6 * s, cy + 2 * s, 0.6 * s, '#fff', 'opacity=".8"') +
+        path('M' + (x - 6.4 * s) + ' ' + (cy - 0.5 * s) + 'Q' + x + ' ' + (cy - 8.2 * s) + ' ' + (x + 6.4 * s) + ' ' + (cy - 0.5 * s), 'none', L(1.8));
     });
   }
-  function blush(cx, cy, gap, s){ return both(function(d){ return ell(cx + d * gap, cy, 6 * s, 3.4 * s, '#ff8fab', 'opacity=".6"'); }); }
+  function blush(cx, cy, gap, s){ return both(function(d){ return ell(cx + d * gap, cy, 7 * s, 4 * s, '#ff8fab', 'opacity=".2"'); }); }
   function catMouth(cx, cy, s){ return path('M' + (cx - 6 * s) + ' ' + cy + 'q' + (3 * s) + ' ' + (4 * s) + ' ' + (6 * s) + ' 0q' + (3 * s) + ' ' + (4 * s) + ' ' + (6 * s) + ' 0', 'none', L(2.2)); }
   // かっこいい系の目（白目＋色のついた瞳＋きりっとした眉）
   function eyesHero(cx, cy, gap, s, iris, noBrow){
     return both(function(d){
       var x = cx + d * gap;
-      return ell(x, cy, 7 * s, 8.5 * s, '#fff', L(2)) + ell(x + d * 0.8 * s, cy + 1 * s, 4.6 * s, 6 * s, iris) +
-        circle(x + d * 0.8 * s, cy + 1.5 * s, 2.4 * s, '#111') + circle(x - 1.5 * s, cy - 2 * s, 1.6 * s, '#fff') +
-        (noBrow ? '' : path('M' + (x - d * 8 * s) + ' ' + (cy - 11 * s) + 'L' + (x + d * 9 * s) + ' ' + (cy - 15 * s), 'none', L(3.4)));
+      return path('M' + (x - 8 * s) + ' ' + (cy + 1 * s) + 'Q' + x + ' ' + (cy - 8 * s) + ' ' + (x + 8 * s) + ' ' + (cy + 1 * s) + 'Q' + x + ' ' + (cy + 6 * s) + ' ' + (x - 8 * s) + ' ' + (cy + 1 * s) + 'Z', '#f4f1ec', L(1.4)) +
+        circle(x + d * 0.6 * s, cy, 3.6 * s, iris) + circle(x + d * 0.6 * s, cy, 1.7 * s, '#0b0705') + circle(x - 0.6 * s, cy - 1.4 * s, 1 * s, '#fff') +
+        path('M' + (x - 8.5 * s) + ' ' + (cy + 0.5 * s) + 'Q' + x + ' ' + (cy - 8.5 * s) + ' ' + (x + 8.5 * s) + ' ' + (cy + 0.5 * s), 'none', L(2.2)) +
+        (noBrow ? '' : path('M' + (x - d * 9 * s) + ' ' + (cy - 9 * s) + 'Q' + (x + d * 1 * s) + ' ' + (cy - 13 * s) + ' ' + (x + d * 10 * s) + ' ' + (cy - 12 * s), 'none', L(2.6)));
     });
   }
   function grin(cx, cy, s){
@@ -377,26 +383,28 @@ var PETS = (function(){
 
   // ---------------------------------------------- 人型（侍・騎士・忍者）の共通の体
   // o = { skin, top, bottom, shoes, back, body, arms, head, headBack, front, weapon, face, hair }
+  // 衣装・頭のパーツは「頭の大きい2頭身」の座標で描き、ここで約3.5頭身の体に合わせて変形する
+  var BODY_TF = 'translate(0 -92) scale(1 1.143) translate(0 64)'; // 胴（-64〜-22 → -92〜-44）
+  var HEAD_TF = 'translate(0 -118) scale(.68) translate(0 96)';   // 頭を小さく、高い位置へ
   function humanoid(o){
     var s = '', hy = -96;
-    s += o.back || '';
+    if (o.back) s += g('scale(1 1.3)', o.back);
     // 足
-    s += both(function(d){ return rect(d * 10 - 8, -26, 16, 24, 6, o.bottom, L()) + ell(d * 10, -2, 11, 5.5, o.shoes, L(2)); });
-    // 胴
-    s += path('M-20-64H20L24-22H-24Z', o.top, L());
-    s += o.body || '';
+    s += both(function(d){ return rect(d * 10 - 8, -48, 16, 46, 7, o.bottom, L()) + ell(d * 10, -2, 11, 5.5, o.shoes, L(2)); });
+    // 首と胴
+    s += rect(-6, -102, 12, 14, 3, o.skin, L(2));
+    s += path('M-19-92H19L23-44H-23Z', o.top, L());
+    if (o.body) s += g(BODY_TF, o.body);
     // 腕（左手は前、右手は武器を持つ）
-    s += rect(-34, -62, 13, 32, 6.5, o.sleeve || o.top, L(), null) + circle(-27, -30, 7, o.skin, L(2));
-    s += rect(21, -62, 13, 30, 6.5, o.sleeve || o.top, L()) + circle(28, -32, 7, o.skin, L(2));
-    s += o.arms || '';
+    s += rect(-33, -90, 12, 46, 6, o.sleeve || o.top, L()) + circle(-27, -44, 6.5, o.skin, L(2));
+    s += rect(21, -90, 12, 44, 6, o.sleeve || o.top, L()) + circle(27, -46, 6.5, o.skin, L(2));
+    if (o.arms) s += g(BODY_TF, o.arms);
     // 頭
-    s += o.headBack || '';
-    s += circle(0, hy, 32, o.skin, L());
-    s += o.hair || '';
-    s += o.face != null ? o.face : eyesHero(0, hy + 2, 12, 1, o.iris || '#3b2a1a') + grin(0, hy + 16, 1) + blush(0, hy + 12, 21, 0.9);
-    s += o.head || '';
-    s += o.weapon || '';
-    s += o.front || '';
+    var face = o.face != null ? o.face : eyesHero(0, hy + 2, 12, 1, o.iris || '#3b2a1a') +
+      path('M0 ' + (hy + 4) + 'L-3 ' + (hy + 12) + 'H2', 'none', L(1.8)) + path('M-7 ' + (hy + 18) + 'Q0 ' + (hy + 22) + ' 7 ' + (hy + 18), 'none', L(2.2));
+    s += g(HEAD_TF, (o.headBack || '') + both(function(d){ return ell(d * 31, hy + 4, 6, 9, o.skin, L(2)); }) + circle(0, hy, 32, o.skin, L()) + (o.hair || '') + face + (o.head || ''));
+    if (o.weapon) s += g('translate(-1 -14)', o.weapon);
+    if (o.front) s += g('translate(0 -20)', o.front);
     return s;
   }
   function katana(x, y, rot, len, gold){
@@ -541,6 +549,50 @@ var PETS = (function(){
     return s;
   }
 
+  // ------------------------------------------------------------ リアルな仕上げ
+  function rgb(h){
+    h = h.replace('#', '');
+    if (h.length === 3) h = h.replace(/./g, function(c){ return c + c; });
+    return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)];
+  }
+  function shade(h, a){ // a>0 で明るく、a<0 で暗く
+    var c = rgb(h), t = a > 0 ? 255 : 0, k = Math.abs(a);
+    return '#' + c.map(function(v){ return ('0' + Math.round(v + (t - v) * k).toString(16)).slice(-2); }).join('');
+  }
+  // 輪郭線のある部品を「光の当たる側が明るく、反対側が暗い」グラデーションで塗り、
+  // 輪郭線をその部品の色の暗い色・細い線にする
+  function realism(markup, pfx, furry){
+    var grads = {}, n = 0, defs = '';
+    var out = markup.replace(/<(ellipse|circle|rect|path|polygon)\b([^>]*?)\/>/g, function(all, tag, attrs){
+      var f = /fill="(#[0-9a-fA-F]{3}|#[0-9a-fA-F]{6})"/.exec(attrs);
+      if (!f || attrs.indexOf('stroke="' + INK + '"') < 0) return all;
+      var base = f[1].toLowerCase();
+      if (!grads[base]) {
+        grads[base] = pfx + 'g' + (n++);
+        defs += '<radialGradient id="' + grads[base] + '" cx=".36" cy=".28" r=".95">' +
+          '<stop offset="0" stop-color="' + shade(base, 0.45) + '"/><stop offset=".45" stop-color="' + base + '"/><stop offset="1" stop-color="' + shade(base, -0.38) + '"/></radialGradient>';
+      }
+      attrs = attrs.replace(f[0], 'fill="url(#' + grads[base] + ')"')
+        .replace('stroke="' + INK + '"', 'stroke="' + shade(base, -0.6) + '"')
+        .replace(/stroke-width="([0-9.]+)"/, function(m, w){ return 'stroke-width="' + (parseFloat(w) * 0.6).toFixed(2) + '"'; });
+      return '<' + tag + attrs + '/>';
+    });
+    // 質感（細かいざらつき）と、からだの落とす影
+    defs += '<filter id="' + pfx + 'f" x="-15%" y="-15%" width="130%" height="135%">' +
+      // 動物は輪郭を少しだけ毛羽立たせて、毛並みのように見せる
+      (furry ? '<feTurbulence type="turbulence" baseFrequency=".7" numOctaves="2" seed="3" result="fn"/>' +
+        '<feDisplacementMap in="SourceGraphic" in2="fn" scale="' + (1.7 * K).toFixed(2) + '" xChannelSelector="R" yChannelSelector="G" result="src"/>'
+        : '<feOffset in="SourceGraphic" dx="0" dy="0" result="src"/>') +
+      '<feTurbulence type="fractalNoise" baseFrequency=".9" numOctaves="2" seed="7" result="t"/>' +
+      '<feColorMatrix in="t" type="saturate" values="0" result="tg"/>' +
+      '<feComposite in="tg" in2="SourceAlpha" operator="in" result="tm"/>' +
+      '<feComponentTransfer in="tm" result="ta"><feFuncA type="linear" slope=".22"/></feComponentTransfer>' +
+      '<feBlend in="ta" in2="src" mode="multiply" result="tex"/>' +
+      '<feDropShadow in="tex" dx="2" dy="3" stdDeviation="2.4" flood-color="#000" flood-opacity=".3"/></filter>' +
+      '<filter id="' + pfx + 'b" x="-30%" y="-200%" width="160%" height="500%"><feGaussianBlur stdDeviation="3"/></filter>';
+    return { defs: defs, body: out };
+  }
+
   var DRAW = { inu:drawInu, neko:drawNeko, usagi:drawUsagi, panda:drawPanda, hamu:drawHamu,
     dragon:drawDragon, samurai:drawSamurai, knight:drawKnight, ninja:drawNinja, robo:drawRobo };
   var SCALE = [1, 0.58, 0.72, 0.85, 0.94, 1.0];
@@ -557,10 +609,12 @@ var PETS = (function(){
         s += path('M' + (100 + Math.cos(a) * 66).toFixed(1) + ' ' + (100 + Math.sin(a) * 66).toFixed(1) + 'L' + (100 + Math.cos(a) * 96).toFixed(1) + ' ' + (100 + Math.sin(a) * 96).toFixed(1), 'none', 'stroke="' + ch.aura + '" stroke-width="4" stroke-linecap="round" opacity=".5"');
       }
     }
-    s += ell(100, 188, 30 + st * 8, 7, 'rgba(0,0,0,.13)');
     INK = ch.ink; K = k;
-    s += '<g class="pet-bounce"><g transform="translate(100 ' + (184 - (st === 1 ? LIFT[ch.id] || 0 : 0)) + ') scale(' + k + ')">' + DRAW[ch.id](st) + '</g>';
+    var R = realism(DRAW[ch.id](st), gid, ch.type === 'cute');
     K = 1;
+    s += '<defs>' + R.defs + '</defs>';
+    s += ell(100, 187, 30 + st * 8, 6, 'rgba(0,0,0,.35)', 'filter="url(#' + gid + 'b)"');
+    s += '<g class="pet-bounce"><g filter="url(#' + gid + 'f)" transform="translate(100 ' + (184 - (st === 1 ? LIFT[ch.id] || 0 : 0)) + ') scale(' + k + ')">' + R.body + '</g>';
     if (st === 1) {
       // 生まれたて：タマゴのからに入っている
       s += path('M50 150L62 140L72 152L84 138L96 150L108 138L120 152L132 140L146 150C150 172 130 186 100 186C70 186 48 172 50 150Z', ch.egg[1], 'stroke="' + ch.egg[0] + '" stroke-width="3.5" stroke-linejoin="round"');
