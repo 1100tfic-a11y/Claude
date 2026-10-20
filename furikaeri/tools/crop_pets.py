@@ -8,7 +8,7 @@ im = Image.open(os.path.join(HERE, '..', 'art', 'characters.png')).convert('RGB'
 PANEL = {  # パネルの左上（元画像の座標）
   1:(0,0), 2:(769,0), 3:(0,218), 4:(769,218), 5:(0,432), 6:(769,432), 7:(0,637), 8:(769,637), 9:(0,825), 10:(769,825)}
 # キャラ: (パネル番号, 地面のy, いちばん上のy, タマゴ箱, [各段階の中心x], タマゴのパネル番号)
-# ※ 画像には侍のパネルが無く（10番はハムスターの重複）、黒ねこの完全体もありません
+# ※ この画像には侍のパネルが無いので、侍は下の art/samurai.jpg から切り抜きます。黒ねこの完全体も無いので、成熟期を反転して仮に使います
 CH = {
   'inu':   (1, 172, 8,   (30,82,152,212),  [235, 342, 462, 565, 680]),
   'neko':  (2, 173, 4,   (15,82,140,212),  [245, 370, 517, None, 670]),
@@ -61,6 +61,31 @@ for cid, spec in CH.items():
     b = io.BytesIO(); p.save(b, 'WEBP', quality=80, method=6)
     uris.append('data:image/webp;base64,' + base64.b64encode(b.getvalue()).decode())
   out[cid] = uris
+# ---- 侍（かたなのタマゴ）：別の画像 art/samurai.jpg から
+# キャラどうしが近いので、本人だけをくっきり切り抜き、まわりはぼかした背景で埋める
+from PIL import ImageFilter, ImageEnhance, ImageDraw
+sam = Image.open(os.path.join(HERE, '..', 'art', 'samurai.jpg')).convert('RGB')
+SAM = [  # (左, 上, 右, 下)：本人の範囲
+  (20, 600, 210, 830), (215, 500, 445, 830), (480, 385, 690, 836),
+  (700, 150, 985, 842), (955, 100, 1315, 842), (1265, 40, 1776, 846)]
+uris = []
+for i, (x0, y0, x1, y1) in enumerate(SAM):
+  H = y1 - y0; W = round(H * RATIO); cx = (x0 + x1) / 2
+  bx0 = max(0, min(sam.width - W, round(cx - W / 2)))
+  wide = sam.crop((bx0, y0, bx0 + W, y1))
+  if x1 - x0 < W:
+    bg = ImageEnhance.Brightness(wide.filter(ImageFilter.GaussianBlur(H / 40))).enhance(0.85)
+    tight = sam.crop((x0, y0, x1, y1))
+    m = Image.new('L', tight.size, 255); d = ImageDraw.Draw(m); f = max(6, (x1 - x0) // 12)
+    for k in range(f):
+      a_ = round(255 * k / f); d.line([(k, 0), (k, H)], fill=a_); d.line([(tight.width - 1 - k, 0), (tight.width - 1 - k, H)], fill=a_)
+    bg.paste(tight, (x0 - bx0, 0), m)
+    wide = bg
+  wide = wide.resize((round(220 * RATIO), 220), Image.LANCZOS)
+  b = io.BytesIO(); wide.save(b, 'WEBP', quality=80, method=6)
+  uris.append('data:image/webp;base64,' + base64.b64encode(b.getvalue()).decode())
+out['samurai'] = uris
+
 js = ('// tools/crop_pets.py で自動作成（art/characters.png から切り抜いた絵）。手で書きかえないでください。\n'
       '// PET_IMAGES[キャラ] = [タマゴ, 幼年期, 成長期, 成熟期, 完全体, 究極体]\n'
       'var PET_IMAGES = ' + json.dumps(out, indent=0) + ';\n')
