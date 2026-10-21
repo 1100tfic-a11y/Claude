@@ -100,6 +100,12 @@ for x0, y0, x1, y1 in GEAR:
   c = c.resize((round(220 * RATIO), 220), Image.LANCZOS)
   b = io.BytesIO(); c.save(b, 'WEBP', quality=80, method=6)
   uris.append('data:image/webp;base64,' + base64.b64encode(b.getvalue()).decode())
+# 完全体は、顔のアップの代わりに全身像（art/gear_complete.jpg）を使う
+gc = Image.open(os.path.join(HERE, '..', 'art', 'gear_complete.jpg')).convert('RGB')
+H = gc.height; W = round(H * RATIO); x0 = (gc.width - W) // 2
+gc = gc.crop((x0, 0, x0 + W, H)).resize((round(220 * RATIO), 220), Image.LANCZOS)
+b = io.BytesIO(); gc.save(b, 'WEBP', quality=80, method=6)
+uris[4] = 'data:image/webp;base64,' + base64.b64encode(b.getvalue()).decode()
 out['robo'] = uris
 
 js = ('// tools/crop_pets.py で自動作成（art/characters.png から切り抜いた絵）。手で書きかえないでください。\n'
