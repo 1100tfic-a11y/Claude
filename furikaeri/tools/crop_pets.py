@@ -108,6 +108,23 @@ b = io.BytesIO(); gc.save(b, 'WEBP', quality=80, method=6)
 uris[4] = 'data:image/webp;base64,' + base64.b64encode(b.getvalue()).decode()
 out['robo'] = uris
 
+# ---- 騎士（たてのタマゴ）：別の画像 art/tate.png から（カードの絵の部分）
+tate = Image.open(os.path.join(HERE, '..', 'art', 'tate.png')).convert('RGB')
+TATE = [(4, 150, 244, 478), (260, 145, 496, 478), (508, 140, 726, 478),
+        (738, 138, 964, 478), (984, 138, 1220, 478), (1244, 140, 1528, 478)]
+uris = []
+for x0, y0, x1, y1 in TATE:
+  c = tate.crop((x0, y0, x1, y1)); H = c.height; W = round(H * RATIO)
+  if c.width < W:
+    bg = ImageEnhance.Brightness(c.resize((W, H)).filter(ImageFilter.GaussianBlur(10))).enhance(0.7)
+    bg.paste(c, ((W - c.width) // 2, 0)); c = bg
+  elif c.width > W:
+    k = (c.width - W) // 2; c = c.crop((k, 0, k + W, H))
+  c = c.resize((round(220 * RATIO), 220), Image.LANCZOS)
+  b = io.BytesIO(); c.save(b, 'WEBP', quality=80, method=6)
+  uris.append('data:image/webp;base64,' + base64.b64encode(b.getvalue()).decode())
+out['knight'] = uris
+
 js = ('// tools/crop_pets.py で自動作成（art/characters.png から切り抜いた絵）。手で書きかえないでください。\n'
       '// PET_IMAGES[キャラ] = [タマゴ, 幼年期, 成長期, 成熟期, 完全体, 究極体]\n'
       'var PET_IMAGES = ' + json.dumps(out, indent=0) + ';\n')

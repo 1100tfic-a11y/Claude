@@ -28,7 +28,7 @@ var PETS = (function(){
     { id:'samurai', type:'cool', pattern:'zigzag',   egg:['#2f5fbf','#dbe6fb'], ink:'#1d1b2e', aura:'#f06595',
       names:['かたなのタマゴ','わかまる','けんたろう','サムライ剣士','鎧武者','天下無双の将軍'] },
     { id:'knight',  type:'cool', pattern:'shields',  egg:['#4a86c8','#dfeaf6'], ink:'#232836', aura:'#fff3a8',
-      names:['たてのタマゴ','みならいナイト','ナイトくん','シルバーナイト','ロイヤルナイト','聖騎士パラディオン'] },
+      names:['たてのタマゴ','ヒナドラ','ボルカドラ','フレアドラゴン','インフェルノドラゴン','超躍竜王バルーン'] },
     { id:'ninja',   type:'cool', pattern:'shuriken', egg:['#2a6fd0','#dcebff'], ink:'#120f1c', aura:'#b46bff',
       names:['しゅりけんのタマゴ','ちびにん','にんまる','シノビ','影丸','忍頭ハンゾウ'] },
     { id:'robo',    type:'cool', pattern:'gears',    egg:['#1f8fb8','#d8f1f8'], ink:'#1b1f24', aura:'#5ff2ff',
