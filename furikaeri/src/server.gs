@@ -25,6 +25,8 @@ const CONFIG = {
   PETS: true,
   // 何回提出すると1段階進化するか
   GROW_PER_STAGE: 3,
+  // タマゴを選んだ後、何回提出すると孵化するか
+  HATCH_AFTER: 1,
   // 1日に育成ポイントがもらえる回数の上限（2時間続きの授業でも2回まで）
   GROW_MAX_PER_DAY: 2,
 };
@@ -62,6 +64,7 @@ function publicSettings_() {
     subject: CONFIG.SUBJECT,
     pets: CONFIG.PETS,
     growPerStage: CONFIG.GROW_PER_STAGE,
+    hatchAfter: CONFIG.HATCH_AFTER,
     needWord: wordSettings_().mode !== 'off',
   };
 }
@@ -201,8 +204,12 @@ function savePet_(sh, p) {
   else { sh.appendRow(v); p.row = sh.getLastRow(); }
 }
 
+// 育成ポイント → 段階。タマゴを選んだ回で1ポイント、そこから HATCH_AFTER 回で孵化、
+// その後は GROW_PER_STAGE 回ごとに進化する
 function petStage_(points) {
-  return Math.min(5, Math.floor(points / CONFIG.GROW_PER_STAGE));
+  const hatch = 1 + CONFIG.HATCH_AFTER;
+  if (points < hatch) return 0;
+  return Math.min(5, 1 + Math.floor((points - hatch) / CONFIG.GROW_PER_STAGE));
 }
 
 /** 生徒の画面に返す情報 */

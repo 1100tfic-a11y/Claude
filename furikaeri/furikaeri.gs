@@ -36,6 +36,8 @@ const CONFIG = {
   PETS: true,
   // 何回提出すると1段階進化するか
   GROW_PER_STAGE: 3,
+  // タマゴを選んだ後、何回提出すると孵化するか
+  HATCH_AFTER: 1,
   // 1日に育成ポイントがもらえる回数の上限（2時間続きの授業でも2回まで）
   GROW_MAX_PER_DAY: 2,
 };
@@ -73,6 +75,7 @@ function publicSettings_() {
     subject: CONFIG.SUBJECT,
     pets: CONFIG.PETS,
     growPerStage: CONFIG.GROW_PER_STAGE,
+    hatchAfter: CONFIG.HATCH_AFTER,
     needWord: wordSettings_().mode !== 'off',
   };
 }
@@ -212,8 +215,12 @@ function savePet_(sh, p) {
   else { sh.appendRow(v); p.row = sh.getLastRow(); }
 }
 
+// 育成ポイント → 段階。タマゴを選んだ回で1ポイント、そこから HATCH_AFTER 回で孵化、
+// その後は GROW_PER_STAGE 回ごとに進化する
 function petStage_(points) {
-  return Math.min(5, Math.floor(points / CONFIG.GROW_PER_STAGE));
+  const hatch = 1 + CONFIG.HATCH_AFTER;
+  if (points < hatch) return 0;
+  return Math.min(5, 1 + Math.floor((points - hatch) / CONFIG.GROW_PER_STAGE));
 }
 
 /** 生徒の画面に返す情報 */
@@ -1458,7 +1465,7 @@ var SETTINGS = (function(){
     // Apps Script の外で開いたとき（体験モード）
     var w = null;
     try { w = JSON.parse(localStorage.getItem('furikaeri_demo_word') || 'null'); } catch(x) {}
-    return { classes:{1:6,2:6,3:7}, maxNumber:35, maxPeriod:6, subject:'技術', needWord: !w || w.mode !== 'off', pets:true, growPerStage:3 };
+    return { classes:{1:6,2:6,3:7}, maxNumber:35, maxPeriod:6, subject:'技術', needWord: !w || w.mode !== 'off', pets:true, growPerStage:3, hatchAfter:1 };
   }
 })();
 var DEMO = typeof google === 'undefined' || !google.script;
@@ -1661,10 +1668,20 @@ function esc(s){
   });
 }
 
+// 育成ポイント → 段階（Apps Script 側の petStage_ と同じ計算）
+function hatchAfter(){ return SETTINGS.hatchAfter == null ? SETTINGS.growPerStage - 1 : SETTINGS.hatchAfter; }
+function petStage(points){
+  var h = 1 + hatchAfter();
+  return points < h ? 0 : Math.min(5, 1 + Math.floor((points - h) / SETTINGS.growPerStage));
+}
+
 // 進化までの ●●○
 function progressHtml(v){
   if (v.stage >= 5) return '<div class="dots">🎉 究極体まで育て上げた！</div>';
-  var n = SETTINGS.growPerStage, have = v.points % n, dots = '';
+  var h = 1 + hatchAfter(), n, have;
+  if (v.stage === 0) { n = hatchAfter(); have = v.points - 1; }
+  else { n = SETTINGS.growPerStage; have = v.points - (h + (v.stage - 1) * n); }
+  var dots = '';
   for (var i = 0; i < n; i++) dots += '<i class="' + (i < have ? 'on' : '') + '"></i>';
   return '<div class="dots">' + dots + '<span>あと<b>' + (n - have) + '回</b>で' + (v.stage === 0 ? 'うまれる！' : '進化！') + '</span></div>';
 }
@@ -1687,7 +1704,7 @@ function loadTopPet(){
     box.classList.remove('hidden');
     if (!v || !v.current) {
       box.innerHTML = '<div class="pic" style="filter:grayscale(1);opacity:.35">' + PETS.svg('inu', 0, 80) + '</div>' +
-        '<div class="info"><p class="petname">キャラを育てよう！</p><div class="muted">ふりかえりを送信すると、タマゴを1つ選べます。' + SETTINGS.growPerStage + '回送信するごとに進化します。</div>' + (v ? zukanHtml(v) : '') + '</div>';
+        '<div class="info"><p class="petname">キャラを育てよう！</p><div class="muted">ふりかえりを送信すると、タマゴを1つ選べます。次の' + hatchAfter() + '回の送信で孵化し、その後は' + SETTINGS.growPerStage + '回送信するごとに進化します。</div>' + (v ? zukanHtml(v) : '') + '</div>';
       return;
     }
     box.innerHTML = '<div class="pic">' + PETS.svg(v.current, v.stage, 120) + '</div><div class="info">' +
@@ -1799,7 +1816,7 @@ var demoPet = (function(){
   var KEY = 'furikaeri_demo_pets';
   function all(){ return store(KEY) || {}; }
   function view(p){
-    var st = p.current ? Math.min(5, Math.floor(p.points / SETTINGS.growPerStage)) : 0;
+    var st = p.current ? petStage(p.points) : 0;
     return { current:p.current, points:p.points, stage:st, done:p.done.slice(), needEgg: !p.current || st === 5 };
   }
   function count(p, lesson){
@@ -1813,7 +1830,7 @@ var demoPet = (function(){
     grow: function(r, lesson){
       var db = all(), key = r.grade + '-' + r.cls + '-' + r.num;
       var p = db[key] || { current:'', points:0, day:'', lessons:[], done:[] };
-      var before = p.current ? Math.min(5, Math.floor(p.points / SETTINGS.growPerStage)) : -1, counted = 'none';
+      var before = p.current ? petStage(p.points) : -1, counted = 'none';
       if (p.current && before < 5) { counted = count(p, lesson); if (counted === 'ok') p.points++; }
       db[key] = p; store(KEY, db);
       var v = view(p);
