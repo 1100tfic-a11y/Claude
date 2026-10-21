@@ -86,6 +86,22 @@ for i, (x0, y0, x1, y1) in enumerate(SAM):
   uris.append('data:image/webp;base64,' + base64.b64encode(b.getvalue()).decode())
 out['samurai'] = uris
 
+# ---- ロボット（ギアのタマゴ）：別の画像 art/gear.png から
+# カードが縦長なので、3:4 の枠に合わせて、左右のあまりはぼかした同じ絵で埋める
+gear = Image.open(os.path.join(HERE, '..', 'art', 'gear.png')).convert('RGB')
+GEAR = [(28, 212, 226, 545), (252, 212, 440, 545), (464, 212, 654, 545),
+        (680, 212, 873, 545), (897, 212, 1108, 545), (1171, 198, 1505, 640)]
+uris = []
+for x0, y0, x1, y1 in GEAR:
+  c = gear.crop((x0, y0, x1, y1)); H = c.height; W = round(H * RATIO)
+  if c.width < W:
+    bg = ImageEnhance.Brightness(c.resize((W, H)).filter(ImageFilter.GaussianBlur(10))).enhance(0.7)
+    bg.paste(c, ((W - c.width) // 2, 0)); c = bg
+  c = c.resize((round(220 * RATIO), 220), Image.LANCZOS)
+  b = io.BytesIO(); c.save(b, 'WEBP', quality=80, method=6)
+  uris.append('data:image/webp;base64,' + base64.b64encode(b.getvalue()).decode())
+out['robo'] = uris
+
 js = ('// tools/crop_pets.py で自動作成（art/characters.png から切り抜いた絵）。手で書きかえないでください。\n'
       '// PET_IMAGES[キャラ] = [タマゴ, 幼年期, 成長期, 成熟期, 完全体, 究極体]\n'
       'var PET_IMAGES = ' + json.dumps(out, indent=0) + ';\n')

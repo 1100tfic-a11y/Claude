@@ -11,6 +11,7 @@
 | `src/pets-gallery.html` | **キャラクター図鑑**（全10種類×6段階の一覧）。ダブルクリックで開けます |
 | `art/characters.png` | キャラクターの元の絵（全キャラ・全段階の一覧画像） |
 | `art/samurai.jpg` | 侍（かたなのタマゴ）の元の絵 |
+| `art/gear.png` | ロボット（ギアのタマゴ）の元の絵 |
 | `src/pet-images.js` | 元の絵から各キャラ・各段階を切り抜いた画像（`tools/crop_pets.py` で自動作成） |
 | `src/pets.js` | キャラクターの情報と表示。元の絵が無いキャラ・段階は、図形で描いた絵を代わりに使います |
 | `src/server.gs`・`src/build.js` | 開発用（`node src/build.js` で `furikaeri.gs` を作り直します）。先生は使いません |

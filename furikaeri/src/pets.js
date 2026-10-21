@@ -32,7 +32,7 @@ var PETS = (function(){
     { id:'ninja',   type:'cool', pattern:'shuriken', egg:['#2a6fd0','#dcebff'], ink:'#120f1c', aura:'#b46bff',
       names:['しゅりけんのタマゴ','ちびにん','にんまる','シノビ','影丸','忍頭ハンゾウ'] },
     { id:'robo',    type:'cool', pattern:'gears',    egg:['#1f8fb8','#d8f1f8'], ink:'#1b1f24', aura:'#5ff2ff',
-      names:['ギアのタマゴ','ポコボ','メカボックス','ガードロボ','バトルメカ','超機神ギガブレイバー'] }
+      names:['ギアのタマゴ','ギアトル','ギアキッド','ギアブレード','ギア・アルティメット','真・ギア・アルティメット'] }
   ];
   var BY = {};
   LIST.forEach(function(p){ BY[p.id] = p; });
