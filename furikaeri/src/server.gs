@@ -69,6 +69,11 @@ function doGet(e) {
   }
 }
 
+/** 公開中のウェブアプリの URL（…/exec）。取れなければ空 */
+function webAppUrl_() {
+  try { return String(ScriptApp.getService().getUrl() || '').replace(/\/dev$/, '/exec'); } catch (e) { return ''; }
+}
+
 function publicSettings_() {
   return {
     classes: CONFIG.CLASSES,
@@ -78,6 +83,7 @@ function publicSettings_() {
     pets: CONFIG.PETS,
     growPerStage: CONFIG.GROW_PER_STAGE,
     hatchAfter: CONFIG.HATCH_AFTER,
+    teacherUrl: webAppUrl_() ? webAppUrl_() + '?page=teacher' : '',
     needWord: wordSettings_().mode !== 'off',
   };
 }
