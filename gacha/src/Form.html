@@ -382,7 +382,7 @@ function demoNorm(w){ return String(w || '').normalize('NFKC').replace(/\s+/g, '
 function demoDaily(day){
   var h = 2166136261;
   for (var i = 0; i < day.length; i++) { h ^= day.charCodeAt(i); h = Math.imul(h, 16777619) >>> 0; }
-  return ('000' + (h % 10000)).slice(-4);
+  return ('00000' + (h % 1000000)).slice(-6);
 }
 function demoWord(){
   var w = store('furikaeri_demo_word') || { mode:'daily', fixed:'' };

@@ -117,7 +117,7 @@ tr.picked td{background:#fff1f1}
         <div class="wordnow"><span class="muted" id="wordDate">今日の合言葉</span><b id="wordNow">…</b>
           <button class="btn sub" id="wordShow" style="margin:.2rem 0 .3rem">大きく表示</button></div>
         <div class="wordset">
-          <label><input type="radio" name="wmode" value="daily">毎日自動でかわる（4けたの数字・おすすめ）</label>
+          <label><input type="radio" name="wmode" value="daily">毎日自動でかわる（6けたの数字・おすすめ）</label>
           <label><input type="radio" name="wmode" value="fixed">自分で決める：<input type="text" id="wordFixed" maxlength="20" style="width:10rem" placeholder="例）はんだ"></label>
           <label><input type="radio" name="wmode" value="off">使わない</label>
           <div class="ctrl" style="margin-top:.3rem">
@@ -285,7 +285,7 @@ function todayStr(){
 function demoDaily(day){
   var h = 2166136261;
   for (var i = 0; i < day.length; i++) { h ^= day.charCodeAt(i); h = Math.imul(h, 16777619) >>> 0; }
-  return ('000' + (h % 10000)).slice(-4);
+  return ('00000' + (h % 1000000)).slice(-6);
 }
 function demoSample(){
   var seed = 7;

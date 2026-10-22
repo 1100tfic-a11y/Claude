@@ -39,7 +39,7 @@ const GACHA_HEADERS = ['キー', '学年', '組', '番号', '氏名', '引いた
 const GACHA_LOG_HEADERS = ['引いた日時', '授業日', '時限', '学年', '組', '番号', '氏名', 'キャラID', 'キャラ名', 'レア度', 'はじめて'];
 
 // コードの版（checkSetup で、公開中のコードが最新か確かめるため）
-const CODE_VERSION = 'gacha-2026-10-22b';
+const CODE_VERSION = 'gacha-2026-10-22c';
 
 const HEADERS = [
   '送信日時', '授業日', '時限', '学年', '組', '番号', '氏名',
@@ -413,7 +413,7 @@ function checkPass_(pass) {
 
 // ===================== 合言葉 =====================
 // 設定はスクリプトプロパティに保存し、先生用ページから変更する（コードの書きかえ・再デプロイ不要）
-//   mode: 'daily'（毎日自動でかわる4けたの数字）/ 'fixed'（先生が決めた言葉）/ 'off'（使わない）
+//   mode: 'daily'（毎日自動でかわる6けたの数字）/ 'fixed'（先生が決めた言葉）/ 'off'（使わない）
 const WORD_KEY = 'WORD_SETTINGS';
 
 function wordSettings_() {
@@ -432,12 +432,12 @@ function normWord_(w) {
   return String(w == null ? '' : w).normalize('NFKC').replace(/\s+/g, '').toLowerCase();
 }
 
-/** その日の合言葉（4けた）。日付と秘密の値から計算するので、日付が変わると自動で変わる */
+/** その日の合言葉（6けた）。日付と秘密の値から計算するので、日付が変わると自動で変わる */
 function dailyWord_(secret, day) {
   const sig = Utilities.computeHmacSha256Signature(day, secret);
   let n = 0;
   for (let i = 0; i < 4; i++) n = n * 256 + (sig[i] & 255);
-  return ('000' + (n % 10000)).slice(-4);
+  return ('00000' + (n % 1000000)).slice(-6);
 }
 
 function currentWord_(s) {
