@@ -37,11 +37,13 @@ const PASS_KEY = 'TEACHER_PASSCODE';
 const TRASH_NAME = '削除済み';
 const PET_SHEET = 'キャラ';
 // src/pets.js の list と同じ並び（id）
-const PET_IDS = ['inu', 'neko', 'usagi', 'panda', 'hamu', 'dragon', 'samurai', 'knight', 'ninja', 'robo'];
+const PET_IDS = ['inu', 'neko', 'usagi', 'panda', 'hamu', 'dragon', 'samurai', 'ninja', 'robo', 'knight'];
+// 段階：0 タマゴ / 1 成長期 / 2 成熟期 / 3 完全体 / 4 究極体
+const ULT_STAGE = 4;
 const PET_HEADERS = ['キー', '学年', '組', '番号', '氏名', '育成中のキャラ', '育成ポイント', '最後に育てた日', 'その日に数えた授業', '育て上げたキャラ', '更新日時'];
 
 // コードの版（checkSetup で、公開中のコードが最新か確かめるため）
-const CODE_VERSION = '2026-10-22f';
+const CODE_VERSION = '2026-10-23a';
 
 const HEADERS = [
   '送信日時', '授業日', '時限', '学年', '組', '番号', '氏名',
@@ -277,7 +279,7 @@ function savePet_(sh, p) {
 function petStage_(points) {
   const hatch = 1 + CONFIG.HATCH_AFTER;
   if (points < hatch) return 0;
-  return Math.min(5, 1 + Math.floor((points - hatch) / CONFIG.GROW_PER_STAGE));
+  return Math.min(ULT_STAGE, 1 + Math.floor((points - hatch) / CONFIG.GROW_PER_STAGE));
 }
 
 /** 生徒の画面に返す情報 */
@@ -285,7 +287,7 @@ function petView_(p) {
   const stage = p.current ? petStage_(p.points) : 0;
   return {
     current: p.current, points: p.points, stage: stage, done: p.done,
-    needEgg: !p.current || stage === 5,
+    needEgg: !p.current || stage === ULT_STAGE,
   };
 }
 
@@ -307,7 +309,7 @@ function growPet_(g, c, n, name, lesson) {
   p.name = name;
   const before = p.current ? petStage_(p.points) : -1;
   let counted = 'none';
-  if (p.current && before < 5) {
+  if (p.current && before < ULT_STAGE) {
     counted = countLesson_(p, lesson);
     if (counted === 'ok') p.points++;
   }

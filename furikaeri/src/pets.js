@@ -2,37 +2,39 @@
  * 育成キャラクター（10種類 × 6段階）を SVG で描く
  *   PETS.list          … キャラクターの一覧
  *   PETS.get(id)       … 1体の情報
- *   PETS.svg(id, st)   … 段階 st（0=タマゴ 〜 5=究極体）の絵（SVG文字列）
+ *   PETS.svg(id, st)   … 段階 st（0=タマゴ 〜 4=究極体）の絵（SVG文字列）
  *   PETS.STAGES        … 段階の名前
  * 画像ファイルは使わず、すべて図形で描いています。
  * タマゴの色だけ「かわいい系＝ピンク」「かっこいい系＝青」で、生まれた後の色は自由です。
  * ========================================================================= */
 var PETS = (function(){
-  var STAGES = ['タマゴ', '幼年期', '成長期', '成熟期', '完全体', '究極体'];
+  // 段階（0 タマゴ 〜 4 究極体）。孵化すると成長期から始まる
+  var STAGES = ['タマゴ', '成長期', '成熟期', '完全体', '究極体'];
+  var ULT = STAGES.length - 1;
 
-  // type: cute（ピンクのタマゴ）/ cool（青のタマゴ）　egg: タマゴの色 [こい色, うすい色]　aura: 究極体の光の色
+  // type: cute（かわいい系）/ cool（かっこいい系）　egg: 図形で描くときのタマゴの色 [こい色, うすい色]　aura: 究極体の光の色
   var LIST = [
     { id:'inu',     type:'cute', pattern:'paws',     egg:['#ff8fb1','#ffe3ec'], ink:'#4a2a10', aura:'#ffb347',
-      names:['にくきゅうのタマゴ','こしば','しばまる','ワンダフル','ヒーローわんこ','聖獣こまいぬ'] },
+      names:['にくきゅうのタマゴ','ハナコ','サクラリア','桜天ノ光導獣・ハルフローラ','桜天ノ煌導獣・ルミアスト'] },
     { id:'neko',    type:'cute', pattern:'stars',    egg:['#ee8fd0','#fde8f6'], ink:'#16141f', aura:'#b388ff',
-      names:['ほしのタマゴ','くろにゃん','ノワール','まほうねこ','ムーンウィッチ','星の大魔女ルナ'] },
+      names:['ほしのタマゴ','くろにゃん','ヤミリル','夜天ノ月影猫・ルナミア','終夜ノ宙猫神・ノクタリス'] },
     { id:'usagi',   type:'cute', pattern:'hearts',   egg:['#ff9eb5','#fff0f3'], ink:'#5a3442', aura:'#ffd6f0',
-      names:['ハートのタマゴ','ちびうさ','ぴょんた','はなうさぎ','フラワープリンセス','月のうさぎ姫'] },
+      names:['ハートのタマゴ','ちびうさ','ミミアル','花愛ノ聖兎・フルリーナ','永遠ノ花冠神・フロレシア'] },
     { id:'panda',   type:'cute', pattern:'dots',     egg:['#f78fb3','#ffe6f0'], ink:'#1c1c1c', aura:'#9be15d',
-      names:['みずたまのタマゴ','ころぱん','パンパン','ささパンダ','カンフーパンダ','パンダ大王'] },
+      names:['みずたまのタマゴ','こうぱん','ミズマル','流水ノ拳獣・アクアリオ','海天ノ覇獣・アクアルナス'] },
     { id:'hamu',    type:'cute', pattern:'flowers',  egg:['#f6a6d0','#fdeef7'], ink:'#5c3a1a', aura:'#ffd23f',
-      names:['ひまわりのタマゴ','ちびハム','ほっぺハム','もぐもぐハム','どんぐり探検家','ひまわり女王ハム'] },
+      names:['ひまわりのタマゴ','ひまりん','サンリオ','陽華獣・ソレイユ','光陽ノ花竜神・ヘリオス'] },
 
     { id:'dragon',  type:'cool', pattern:'scales',   egg:['#3d7bf2','#d9e8ff'], ink:'#3d0f06', aura:'#ff7a29',
-      names:['りゅうのタマゴ','チビドラ','ボルカドラ','フレアドラゴン','インフェルノドラゴン','紅蓮竜王バハムーン'] },
+      names:['りゅうのタマゴ','チビドラ','リュウレイ','スカイドラゴン・リュウ','天空竜王・ルクスドラコ'] },
     { id:'samurai', type:'cool', pattern:'zigzag',   egg:['#2f5fbf','#dbe6fb'], ink:'#1d1b2e', aura:'#f06595',
-      names:['かたなのタマゴ','わかまる','けんたろう','サムライ剣士','鎧武者','天下無双の将軍'] },
-    { id:'knight',  type:'cool', pattern:'shields',  egg:['#4a86c8','#dfeaf6'], ink:'#232836', aura:'#fff3a8',
-      names:['たてのタマゴ','ヒナドラ','ボルカドラ','フレアドラゴン','インフェルノドラゴン','超躍竜王バルーン'] },
+      names:['かたなのタマゴ','わかまる','けんたろう','サムライ剣士','天下無双の将軍'] },
     { id:'ninja',   type:'cool', pattern:'shuriken', egg:['#2a6fd0','#dcebff'], ink:'#120f1c', aura:'#b46bff',
-      names:['しゅりけんのタマゴ','ちびにん','にんまる','シノビ','影丸','忍頭ハンゾウ'] },
+      names:['しゅりけんのタマゴ','しゅりたま','かげまる','風魔の影忍・シノマル','影天ノ風魔神・シオン'] },
     { id:'robo',    type:'cool', pattern:'gears',    egg:['#1f8fb8','#d8f1f8'], ink:'#1b1f24', aura:'#5ff2ff',
-      names:['ギアのタマゴ','ギアトル','ギアキッド','ギアブレード','ギア・アルティメット','真・ギア・アルティメット'] }
+      names:['ギアのタマゴ','ギアビット','ギアブランド','ギアブランド・覚醒','クロノギア・オルディス'] },
+    { id:'knight',  type:'cool', pattern:'shields',  egg:['#4a86c8','#dfeaf6'], ink:'#232836', aura:'#fff3a8',
+      names:['たてのタマゴ','ブラッドシールドゴーレム','要塞盾神ゴーレム','要塞盾神ゴーレム・覚醒','深淵の盾帝・ガルディオン'] }
   ];
   var BY = {};
   LIST.forEach(function(p){ BY[p.id] = p; });
@@ -659,25 +661,27 @@ var PETS = (function(){
     var imgs = typeof PET_IMAGES !== 'undefined' && PET_IMAGES[ch.id];
     if (!imgs || !imgs[st]) return '';
     var h = size || 160, w = Math.round(h * 0.75);
-    return '<span class="pet-svg pet-pic' + (st === 5 ? ' pet-ult' : '') + '" style="width:' + w + 'px;height:' + h + 'px" role="img" aria-label="' + ch.names[st] + '">' +
+    return '<span class="pet-svg pet-pic' + (st === ULT ? ' pet-ult' : '') + '" style="width:' + w + 'px;height:' + h + 'px" role="img" aria-label="' + ch.names[st] + '">' +
       '<img src="' + imgs[st] + '" alt="" class="' + (st === 0 ? 'pet-wobble' : 'pet-bounce') + '" draggable="false"></span>';
   }
 
   function svg(id, st, size){
     var ch = BY[id];
     if (!ch) return '';
-    st = Math.max(0, Math.min(5, Number(st) || 0));
+    st = Math.max(0, Math.min(ULT, Number(st) || 0));
     var pic = picture(ch, st, size);
     if (pic) return pic;
-    var inner = st === 0 ? eggSvg(ch) : creature(ch, st);
+    // 絵の画像が無いときは、図形で描いた絵（6段階で描いてあるので、成長期以降は1つ先の絵）を使う
+    var inner = st === 0 ? eggSvg(ch) : creature(ch, Math.min(5, st + 1));
     return '<svg class="pet-svg" viewBox="0 0 200 200" width="' + (size || 160) + '" height="' + (size || 160) + '" role="img" aria-label="' + ch.names[st] + '">' + inner + '</svg>';
   }
 
   return {
     STAGES: STAGES,
+    ULT: ULT,
     list: LIST,
     get: function(id){ return BY[id]; },
-    name: function(id, st){ var p = BY[id]; return p ? p.names[Math.max(0, Math.min(5, st))] : ''; },
+    name: function(id, st){ var p = BY[id]; return p ? p.names[Math.max(0, Math.min(ULT, st))] : ''; },
     svg: svg,
     // アニメーション用のCSS（ページに1回だけ入れる）
     css: '.pet-pic{display:inline-block;position:relative;overflow:hidden;border-radius:14px;vertical-align:middle;box-shadow:0 3px 10px rgba(30,30,60,.25);background:#eee}' +

@@ -384,12 +384,12 @@ function esc(s){
 function hatchAfter(){ return SETTINGS.hatchAfter == null ? SETTINGS.growPerStage - 1 : SETTINGS.hatchAfter; }
 function petStage(points){
   var h = 1 + hatchAfter();
-  return points < h ? 0 : Math.min(5, 1 + Math.floor((points - h) / SETTINGS.growPerStage));
+  return points < h ? 0 : Math.min(PETS.ULT, 1 + Math.floor((points - h) / SETTINGS.growPerStage));
 }
 
 // 進化までの ●●○
 function progressHtml(v){
-  if (v.stage >= 5) return '<div class="dots">🎉 究極体まで育て上げた！</div>';
+  if (v.stage >= PETS.ULT) return '<div class="dots">🎉 究極体まで育て上げた！</div>';
   var h = 1 + hatchAfter(), n, have;
   if (v.stage === 0) { n = hatchAfter(); have = v.points - 1; }
   else { n = SETTINGS.growPerStage; have = v.points - (h + (v.stage - 1) * n); }
@@ -401,7 +401,7 @@ function progressHtml(v){
 function zukanHtml(v){
   if (!v.done || !v.done.length) return '';
   return '<div class="zukan">図鑑：' + v.done.map(function(id){
-    return '<span title="' + esc(PETS.name(id, 5)) + '">' + PETS.svg(id, 5, 40) + '</span>';
+    return '<span title="' + esc(PETS.name(id, PETS.ULT)) + '">' + PETS.svg(id, PETS.ULT, 40) + '</span>';
   }).join('') + '</div>';
 }
 
@@ -421,7 +421,7 @@ function loadTopPet(){
     }
     box.innerHTML = '<div class="pic">' + PETS.svg(v.current, v.stage, 120) + '</div><div class="info">' +
       '<p class="petname">' + esc(PETS.name(v.current, v.stage)) + '<span class="petstage">' + PETS.STAGES[v.stage] + '</span></p>' +
-      progressHtml(v) + (v.stage >= 5 ? '<div class="muted">次にふりかえりを送信すると、新しいタマゴを選べます。</div>' : '') + zukanHtml(v) + '</div>';
+      progressHtml(v) + (v.stage >= PETS.ULT ? '<div class="muted">次にふりかえりを送信すると、新しいタマゴを選べます。</div>' : '') + zukanHtml(v) + '</div>';
   }, function(){ box.classList.add('hidden'); });
 }
 
@@ -437,13 +437,13 @@ function showPetAfterSend(v){
   $('sentBox').open = false;
   if (v.needEgg) {
     var head = '';
-    if (v.current && v.stage >= 5) {
-      head = '<div class="petstage-area" id="evoArea">' + PETS.svg(v.current, v.evolved ? v.from : 5, 150) + '</div>' +
+    if (v.current && v.stage >= PETS.ULT) {
+      head = '<div class="petstage-area" id="evoArea">' + PETS.svg(v.current, v.evolved ? v.from : PETS.ULT, 150) + '</div>' +
         '<p class="petmsg" id="evoMsg"></p>';
     }
     box.innerHTML = head + eggChooserHtml(v);
     bindEggChooser(v);
-    if (v.current && v.evolved) runEvolution(v.current, v.from, 5, function(){ $('evoMsg').textContent = '究極体まで育て上げた！ 新しいタマゴを選べるよ（次回でもOK）'; });
+    if (v.current && v.evolved) runEvolution(v.current, v.from, PETS.ULT, function(){ $('evoMsg').textContent = '究極体まで育て上げた！ 新しいタマゴを選べるよ（次回でもOK）'; });
     else if (v.current) $('evoMsg').textContent = '究極体まで育て上げた！ 新しいタマゴを選ぼう';
     return;
   }
@@ -481,7 +481,7 @@ function runEvolution(id, from, to, done){
 }
 
 function eggChooserHtml(v){
-  var done = v.done || [], cur = v.current && v.stage >= 5 ? done.concat([v.current]) : done;
+  var done = v.done || [], cur = v.current && v.stage >= PETS.ULT ? done.concat([v.current]) : done;
   var all = PETS.list.every(function(p){ return cur.indexOf(p.id) >= 0; });
   var group = function(type, title){
     return '<h3 class="' + type + '">' + title + '</h3><div class="egg-grid">' + PETS.list.filter(function(p){ return p.type === type; }).map(function(p){
@@ -491,7 +491,7 @@ function eggChooserHtml(v){
     }).join('') + '</div>';
   };
   return '<div class="eggs"><h2 style="margin-top:.6rem">🥚 タマゴを1つ選んでね</h2>' +
-    group('cute', '💗 かわいい系（ピンクのタマゴ）') + group('cool', '💙 かっこいい系（青のタマゴ）') +
+    group('cute', '💗 かわいい系') + group('cool', '💙 かっこいい系') +
     '<button type="button" class="btn pet" id="eggGo" disabled>タマゴを選んでね</button><p class="msg" id="eggMsg"></p></div>';
 }
 
@@ -529,7 +529,7 @@ var demoPet = (function(){
   function all(){ return store(KEY) || {}; }
   function view(p){
     var st = p.current ? petStage(p.points) : 0;
-    return { current:p.current, points:p.points, stage:st, done:p.done.slice(), needEgg: !p.current || st === 5 };
+    return { current:p.current, points:p.points, stage:st, done:p.done.slice(), needEgg: !p.current || st === PETS.ULT };
   }
   function count(p, lesson){
     var day = lesson.split('#')[0];
@@ -543,7 +543,7 @@ var demoPet = (function(){
       var db = all(), key = r.grade + '-' + r.cls + '-' + r.num;
       var p = db[key] || { current:'', points:0, day:'', lessons:[], done:[] };
       var before = p.current ? petStage(p.points) : -1, counted = 'none';
-      if (p.current && before < 5) { counted = count(p, lesson); if (counted === 'ok') p.points++; }
+      if (p.current && before < PETS.ULT) { counted = count(p, lesson); if (counted === 'ok') p.points++; }
       db[key] = p; store(KEY, db);
       var v = view(p);
       v.counted = counted; v.from = before; v.evolved = before >= 0 && v.stage > before;
