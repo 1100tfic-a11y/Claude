@@ -55,7 +55,7 @@ const PET_IDS = ['inu', 'neko', 'usagi', 'panda', 'hamu', 'dragon', 'samurai', '
 const PET_HEADERS = ['キー', '学年', '組', '番号', '氏名', '育成中のキャラ', '育成ポイント', '最後に育てた日', 'その日に数えた授業', '育て上げたキャラ', '更新日時'];
 
 // コードの版（checkSetup で、公開中のコードが最新か確かめるため）
-const CODE_VERSION = '2026-10-22e';
+const CODE_VERSION = '2026-10-22f';
 
 const HEADERS = [
   '送信日時', '授業日', '時限', '学年', '組', '番号', '氏名',
@@ -131,7 +131,6 @@ function publicSettings_() {
     growPerStage: CONFIG.GROW_PER_STAGE,
     hatchAfter: CONFIG.HATCH_AFTER,
     version: CODE_VERSION,
-    teacherUrl: webAppUrl_() ? webAppUrl_() + '?page=teacher' : '',
     needWord: wordSettings_().mode !== 'off',
   };
 }
@@ -801,8 +800,7 @@ details.sent summary{cursor:pointer;font-weight:700;color:var(--ink2)}
     <details class="sent" id="sentBox"><summary>送信した内容を見る</summary><dl id="summary"></dl></details>
     <button type="button" class="btn sub" id="again" style="margin-top:1rem">まちがえたので、もう一度送る</button>
   </section>
-  <p id="teacherLink" class="hint hidden" style="text-align:center;margin-top:2rem"><a target="_top">先生用ページ</a></p>
-  <p id="verNote" class="hint" style="text-align:center;opacity:.6"></p>
+  <p id="verNote" class="hint" style="text-align:center;opacity:.6;margin-top:2rem"></p>
 </main>
 
 <script>
@@ -1623,10 +1621,6 @@ function setupForm(){
   if (DEMO) $('demoNote').classList.remove('hidden');
   if (SETTINGS.needWord) $('secW').classList.remove('hidden');
   if (SETTINGS.version) $('verNote').textContent = 'ver ' + SETTINGS.version;
-  if (SETTINGS.teacherUrl) {
-    $('teacherLink').querySelector('a').href = SETTINGS.teacherUrl;
-    $('teacherLink').classList.remove('hidden');
-  }
 
   var g = $('grade');
   g.innerHTML = '<option value="">選ぶ</option>';

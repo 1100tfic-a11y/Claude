@@ -41,7 +41,7 @@ const PET_IDS = ['inu', 'neko', 'usagi', 'panda', 'hamu', 'dragon', 'samurai', '
 const PET_HEADERS = ['キー', '学年', '組', '番号', '氏名', '育成中のキャラ', '育成ポイント', '最後に育てた日', 'その日に数えた授業', '育て上げたキャラ', '更新日時'];
 
 // コードの版（checkSetup で、公開中のコードが最新か確かめるため）
-const CODE_VERSION = '2026-10-22e';
+const CODE_VERSION = '2026-10-22f';
 
 const HEADERS = [
   '送信日時', '授業日', '時限', '学年', '組', '番号', '氏名',
@@ -117,7 +117,6 @@ function publicSettings_() {
     growPerStage: CONFIG.GROW_PER_STAGE,
     hatchAfter: CONFIG.HATCH_AFTER,
     version: CODE_VERSION,
-    teacherUrl: webAppUrl_() ? webAppUrl_() + '?page=teacher' : '',
     needWord: wordSettings_().mode !== 'off',
   };
 }

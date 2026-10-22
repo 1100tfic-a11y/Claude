@@ -165,8 +165,7 @@ details.sent summary{cursor:pointer;font-weight:700;color:var(--ink2)}
     <details class="sent" id="sentBox"><summary>送信した内容を見る</summary><dl id="summary"></dl></details>
     <button type="button" class="btn sub" id="again" style="margin-top:1rem">まちがえたので、もう一度送る</button>
   </section>
-  <p id="teacherLink" class="hint hidden" style="text-align:center;margin-top:2rem"><a target="_top">先生用ページ</a></p>
-  <p id="verNote" class="hint" style="text-align:center;opacity:.6"></p>
+  <p id="verNote" class="hint" style="text-align:center;opacity:.6;margin-top:2rem"></p>
 </main>
 
 <script src="pet-images.js"></script>
@@ -209,10 +208,6 @@ function setupForm(){
   if (DEMO) $('demoNote').classList.remove('hidden');
   if (SETTINGS.needWord) $('secW').classList.remove('hidden');
   if (SETTINGS.version) $('verNote').textContent = 'ver ' + SETTINGS.version;
-  if (SETTINGS.teacherUrl) {
-    $('teacherLink').querySelector('a').href = SETTINGS.teacherUrl;
-    $('teacherLink').classList.remove('hidden');
-  }
 
   var g = $('grade');
   g.innerHTML = '<option value="">選ぶ</option>';
