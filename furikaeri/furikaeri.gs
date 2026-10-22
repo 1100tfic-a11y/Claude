@@ -51,6 +51,9 @@ const PET_SHEET = 'キャラ';
 const PET_IDS = ['inu', 'neko', 'usagi', 'panda', 'hamu', 'dragon', 'samurai', 'knight', 'ninja', 'robo'];
 const PET_HEADERS = ['キー', '学年', '組', '番号', '氏名', '育成中のキャラ', '育成ポイント', '最後に育てた日', 'その日に数えた授業', '育て上げたキャラ', '更新日時'];
 
+// コードの版（checkSetup で、公開中のコードが最新か確かめるため）
+const CODE_VERSION = '2026-10-22a';
+
 const HEADERS = [
   '送信日時', '授業日', '時限', '学年', '組', '番号', '氏名',
   '理解度', '理解度の理由', '進捗度', '進捗度の理由', '質問・感想', 'アカウント',
@@ -80,6 +83,31 @@ function doGet(e) {
   }
 }
 
+/**
+ * 点検用：Apps Script のエディタで関数「checkSetup」を選んで ▶実行 すると、
+ * 先生用・生徒用ページが作れるかを確かめ、結果を「実行ログ」に表示する。
+ */
+function checkSetup() {
+  const log = [];
+  log.push('コードの版: ' + CODE_VERSION);
+  log.push('ウェブアプリのURL: ' + (webAppUrl_() || '（取得できません）'));
+  log.push('先生用パスコード: ' + (PropertiesService.getScriptProperties().getProperty(PASS_KEY) ? '設定済み' : '未設定'));
+  log.push('FORM_HTML の長さ: ' + (typeof FORM_HTML === 'string' ? FORM_HTML.length : '（ありません）'));
+  log.push('TEACHER_HTML の長さ: ' + (typeof TEACHER_HTML === 'string' ? TEACHER_HTML.length : '（ありません）'));
+  [['先生用', { page: 'teacher' }], ['生徒用', {}]].forEach(function (t) {
+    try {
+      const out = doGet({ parameter: t[1] });
+      const html = out.getContent();
+      log.push(t[0] + 'ページ: ' + (out.getTitle() === 'エラー' ? 'エラー → ' + html.replace(/<[^>]+>/g, ' ').slice(0, 800) : 'OK（' + html.length + '文字）'));
+    } catch (e) {
+      log.push(t[0] + 'ページ: 例外 → ' + (e && e.stack || e));
+    }
+  });
+  const text = log.join('\n');
+  console.log(text);
+  return text;
+}
+
 /** 公開中のウェブアプリの URL（…/exec）。取れなければ空 */
 function webAppUrl_() {
   try { return String(ScriptApp.getService().getUrl() || '').replace(/\/dev$/, '/exec'); } catch (e) { return ''; }
@@ -94,6 +122,7 @@ function publicSettings_() {
     pets: CONFIG.PETS,
     growPerStage: CONFIG.GROW_PER_STAGE,
     hatchAfter: CONFIG.HATCH_AFTER,
+    version: CODE_VERSION,
     teacherUrl: webAppUrl_() ? webAppUrl_() + '?page=teacher' : '',
     needWord: wordSettings_().mode !== 'off',
   };
@@ -719,6 +748,7 @@ details.sent summary{cursor:pointer;font-weight:700;color:var(--ink2)}
     <button type="button" class="btn sub" id="again" style="margin-top:1rem">まちがえたので、もう一度送る</button>
   </section>
   <p id="teacherLink" class="hint hidden" style="text-align:center;margin-top:2rem"><a target="_top">先生用ページ</a></p>
+  <p id="verNote" class="hint" style="text-align:center;opacity:.6"></p>
 </main>
 
 <script>
@@ -1538,6 +1568,7 @@ function setupForm(){
   $('today').textContent = (d.getMonth()+1) + '月' + d.getDate() + '日（' + w + '）の授業';
   if (DEMO) $('demoNote').classList.remove('hidden');
   if (SETTINGS.needWord) $('secW').classList.remove('hidden');
+  if (SETTINGS.version) $('verNote').textContent = 'ver ' + SETTINGS.version;
   if (SETTINGS.teacherUrl) {
     $('teacherLink').querySelector('a').href = SETTINGS.teacherUrl;
     $('teacherLink').classList.remove('hidden');
