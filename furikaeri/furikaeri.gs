@@ -55,7 +55,7 @@ const PET_IDS = ['inu', 'neko', 'usagi', 'panda', 'hamu', 'dragon', 'samurai', '
 const PET_HEADERS = ['キー', '学年', '組', '番号', '氏名', '育成中のキャラ', '育成ポイント', '最後に育てた日', 'その日に数えた授業', '育て上げたキャラ', '更新日時'];
 
 // コードの版（checkSetup で、公開中のコードが最新か確かめるため）
-const CODE_VERSION = '2026-10-22b';
+const CODE_VERSION = '2026-10-22c';
 
 const HEADERS = [
   '送信日時', '授業日', '時限', '学年', '組', '番号', '氏名',
@@ -93,7 +93,7 @@ function doGet(e) {
 function checkSetup() {
   const log = [];
   log.push('コードの版: ' + CODE_VERSION);
-  log.push('ウェブアプリのURL: ' + (webAppUrl_() || '（取得できません）'));
+  log.push('先生用URL: ' + (webAppUrl_() ? webAppUrl_() + '?page=teacher' : '（取得できません）'));
   log.push('先生用パスコード: ' + (PropertiesService.getScriptProperties().getProperty(PASS_KEY) ? '設定済み' : '未設定'));
   log.push('FORM_HTML の長さ: ' + (typeof FORM_HTML === 'string' ? FORM_HTML.length : '（ありません）'));
   log.push('TEACHER_HTML の長さ: ' + (typeof TEACHER_HTML === 'string' ? TEACHER_HTML.length : '（ありません）'));
@@ -112,9 +112,13 @@ function checkSetup() {
   return text;
 }
 
-/** 公開中のウェブアプリの URL（…/exec）。取れなければ空 */
+/**
+ * 先生（スクリプトの持ち主）用の URL（…/dev）。取れなければ空
+ * ScriptApp.getService().getUrl() はテスト用（/dev）の URL を返す。/dev は持ち主だけが開け、
+ * いつも最後に保存したコードで動くので、先生用ページに向いている（/exec に書きかえると開けない）
+ */
 function webAppUrl_() {
-  try { return String(ScriptApp.getService().getUrl() || '').replace(/\/dev$/, '/exec'); } catch (e) { return ''; }
+  try { return String(ScriptApp.getService().getUrl() || ''); } catch (e) { return ''; }
 }
 
 function publicSettings_() {
@@ -379,15 +383,15 @@ function openTeacherMenu() {
     ui.alert('まだウェブアプリとして公開（デプロイ）されていません。\nApps Script の「デプロイ」→「新しいデプロイ」→「ウェブアプリ」で公開してください。');
     return;
   }
-  url = url.replace(/\/dev$/, '/exec');
   const esc = function (t) { return t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;'); };
   const t = url + '?page=teacher';
   const html = HtmlService.createHtmlOutput(
     '<div style="font-family:sans-serif;line-height:1.7">' +
     '<p><a href="' + esc(t) + '" target="_blank" style="font-size:1.2em;font-weight:bold">▶ 先生用ページを開く</a></p>' +
     '<p style="font-size:.85em">先生用（ブックマーク用）：<br><input style="width:100%" readonly value="' + esc(t) + '" onclick="this.select()"></p>' +
-    '<p style="font-size:.85em">生徒用（配布用）：<br><input style="width:100%" readonly value="' + esc(url) + '" onclick="this.select()"></p>' +
-    '</div>').setWidth(520).setHeight(260);
+    '<p style="font-size:.8em;color:#555">※ この URL（最後が /dev）は持ち主の先生だけが開けるテスト用で、いつも最後に保存したコードで動きます。<br>' +
+    '生徒に配るのは「デプロイを管理」の「ウェブアプリ」に表示される URL（最後が /exec）です。</p>' +
+    '</div>').setWidth(560).setHeight(300);
   ui.showModalDialog(html, '先生用ページ');
 }
 
