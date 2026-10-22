@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<base target="_top">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>授業ふりかえり</title>
+<style>
+:root{
+  --ink:#1c2430; --ink2:#55637a; --line:#d7dee9; --bg:#f4f7fb; --panel:#fff;
+  --accent:#2f6fd0; --err:#c92a2a; --ok:#0f7b46;
+  --a:#0f7b46; --b:#2f6fd0; --c:#d9480f;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);line-height:1.6;
+  font-family:"BIZ UDPGothic","Hiragino Kaku Gothic ProN","Yu Gothic UI","Meiryo",system-ui,sans-serif;
+  -webkit-text-size-adjust:100%}
+header{background:linear-gradient(100deg,#2f6fd0,#4C97FF 60%,#0FBD8C);color:#fff;padding:.9rem 1rem}
+header h1{margin:0 auto;max-width:720px;font-size:1.3rem}
+header p{margin:.1rem auto 0;max-width:720px;font-size:.9rem;opacity:.95}
+main{max-width:720px;margin:0 auto;padding:1rem 1rem 3rem}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:1rem;margin-bottom:1rem;
+  box-shadow:0 2px 6px rgba(28,36,48,.08)}
+.panel.bad{border:2px solid var(--err)}
+h2{font-size:1.08rem;margin:0 0 .6rem}
+.req{display:inline-block;font-size:.72rem;background:var(--err);color:#fff;border-radius:6px;padding:0 .4rem;margin-left:.3rem;vertical-align:middle}
+.opt{display:inline-block;font-size:.72rem;background:#8a96a8;color:#fff;border-radius:6px;padding:0 .4rem;margin-left:.3rem;vertical-align:middle}
+.row{display:grid;grid-template-columns:repeat(4,1fr);gap:.6rem}
+.row.three{grid-template-columns:repeat(3,1fr)}
+@media(max-width:520px){.row,.row.three{grid-template-columns:1fr 1fr}}
+label.f{display:block;font-size:.85rem;color:var(--ink2);font-weight:700}
+select,input[type=text],textarea{width:100%;font:inherit;font-size:1.05rem;padding:.6rem .7rem;border:2px solid var(--line);
+  border-radius:10px;background:#fff;color:var(--ink)}
+textarea{min-height:4.8rem;resize:vertical}
+select:focus,input:focus,textarea:focus{outline:3px solid #bcd5f7;border-color:var(--accent)}
+.name{margin-top:.6rem}
+.choices{display:grid;grid-template-columns:repeat(3,1fr);gap:.5rem;margin-bottom:.7rem}
+.choices input{position:absolute;opacity:0;pointer-events:none}
+.choices label{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;
+  border:2px solid var(--line);border-radius:12px;padding:.6rem .3rem;cursor:pointer;background:#fff;min-height:5.2rem;
+  font-size:.82rem;color:var(--ink2);user-select:none}
+.choices label b{font-size:1.8rem;line-height:1.1;color:var(--ink)}
+.choices input:focus-visible+label{outline:3px solid #bcd5f7}
+.choices input[value=A]:checked+label{background:var(--a);border-color:var(--a);color:#fff}
+.choices input[value=B]:checked+label{background:var(--b);border-color:var(--b);color:#fff}
+.choices input[value=C]:checked+label{background:var(--c);border-color:var(--c);color:#fff}
+.choices input:checked+label b{color:#fff}
+.hint{font-size:.8rem;color:var(--ink2);margin:.25rem 0 0}
+.count{float:right}
+.btn{display:block;width:100%;background:var(--accent);color:#fff;border:none;border-radius:12px;padding:.9rem;
+  font:inherit;font-size:1.15rem;font-weight:700;cursor:pointer}
+.btn:disabled{opacity:.6;cursor:wait}
+.btn.sub{background:#fff;color:var(--accent);border:2px solid var(--accent);font-size:1rem;padding:.7rem}
+.msg{color:var(--err);font-weight:700;margin:.6rem 0 0;min-height:1.4em}
+.done{text-align:center}
+.done .big{font-size:3rem;line-height:1}
+.done dl{display:grid;grid-template-columns:auto 1fr;gap:.2rem .8rem;text-align:left;margin:1rem auto;max-width:28rem}
+.done dt{color:var(--ink2);font-weight:700}
+.done dd{margin:0;white-space:pre-wrap;word-break:break-word}
+.demo{background:#fff8e8;border-left:5px solid #ffbf00;border-radius:6px;padding:.5rem .8rem;font-size:.85rem;margin-bottom:1rem}
+.word input{font-size:1.5rem;letter-spacing:.2em;text-align:center;max-width:14rem;display:block;margin:0 auto}
+/* ---- ガチャ ---- */
+.gtop{background:linear-gradient(135deg,#fff,#fff8e6 55%,#f1f7ff)}
+.gtop-head{display:flex;gap:.8rem;align-items:center}
+.gtop-head .info{flex:1;min-width:0}
+.gtitle{font-size:1.15rem;font-weight:800;margin:0}
+.gbar{height:.7rem;background:#e3e9f2;border-radius:99px;overflow:hidden;margin:.3rem 0}
+.gbar i{display:block;height:100%;background:linear-gradient(90deg,#ffcc33,#ff8a3d);border-radius:99px}
+.gsub{font-size:.85rem;color:var(--ink2)}
+.gthumbs{display:flex;flex-wrap:wrap;gap:.25rem;margin-top:.4rem}
+.btn.mini{width:auto;display:inline-block;font-size:.85rem;padding:.35rem .9rem;margin-top:.5rem}
+.zukan-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:.45rem;margin-top:.7rem}
+.zk{background:#fff;border:2px solid var(--line);border-radius:12px;padding:.35rem .2rem .3rem;text-align:center;font-size:.72rem;position:relative}
+.zk .nm{display:block;font-weight:700;margin-top:.15rem;word-break:break-all}
+.zk .st{display:block;font-size:.68rem;letter-spacing:-.05em}
+.zk .ct{position:absolute;top:.15rem;right:.25rem;font-size:.66rem;font-weight:700;color:var(--ink2)}
+.zk.no .nm{color:#b6c0cf}
+.rates{font-size:.78rem;color:var(--ink2);margin-top:.6rem}
+.gdone{margin-top:.6rem}
+.gmsg{font-weight:700;color:#d9480f;margin:.4rem 0;min-height:1.4em}
+.gstage{position:relative;width:220px;height:250px;margin:.4rem auto 0}
+.gmachine{position:absolute;left:0;top:0;width:220px;height:250px}
+.gstage.turn .ghandle{animation:gTurn .9s ease-in-out}
+@keyframes gTurn{0%{transform:rotate(0)}100%{transform:rotate(360deg)}}
+.gstage.turn .gdome{animation:gShake .15s linear 6}
+@keyframes gShake{0%,100%{transform:translateX(0)}25%{transform:translateX(-3px)}75%{transform:translateX(3px)}}
+.capsule{position:absolute;left:50%;top:190px;width:56px;height:56px;margin-left:-28px;opacity:0}
+.capsule .top,.capsule .bot{position:absolute;left:0;width:56px;height:28px;box-sizing:border-box;border:3px solid rgba(0,0,0,.25)}
+.capsule .top{top:0;border-radius:28px 28px 0 0;background:var(--cc);border-bottom-width:1px}
+.capsule .bot{bottom:0;border-radius:0 0 28px 28px;background:#fff;border-top-width:1px}
+.capsule.drop{animation:gDrop .7s cubic-bezier(.3,1.4,.5,1) forwards}
+@keyframes gDrop{0%{opacity:1;transform:translateY(-30px) scale(.6)}100%{opacity:1;transform:translateY(0) scale(1)}}
+.capsule.wobble{opacity:1;animation:gWob .18s linear infinite}
+@keyframes gWob{0%,100%{transform:rotate(0)}25%{transform:rotate(-12deg)}75%{transform:rotate(12deg)}}
+.capsule.open{opacity:1}
+.capsule.open .top{animation:gOpenT .45s ease-out forwards}
+.capsule.open .bot{animation:gOpenB .45s ease-out forwards}
+@keyframes gOpenT{to{transform:translate(-26px,-36px) rotate(-40deg);opacity:0}}
+@keyframes gOpenB{to{transform:translate(26px,30px) rotate(30deg);opacity:0}}
+.greveal{position:relative;display:inline-block;margin:.6rem auto 0;padding:1rem}
+.greveal .gc-pic{position:relative;z-index:1;animation:gPop .6s cubic-bezier(.2,1.6,.4,1)}
+@keyframes gPop{0%{transform:scale(.2)}100%{transform:scale(1)}}
+.greveal::before{content:"";position:absolute;inset:0;border-radius:50%;background:radial-gradient(var(--rl) 30%,rgba(255,255,255,0) 70%)}
+.greveal.r-SR::before{background:radial-gradient(#e9c8ff 25%,rgba(255,255,255,0) 70%)}
+.greveal.r-SSR::before{inset:-25%;background:conic-gradient(#ff6b6b,#ffd93d,#6bcB77,#4d96ff,#c77dff,#ff6b6b);border-radius:50%;opacity:.45;animation:gSpin 4s linear infinite;
+  -webkit-mask:radial-gradient(transparent 20%,#000 21%,transparent 70%);mask:radial-gradient(transparent 20%,#000 21%,transparent 70%)}
+@keyframes gSpin{to{transform:rotate(360deg)}}
+.gflash{position:fixed;inset:0;background:#fff;pointer-events:none;z-index:50;animation:gFlash .6s ease-out forwards}
+@keyframes gFlash{0%{opacity:.95}100%{opacity:0}}
+.grar{display:inline-block;font-weight:800;color:#fff;border-radius:99px;padding:.05rem .7rem;font-size:.85rem}
+.gname{font-size:1.35rem;font-weight:800;margin:.2rem 0}
+.gnew{display:inline-block;background:#ff3b6b;color:#fff;font-weight:800;border-radius:6px;padding:0 .45rem;margin-left:.3rem;font-size:.85rem;vertical-align:middle;animation:gPop .5s .3s both}
+.btn.gacha{background:linear-gradient(90deg,#ff8a3d,#ff3b6b,#c77dff);font-size:1.2rem}
+.btn.gacha:disabled{opacity:.6}
+details.sent{text-align:left;margin-top:1rem;border:1px solid var(--line);border-radius:10px;padding:.4rem .8rem;background:#fbfcfe}
+details.sent summary{cursor:pointer;font-weight:700;color:var(--ink2)}
+.hidden{display:none !important}
+</style>
+</head>
+<body>
+<header>
+  <h1 id="title">授業ふりかえり</h1>
+  <p id="today"></p>
+</header>
+<main>
+  <div id="demoNote" class="demo hidden">【体験モード】Google Apps Script の外で開いています。送信内容はこの端末のブラウザにだけ保存されます。</div>
+
+  <section class="panel gtop hidden" id="gTop" aria-live="polite"></section>
+
+  <form id="form" novalidate>
+    <section class="panel" id="secWho">
+      <h2>あなたのこと <span class="req">必須</span></h2>
+      <div class="row" id="whoRow">
+        <div><label class="f" for="grade">学年</label><select id="grade" required></select></div>
+        <div><label class="f" for="cls">組</label><select id="cls" required></select></div>
+        <div><label class="f" for="num">番号</label><select id="num" required></select></div>
+        <div id="periodBox"><label class="f" for="period">時限</label><select id="period" required></select></div>
+      </div>
+      <div class="name">
+        <label class="f" for="name">氏名（フルネーム）</label>
+        <input type="text" id="name" maxlength="40" autocomplete="name" placeholder="例）技術 太郎" required>
+      </div>
+      <p class="hint">学年・組・番号・氏名は、この端末に記憶されます。次回からは入力しなくてOKです。</p>
+    </section>
+
+    <section class="panel" id="secU">
+      <h2>① 本時の授業の理解度 <span class="req">必須</span></h2>
+      <div class="choices" role="radiogroup" aria-label="理解度">
+        <input type="radio" name="understand" id="u-A" value="A"><label for="u-A"><b>A</b>よく理解できた</label>
+        <input type="radio" name="understand" id="u-B" value="B"><label for="u-B"><b>B</b>だいたい理解できた</label>
+        <input type="radio" name="understand" id="u-C" value="C"><label for="u-C"><b>C</b>あまり理解できなかった</label>
+      </div>
+      <label class="f" for="uReason">そう思う理由 <span class="req">必須</span><span class="count" id="uCount"></span></label>
+      <textarea id="uReason" maxlength="1000" placeholder="例）〇〇のしくみは説明できるが、△△がまだよくわからないから"></textarea>
+    </section>
+
+    <section class="panel" id="secP">
+      <h2>② 本時の作業の進捗度 <span class="req">必須</span></h2>
+      <div class="choices" role="radiogroup" aria-label="進捗度">
+        <input type="radio" name="progress" id="p-A" value="A"><label for="p-A"><b>A</b>予定より進んだ</label>
+        <input type="radio" name="progress" id="p-B" value="B"><label for="p-B"><b>B</b>予定どおり進んだ</label>
+        <input type="radio" name="progress" id="p-C" value="C"><label for="p-C"><b>C</b>予定より遅れている</label>
+      </div>
+      <label class="f" for="pReason">そう思う理由 <span class="req">必須</span><span class="count" id="pCount"></span></label>
+      <textarea id="pReason" maxlength="1000" placeholder="例）〇〇まで完成した。次の時間は△△から始める"></textarea>
+    </section>
+
+    <section class="panel" id="secQ">
+      <h2>③ 質問・感想など <span class="opt">任意</span></h2>
+      <textarea id="question" maxlength="1000" placeholder="先生に聞きたいこと、困っていること、感想など"></textarea>
+    </section>
+
+    <section class="panel word hidden" id="secW">
+      <h2>🔑 合言葉 <span class="req">必須</span></h2>
+      <input type="text" id="word" maxlength="20" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="合言葉">
+      <p class="hint" style="text-align:center">先生が黒板（画面）に書いた合言葉を入力してください。</p>
+    </section>
+
+    <button type="submit" class="btn" id="send">送信する</button>
+    <p class="msg" id="msg" role="alert"></p>
+  </form>
+
+  <section class="panel done hidden" id="done">
+    <div class="big">✅</div>
+    <h2>送信しました。おつかれさまでした！</h2>
+    <div id="gDone" class="gdone hidden"></div>
+    <details class="sent" id="sentBox"><summary>送信した内容を見る</summary><dl id="summary"></dl></details>
+    <button type="button" class="btn sub" id="again" style="margin-top:1rem">まちがえたので、もう一度送る</button>
+  </section>
+  <p id="teacherLink" class="hint hidden" style="text-align:center;margin-top:2rem"><a target="_top">先生用ページ</a></p>
+  <p id="verNote" class="hint" style="text-align:center;opacity:.6"></p>
+</main>
+
+<script src="char-images.js"></script>
+<script src="chars.js"></script>
+<script>
+var SETTINGS = (function(){
+  try { return JSON.parse('<?!= settings ?>'); } catch(e) {
+    // Apps Script の外で開いたとき（体験モード）
+    var w = null;
+    try { w = JSON.parse(localStorage.getItem('furikaeri_demo_word') || 'null'); } catch(x) {}
+    return { classes:{1:6,2:6,3:7}, maxNumber:35, maxPeriod:6, subject:'技術', needWord: !w || w.mode !== 'off', gacha:true, gachaMaxPerDay:2, rates:demoRates({ N:60, R:28, SR:10, SSR:2 }) };
+  }
+})();
+// 体験モード用：キャラがいるレア度だけの出やすさ（Apps Script 側の gachaRates_ と同じ）
+function demoRates(r){
+  var out = {};
+  Object.keys(r).forEach(function(k){ if (r[k] > 0 && GACHA.list.some(function(c){ return c.rarity === k; })) out[k] = r[k]; });
+  return out;
+}
+var DEMO = typeof google === 'undefined' || !google.script;
+var ME_KEY = 'furikaeri_me';
+var $ = function(id){ return document.getElementById(id); };
+
+function store(key, val){
+  try {
+    if (val === undefined) return JSON.parse(localStorage.getItem(key) || 'null');
+    localStorage.setItem(key, JSON.stringify(val));
+  } catch(e) { return null; }
+}
+
+function fillSelect(sel, n, unit, keep){
+  var prev = keep ? sel.value : '';
+  sel.innerHTML = '<option value="">選ぶ</option>';
+  for (var i = 1; i <= n; i++) {
+    var o = document.createElement('option');
+    o.value = i; o.textContent = i + unit;
+    sel.appendChild(o);
+  }
+  if (prev && Number(prev) <= n) sel.value = prev;
+}
+
+function setupForm(){
+  $('title').textContent = SETTINGS.subject + ' 授業ふりかえり';
+  var d = new Date(), w = '日月火水木金土'.charAt(d.getDay());
+  $('today').textContent = (d.getMonth()+1) + '月' + d.getDate() + '日（' + w + '）の授業';
+  if (DEMO) $('demoNote').classList.remove('hidden');
+  if (SETTINGS.needWord) $('secW').classList.remove('hidden');
+  if (SETTINGS.version) $('verNote').textContent = 'ver ' + SETTINGS.version;
+  if (SETTINGS.teacherUrl) {
+    $('teacherLink').querySelector('a').href = SETTINGS.teacherUrl;
+    $('teacherLink').classList.remove('hidden');
+  }
+
+  var g = $('grade');
+  g.innerHTML = '<option value="">選ぶ</option>';
+  Object.keys(SETTINGS.classes).forEach(function(k){
+    var o = document.createElement('option'); o.value = k; o.textContent = k + '年'; g.appendChild(o);
+  });
+  fillSelect($('cls'), 0, '組');
+  fillSelect($('num'), SETTINGS.maxNumber, '番');
+  if (SETTINGS.maxPeriod > 0) {
+    fillSelect($('period'), SETTINGS.maxPeriod, '時間目');
+  } else {
+    $('periodBox').remove();
+    $('whoRow').classList.add('three');
+  }
+  g.addEventListener('change', function(){
+    fillSelect($('cls'), SETTINGS.classes[g.value] || 0, '組', true);
+  });
+
+  var me = store(ME_KEY);
+  if (me) {
+    g.value = me.grade || '';
+    fillSelect($('cls'), SETTINGS.classes[g.value] || 0, '組');
+    $('cls').value = me.cls || '';
+    $('num').value = me.num || '';
+    $('name').value = me.name || '';
+  }
+  if (SETTINGS.gacha) {
+    document.head.insertAdjacentHTML('beforeend', '<style>' + GACHA.css + '</style>');
+    ['grade','cls','num'].forEach(function(id){ $(id).addEventListener('change', loadTop); });
+    loadTop();
+  }
+
+  [['uReason','uCount'],['pReason','pCount']].forEach(function(p){
+    var t = $(p[0]), c = $(p[1]);
+    var upd = function(){ c.textContent = t.value.trim().length + '文字'; };
+    t.addEventListener('input', upd); upd();
+  });
+  document.querySelectorAll('select,input,textarea').forEach(function(el){
+    el.addEventListener('change', function(){ var s = el.closest('.panel'); if (s) s.classList.remove('bad'); });
+  });
+
+  $('form').addEventListener('submit', onSubmit);
+  $('again').addEventListener('click', function(){
+    $('done').classList.add('hidden');
+    $('form').classList.remove('hidden');
+    if (SETTINGS.gacha) loadTop();
+    window.scrollTo(0, 0);
+  });
+}
+
+function radio(name){
+  var r = document.querySelector('input[name="' + name + '"]:checked');
+  return r ? r.value : '';
+}
+
+function collect(){
+  return {
+    grade: $('grade').value, cls: $('cls').value, num: $('num').value,
+    period: SETTINGS.maxPeriod > 0 ? $('period').value : '',
+    name: $('name').value.trim(),
+    understand: radio('understand'), understandReason: $('uReason').value.trim(),
+    progress: radio('progress'), progressReason: $('pReason').value.trim(),
+    question: $('question').value.trim(),
+    word: $('word').value.trim()
+  };
+}
+
+function check(r){
+  if (!r.grade) return ['secWho','grade','学年を選んでください。'];
+  if (!r.cls) return ['secWho','cls','組を選んでください。'];
+  if (!r.num) return ['secWho','num','出席番号を選んでください。'];
+  if (SETTINGS.maxPeriod > 0 && !r.period) return ['secWho','period','何時間目の授業か選んでください。'];
+  if (!r.name) return ['secWho','name','氏名を入力してください。'];
+  if (!r.understand) return ['secU','u-A','① 理解度を A・B・C から選んでください。'];
+  if (!r.understandReason) return ['secU','uReason','① 理解度の理由を書いてください。'];
+  if (!r.progress) return ['secP','p-A','② 進捗度を A・B・C から選んでください。'];
+  if (!r.progressReason) return ['secP','pReason','② 進捗度の理由を書いてください。'];
+  if (SETTINGS.needWord && !r.word) return ['secW','word','合言葉を入力してください。'];
+  return null;
+}
+
+function onSubmit(ev){
+  ev.preventDefault();
+  var r = collect();
+  var bad = check(r);
+  document.querySelectorAll('.panel.bad').forEach(function(p){ p.classList.remove('bad'); });
+  if (bad) {
+    $(bad[0]).classList.add('bad');
+    $('msg').textContent = bad[2];
+    $(bad[0]).scrollIntoView({ behavior:'smooth', block:'center' });
+    $(bad[1]).focus({ preventScroll:true });
+    return;
+  }
+  $('msg').textContent = '';
+  $('send').disabled = true;
+  $('send').textContent = '送信中…';
+  send(r, function(res){
+    $('send').disabled = false;
+    $('send').textContent = '送信する';
+    if (!res || !res.ok) {
+      $('msg').textContent = (res && res.message) || '送信できませんでした。もう一度ためしてください。';
+      if (res && res.field === 'word') {
+        // 先生が合言葉を使う設定にしたのが、このページを開いた後だった場合も入力欄を出す
+        SETTINGS.needWord = true;
+        $('secW').classList.remove('hidden');
+        $('secW').classList.add('bad');
+        $('word').select();
+        $('word').focus();
+      }
+      return;
+    }
+    store(ME_KEY, { grade:r.grade, cls:r.cls, num:r.num, name:r.name });
+    showDone(r);
+    if (SETTINGS.gacha && res.gacha) showGachaAfterSend(res.gacha);
+  });
+}
+
+function send(r, cb){
+  if (DEMO) {
+    var want = demoWord();
+    if (want && demoNorm(r.word) !== demoNorm(want)) {
+      setTimeout(function(){ cb({ ok:false, field:'word', message:'合言葉がちがいます。先生が黒板に書いた合言葉を入力してください。' }); }, 300);
+      return;
+    }
+    var rows = store('furikaeri_demo_rows') || [];
+    var d = new Date(), pad = function(n){ return ('0' + n).slice(-2); };
+    var day = d.getFullYear() + '-' + pad(d.getMonth()+1) + '-' + pad(d.getDate());
+    rows.push([day + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes()), day,
+      r.period ? Number(r.period) : '', Number(r.grade), Number(r.cls), Number(r.num), r.name,
+      r.understand, r.understandReason, r.progress, r.progressReason, r.question, '']);
+    store('furikaeri_demo_rows', rows);
+    var gacha = demoGacha.pull(r, day + '#' + (r.period || ''));
+    setTimeout(function(){ cb({ ok:true, gacha:gacha }); }, 300);
+    return;
+  }
+  google.script.run
+    .withSuccessHandler(cb)
+    .withFailureHandler(function(e){ cb({ ok:false, message:'通信エラー：' + (e && e.message || e) + '　もう一度ためしてください。' }); })
+    .submitReflection(r);
+}
+
+// 体験モード用の合言葉（本番では Code.gs が判定する）
+function demoNorm(w){ return String(w || '').normalize('NFKC').replace(/\s+/g, '').toLowerCase(); }
+function demoDaily(day){
+  var h = 2166136261;
+  for (var i = 0; i < day.length; i++) { h ^= day.charCodeAt(i); h = Math.imul(h, 16777619) >>> 0; }
+  return ('000' + (h % 10000)).slice(-4);
+}
+function demoWord(){
+  var w = store('furikaeri_demo_word') || { mode:'daily', fixed:'' };
+  var d = new Date(), pad = function(n){ return ('0' + n).slice(-2); };
+  if (w.mode === 'off') return '';
+  if (w.mode === 'fixed') return w.fixed;
+  return demoDaily(d.getFullYear() + '-' + pad(d.getMonth()+1) + '-' + pad(d.getDate()));
+}
+
+// ======================= ガチャ =======================
+function serverCall(fn, args, ok, ng){
+  if (DEMO) {
+    setTimeout(function(){ try { ok(demoGacha[fn].apply(null, args)); } catch(e) { ng(e); } }, 200);
+    return;
+  }
+  var run = google.script.run.withSuccessHandler(ok).withFailureHandler(ng);
+  run[fn].apply(run, args);
+}
+
+function esc(s){
+  return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){
+    return { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c];
+  });
+}
+
+function ownedCount(v){ return GACHA.list.filter(function(c){ return v && v.owned && v.owned[c.id]; }).length; }
+
+function rarityTag(r){
+  var R = GACHA.rarity(r);
+  return '<span class="grar" style="background:' + R.color + '">' + R.id + ' ' + GACHA.stars(r) + '</span>';
+}
+
+function ratesHtml(){
+  var rates = SETTINGS.rates || {}, keys = Object.keys(rates), total = 0;
+  keys.forEach(function(k){ total += rates[k]; });
+  if (!total) return '';
+  return '<div class="rates">出る確率：' + keys.map(function(k){
+    return k + ' ' + (Math.round(rates[k] / total * 1000) / 10) + '%';
+  }).join('　') + '</div>';
+}
+
+function zukanGridHtml(v){
+  var owned = (v && v.owned) || {};
+  return '<div class="zukan-grid">' + GACHA.list.map(function(c, i){
+    var have = owned[c.id];
+    return '<div class="zk' + (have ? '' : ' no') + '">' + (have > 1 ? '<span class="ct">×' + have + '</span>' : '') +
+      GACHA.pic(c.id, 72, !have) +
+      '<span class="nm">' + (have ? esc(c.name) : 'No.' + (i + 1)) + '</span>' +
+      '<span class="st" style="color:' + GACHA.rarity(c.rarity).color + '">' + GACHA.stars(c.rarity) + '</span></div>';
+  }).join('') + '</div>' + ratesHtml();
+}
+
+function collectionHead(v){
+  var have = ownedCount(v), all = GACHA.list.length;
+  return '<p class="gtitle">🎰 ガチャ図鑑 <b>' + have + '</b> / ' + all + '</p>' +
+    '<div class="gbar"><i style="width:' + (all ? Math.round(have / all * 100) : 0) + '%"></i></div>';
+}
+
+// フォーム上の「わたしの図鑑」
+var topReq = 0;
+function loadTop(){
+  var g = $('grade').value, c = $('cls').value, n = $('num').value, box = $('gTop');
+  if (!g || !c || !n) { box.classList.add('hidden'); return; }
+  var my = ++topReq;
+  serverCall('getCollection', [g, c, n], function(v){
+    if (my !== topReq) return; // 選びなおしたあとの古い返事は使わない
+    box.classList.remove('hidden');
+    var left = v ? v.left : SETTINGS.gachaMaxPerDay;
+    var owned = (v && v.owned) || {};
+    var thumbs = GACHA.list.filter(function(ch){ return owned[ch.id]; }).map(function(ch){
+      return '<span title="' + esc(ch.name) + '">' + GACHA.pic(ch.id, 40) + '</span>';
+    }).join('');
+    box.innerHTML = '<div class="gtop-head"><div class="info">' + collectionHead(v) +
+      '<div class="gsub">' + (left > 0 ? 'ふりかえりを送信すると、ガチャを<b>1回</b>引けます（今日はあと' + left + '回）' : '今日のガチャはおしまい。続きは次の授業で！') + '</div></div></div>' +
+      (thumbs ? '<div class="gthumbs">' + thumbs + '</div>' : '') +
+      '<button type="button" class="btn sub mini" id="zkBtn">図鑑を見る</button><div id="zkBox" class="hidden"></div>';
+    $('zkBtn').addEventListener('click', function(){
+      var z = $('zkBox'), open = z.classList.toggle('hidden') === false;
+      if (open && !z.innerHTML) z.innerHTML = zukanGridHtml(v);
+      $('zkBtn').textContent = open ? '図鑑をとじる' : '図鑑を見る';
+    });
+  }, function(){ box.classList.add('hidden'); });
+}
+
+var COUNT_MSG = {
+  same: '同じ授業の2回目の送信なので、ガチャは引けません。',
+  limit: '今日はもうガチャを引いたので、続きは次の授業で！'
+};
+
+// ガチャのマシン（SVG）。カプセルの色はレア度の色
+function machineSvg(){
+  var caps = [[78,62,'#ff6b6b'],[110,52,'#4d96ff'],[142,64,'#ffd93d'],[92,90,'#6bcb77'],[128,92,'#c77dff'],[66,96,'#ff9f43'],[156,98,'#4dd2ff'],[110,78,'#ff7eb6']];
+  return '<svg class="gmachine" viewBox="0 0 220 250" aria-hidden="true">' +
+    '<g class="gdome" style="transform-origin:110px 80px">' +
+    '<circle cx="110" cy="80" r="68" fill="#e9f6ff" stroke="#2b3a55" stroke-width="5"/>' +
+    caps.map(function(c){ return '<circle cx="' + c[0] + '" cy="' + c[1] + '" r="15" fill="' + c[2] + '" stroke="#2b3a55" stroke-width="2.5"/><path d="M' + (c[0]-15) + ' ' + c[1] + 'h30" stroke="#2b3a55" stroke-width="2"/>'; }).join('') +
+    '<ellipse cx="88" cy="50" rx="16" ry="9" fill="#fff" opacity=".7"/></g>' +
+    '<path d="M38 140h144l10 100H28z" fill="#ff3b6b" stroke="#2b3a55" stroke-width="5" stroke-linejoin="round"/>' +
+    '<rect x="44" y="132" width="132" height="16" rx="6" fill="#ff8a3d" stroke="#2b3a55" stroke-width="5"/>' +
+    '<rect x="82" y="196" width="56" height="38" rx="8" fill="#2b3a55"/>' +
+    '<g class="ghandle" style="transform-origin:150px 172px"><circle cx="150" cy="172" r="17" fill="#ffd93d" stroke="#2b3a55" stroke-width="4"/><rect x="146" y="158" width="8" height="28" rx="3" fill="#2b3a55"/></g>' +
+    '<text x="72" y="180" font-size="20" font-weight="900" fill="#fff" text-anchor="middle" font-family="sans-serif">GO!</text>' +
+    '</svg>';
+}
+
+function showGachaAfterSend(v){
+  var box = $('gDone');
+  box.classList.remove('hidden');
+  $('sentBox').open = false;
+  if (!v.result) {
+    box.innerHTML = '<p class="gmsg">' + esc(COUNT_MSG[v.counted] || 'ガチャのキャラがまだ登録されていません。') + '</p>' + collectionHead(v);
+    return;
+  }
+  box.innerHTML = '<div class="gstage" id="gStage">' + machineSvg() +
+    '<div class="capsule" id="gCap" style="--cc:' + GACHA.rarity(GACHA.get(v.result.id).rarity).color + '"><div class="top"></div><div class="bot"></div></div></div>' +
+    '<button type="button" class="btn gacha" id="gGo">🎰 ガチャを回す！</button><div id="gOut"></div>';
+  $('gGo').addEventListener('click', function(){
+    $('gGo').disabled = true;
+    $('gGo').textContent = 'ガラガラ…';
+    runGacha(v);
+  });
+}
+
+// 演出：ハンドルが回る → カプセルが落ちる → ぶるぶる → パカッ → キャラ
+function runGacha(v){
+  var st = $('gStage'), cap = $('gCap'), ch = GACHA.get(v.result.id), R = GACHA.rarity(ch.rarity);
+  st.classList.add('turn');
+  setTimeout(function(){
+    cap.classList.add('drop');
+    setTimeout(function(){
+      cap.classList.remove('drop');
+      cap.classList.add('wobble');
+      setTimeout(function(){
+        cap.classList.remove('wobble');
+        cap.classList.add('open');
+        if (ch.rarity === 'SR' || ch.rarity === 'SSR') {
+          var f = document.createElement('div'); f.className = 'gflash'; document.body.appendChild(f);
+          setTimeout(function(){ f.remove(); }, 700);
+        }
+        setTimeout(function(){
+          st.classList.add('hidden');
+          $('gGo').classList.add('hidden');
+          $('gOut').innerHTML = '<div class="greveal r-' + ch.rarity + '" style="--rl:' + R.light + '">' + GACHA.pic(ch.id, 170) + '</div>' +
+            '<div>' + rarityTag(ch.rarity) + '</div>' +
+            '<p class="gname">' + esc(ch.name) + (v.result.isNew ? '<span class="gnew">NEW!</span>' : '') + '</p>' +
+            '<p class="gsub">' + (v.result.isNew ? '図鑑に登録された！' : 'もう持っているキャラ（' + v.result.count + '体目）') + '</p>' +
+            collectionHead(v) +
+            '<button type="button" class="btn sub mini" id="zkBtn2">図鑑を見る</button><div id="zkBox2" class="hidden"></div>';
+          $('zkBtn2').addEventListener('click', function(){
+            var z = $('zkBox2'), open = z.classList.toggle('hidden') === false;
+            if (open && !z.innerHTML) z.innerHTML = zukanGridHtml(v);
+            $('zkBtn2').textContent = open ? '図鑑をとじる' : '図鑑を見る';
+          });
+        }, 420);
+      }, ch.rarity === 'SSR' ? 1500 : 900);
+    }, 700);
+  }, 900);
+}
+
+// 体験モード用（本番では Apps Script 側で同じことをします）
+var demoGacha = (function(){
+  var KEY = 'gacha_demo_players';
+  function all(){ return store(KEY) || {}; }
+  function today(){ var d = new Date(), p = function(n){ return ('0' + n).slice(-2); }; return d.getFullYear() + '-' + p(d.getMonth()+1) + '-' + p(d.getDate()); }
+  function view(p){
+    var owned = {};
+    GACHA.list.forEach(function(c){ if (p.owned[c.id]) owned[c.id] = p.owned[c.id]; });
+    return { owned:owned, pulls:p.pulls, left: Math.max(0, SETTINGS.gachaMaxPerDay - (p.day === today() ? p.lessons.length : 0)) };
+  }
+  function count(p, lesson){
+    var day = lesson.split('#')[0];
+    if (p.day !== day) { p.day = day; p.lessons = []; }
+    if (p.lessons.indexOf(lesson) >= 0) return 'same';
+    if (p.lessons.length >= SETTINGS.gachaMaxPerDay) return 'limit';
+    p.lessons.push(lesson); return 'ok';
+  }
+  function draw(){
+    var rates = SETTINGS.rates, keys = Object.keys(rates), total = 0, x, r;
+    keys.forEach(function(k){ total += rates[k]; });
+    if (!total) return null;
+    x = Math.random() * total; r = keys[keys.length - 1];
+    for (var i = 0; i < keys.length; i++) { x -= rates[keys[i]]; if (x < 0) { r = keys[i]; break; } }
+    var pool = GACHA.list.filter(function(c){ return c.rarity === r; });
+    return pool[Math.floor(Math.random() * pool.length)];
+  }
+  return {
+    pull: function(r, lesson){
+      var db = all(), key = r.grade + '-' + r.cls + '-' + r.num;
+      var p = db[key] || { pulls:0, owned:{}, day:'', lessons:[] };
+      var counted = count(p, lesson), result = null;
+      if (counted === 'ok') {
+        var ch = draw();
+        if (ch) {
+          var isNew = !p.owned[ch.id];
+          p.owned[ch.id] = (p.owned[ch.id] || 0) + 1; p.pulls++;
+          result = { id:ch.id, isNew:isNew, count:p.owned[ch.id] };
+        }
+      }
+      db[key] = p; store(KEY, db);
+      var v = view(p); v.counted = counted; v.result = result; return v;
+    },
+    getCollection: function(g, c, n){ var p = all()[g + '-' + c + '-' + n]; return p ? view(p) : null; }
+  };
+})();
+
+function showDone(r){
+  var items = [
+    ['クラス', r.grade + '年' + r.cls + '組 ' + r.num + '番 ' + r.name + (r.period ? '（' + r.period + '時間目）' : '')],
+    ['理解度', r.understand + '　' + r.understandReason],
+    ['進捗度', r.progress + '　' + r.progressReason]
+  ];
+  if (r.question) items.push(['質問など', r.question]);
+  $('gDone').classList.add('hidden');
+  $('gTop').classList.add('hidden'); // 送信後は下の結果にガチャを出す
+  $('sentBox').open = true;
+  var dl = $('summary'); dl.innerHTML = '';
+  items.forEach(function(it){
+    var dt = document.createElement('dt'); dt.textContent = it[0];
+    var dd = document.createElement('dd'); dd.textContent = it[1];
+    dl.appendChild(dt); dl.appendChild(dd);
+  });
+  // 次の時間のために、回答欄だけ空にする（学年・組・番号・氏名は残す）
+  document.querySelectorAll('input[type=radio]').forEach(function(x){ x.checked = false; });
+  ['uReason','pReason','question','word'].forEach(function(id){ $(id).value = ''; $(id).dispatchEvent(new Event('input')); });
+  $('form').classList.add('hidden');
+  $('done').classList.remove('hidden');
+  window.scrollTo(0, 0);
+}
+
+setupForm();
+</script>
+</body>
+</html>

@@ -1,0 +1,579 @@
+/**
+ * 授業ふりかえりアンケート ガチャ版（Google Apps Script Webアプリ）
+ *
+ * ・生徒用フォーム   …… WebアプリのURL
+ * ・先生用閲覧ページ …… WebアプリのURL + ?page=teacher
+ * ・回答はこのスクリプトを入れたスプレッドシートの「回答」シートに1行ずつ蓄積されます
+ * ・先生用パスコードは、スプレッドシートのメニュー「ふりかえり」→「先生用パスコードを設定する」で設定します
+ *
+ * 設置方法は README.md を参照してください。
+ */
+
+// ===================== 設定（ふつうは変更不要） =====================
+const CONFIG = {
+  // 学年ごとのクラス数（1年6クラス、2年6クラス、3年7クラス）
+  CLASSES: { 1: 6, 2: 6, 3: 7 },
+  // 出席番号の最大
+  MAX_NUMBER: 35,
+  // 時限の最大（0 にすると時限の欄を表示しません）
+  MAX_PERIOD: 6,
+  // 教科名（フォームの見出しに表示）
+  SUBJECT: '技術',
+  // 回答を保存するシート名
+  SHEET_NAME: '回答',
+  // ガチャ：false にするとガチャの機能を止めます
+  GACHA: true,
+  // レア度ごとの出やすさ（合計が100でなくてもよい。割合で決まります）
+  RATES: { N: 60, R: 28, SR: 10, SSR: 2 },
+  // 1日にガチャを引ける回数の上限（2時間続きの授業でも2回まで）
+  GACHA_MAX_PER_DAY: 2,
+};
+// ==========================================================================
+
+const TZ = 'Asia/Tokyo';
+const PASS_KEY = 'TEACHER_PASSCODE';
+const TRASH_NAME = '削除済み';
+const GACHA_SHEET = 'ガチャ';
+const GACHA_LOG_SHEET = 'ガチャ履歴';
+const GACHA_HEADERS = ['キー', '学年', '組', '番号', '氏名', '引いた回数', '持っているキャラ', '最後に引いた日', 'その日に数えた授業', '更新日時'];
+const GACHA_LOG_HEADERS = ['引いた日時', '授業日', '時限', '学年', '組', '番号', '氏名', 'キャラID', 'キャラ名', 'レア度', 'はじめて'];
+
+// コードの版（checkSetup で、公開中のコードが最新か確かめるため）
+const CODE_VERSION = 'gacha-2026-10-22a';
+
+const HEADERS = [
+  '送信日時', '授業日', '時限', '学年', '組', '番号', '氏名',
+  '理解度', '理解度の理由', '進捗度', '進捗度の理由', '質問・感想', 'アカウント',
+];
+const LEVELS = ['A', 'B', 'C'];
+const MAX_TEXT = 1000;
+
+function doGet(e) {
+  const page = e && e.parameter && String(e.parameter.page || '').trim().toLowerCase() === 'teacher' ? 'Teacher' : 'Form';
+  try {
+    // テンプレート機能（<? ?>）は使わず、設定を直接はめこむ（大きなページでも確実に表示するため）
+    // JSON を '…' の中に入れるので、\ と ' と < をエスケープしておく
+    const json = JSON.stringify(publicSettings_())
+      .replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/</g, '\\u003c');
+    const html = (page === 'Teacher' ? TEACHER_HTML : FORM_HTML).split('<?!= settings ?>').join(json);
+    return HtmlService.createHtmlOutput(html)
+      .setTitle(page === 'Teacher' ? 'ふりかえり 集計（先生用）' : CONFIG.SUBJECT + ' 授業ふりかえり')
+      .addMetaTag('viewport', 'width=device-width, initial-scale=1');
+  } catch (err) {
+    // エラーの内容を画面に出す（「ファイルを開くことができません」だけでは原因がわからないため）
+    const msg = String(err && err.stack || err).replace(/&/g, '&amp;').replace(/</g, '&lt;');
+    return HtmlService.createHtmlOutput(
+      '<div style="font-family:sans-serif;padding:1rem"><h2>ページを表示できませんでした</h2>' +
+      '<p>この画面の内容を、設置した先生（または管理者）に伝えてください。</p>' +
+      '<pre style="white-space:pre-wrap;background:#f4f4f4;padding:.8rem">' + page + '\n' + msg + '</pre></div>')
+      .setTitle('エラー');
+  }
+}
+
+/**
+ * 点検用：Apps Script のエディタで関数「checkSetup」を選んで ▶実行 すると、
+ * 先生用・生徒用ページが作れるかを確かめ、結果を「実行ログ」に表示する。
+ */
+function checkSetup() {
+  const log = [];
+  log.push('コードの版: ' + CODE_VERSION);
+  log.push('先生用URL: ' + (webAppUrl_() ? webAppUrl_() + '?page=teacher' : '（取得できません）'));
+  log.push('先生用パスコード: ' + (PropertiesService.getScriptProperties().getProperty(PASS_KEY) ? '設定済み' : '未設定'));
+  log.push('FORM_HTML の長さ: ' + (typeof FORM_HTML === 'string' ? FORM_HTML.length : '（ありません）'));
+  log.push('TEACHER_HTML の長さ: ' + (typeof TEACHER_HTML === 'string' ? TEACHER_HTML.length : '（ありません）'));
+  [['先生用', { page: 'teacher' }], ['生徒用', {}]].forEach(function (t) {
+    try {
+      const out = doGet({ parameter: t[1] });
+      const html = out.getContent();
+      log.push(t[0] + 'ページ: ' + (out.getTitle() === 'エラー' ? 'エラー → ' + html.replace(/<[^>]+>/g, ' ').slice(0, 800) : 'OK（' + html.length + '文字）'));
+    } catch (e) {
+      log.push(t[0] + 'ページ: 例外 → ' + (e && e.stack || e));
+    }
+  });
+  const text = log.join('\n');
+  console.log(text);
+  Logger.log(text);
+  return text;
+}
+
+/**
+ * 先生（スクリプトの持ち主）用の URL（…/dev）。取れなければ空
+ * ScriptApp.getService().getUrl() はテスト用（/dev）の URL を返す。/dev は持ち主だけが開け、
+ * いつも最後に保存したコードで動くので、先生用ページに向いている（/exec に書きかえると開けない）
+ */
+function webAppUrl_() {
+  try { return String(ScriptApp.getService().getUrl() || ''); } catch (e) { return ''; }
+}
+
+function publicSettings_() {
+  return {
+    classes: CONFIG.CLASSES,
+    maxNumber: CONFIG.MAX_NUMBER,
+    maxPeriod: CONFIG.MAX_PERIOD,
+    subject: CONFIG.SUBJECT,
+    gacha: CONFIG.GACHA,
+    rates: gachaRates_(),
+    gachaMaxPerDay: CONFIG.GACHA_MAX_PER_DAY,
+    version: CODE_VERSION,
+    teacherUrl: webAppUrl_() ? webAppUrl_() + '?page=teacher' : '',
+    needWord: wordSettings_().mode !== 'off',
+  };
+}
+
+function sheet_() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let sh = ss.getSheetByName(CONFIG.SHEET_NAME);
+  if (!sh) {
+    sh = ss.insertSheet(CONFIG.SHEET_NAME);
+  }
+  if (sh.getLastRow() === 0) {
+    sh.appendRow(HEADERS);
+    sh.setFrozenRows(1);
+    sh.getRange(1, 1, 1, HEADERS.length).setFontWeight('bold').setBackground('#eef3fa');
+  }
+  return sh;
+}
+
+function today_() {
+  return Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd');
+}
+
+function clean_(s) {
+  // 先頭の = + - @ はスプレッドシートで数式扱いされないよう ' を付ける
+  let v = String(s == null ? '' : s).replace(/\r\n?/g, '\n').trim().slice(0, MAX_TEXT);
+  if (/^[=+\-@]/.test(v)) v = "'" + v;
+  return v;
+}
+
+function toInt_(v) {
+  const n = Number(v);
+  return Number.isInteger(n) ? n : NaN;
+}
+
+/** 生徒の回答を検証する。問題があればエラーメッセージ、なければ null */
+function validate_(r) {
+  const grade = toInt_(r.grade);
+  const cls = toInt_(r.cls);
+  const num = toInt_(r.num);
+  if (!CONFIG.CLASSES[grade]) return '学年を選んでください。';
+  if (!(cls >= 1 && cls <= CONFIG.CLASSES[grade])) return '組を選んでください。';
+  if (!(num >= 1 && num <= CONFIG.MAX_NUMBER)) return '出席番号を選んでください。';
+  if (!String(r.name || '').trim()) return '氏名を入力してください。';
+  if (CONFIG.MAX_PERIOD > 0) {
+    const p = toInt_(r.period);
+    if (!(p >= 1 && p <= CONFIG.MAX_PERIOD)) return '時限を選んでください。';
+  }
+  if (LEVELS.indexOf(r.understand) < 0) return '本時の理解度（A・B・C）を選んでください。';
+  if (!String(r.understandReason || '').trim()) return '理解度の理由を書いてください。';
+  if (LEVELS.indexOf(r.progress) < 0) return '本時の作業の進捗度（A・B・C）を選んでください。';
+  if (!String(r.progressReason || '').trim()) return '進捗度の理由を書いてください。';
+  return null;
+}
+
+/** 生徒用フォームから呼ばれる */
+function submitReflection(r) {
+  r = r || {};
+  const err = validate_(r);
+  if (err) return { ok: false, message: err };
+  if (!checkWord_(r.word)) {
+    return { ok: false, message: '合言葉がちがいます。先生が黒板に書いた合言葉を入力してください。', field: 'word' };
+  }
+
+  let email = '';
+  try { email = Session.getActiveUser().getEmail() || ''; } catch (e) { /* 取得できない環境では空欄 */ }
+
+  const row = [
+    new Date(),
+    today_(),
+    CONFIG.MAX_PERIOD > 0 ? toInt_(r.period) : '',
+    toInt_(r.grade),
+    toInt_(r.cls),
+    toInt_(r.num),
+    clean_(r.name).slice(0, 40),
+    r.understand,
+    clean_(r.understandReason),
+    r.progress,
+    clean_(r.progressReason),
+    clean_(r.question),
+    email,
+  ];
+
+  const lock = LockService.getScriptLock();
+  lock.waitLock(20000);
+  let gacha = null;
+  try {
+    sheet_().appendRow(row);
+    if (CONFIG.GACHA) gacha = pullGacha_(row[3], row[4], row[5], row[6], row[1] + '#' + row[2]);
+  } finally {
+    lock.releaseLock();
+  }
+  return { ok: true, date: row[1], gacha: gacha };
+}
+
+// ===================== ガチャ =====================
+// 「ガチャ」シートに、生徒1人につき1行で記録する（学年-組-番号がキー）
+// 引いた結果は1回ごとに「ガチャ履歴」シートにも残す
+// キャラの一覧（GACHA_LIST）は src/chars.js から node src/build.js で自動で入ります
+function gachaSheet_() {
+  return namedSheet_(GACHA_SHEET, GACHA_HEADERS, '#fff3d6');
+}
+
+function gachaLogSheet_() {
+  return namedSheet_(GACHA_LOG_SHEET, GACHA_LOG_HEADERS, '#fff3d6');
+}
+
+function namedSheet_(name, headers, color) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let sh = ss.getSheetByName(name);
+  if (!sh) sh = ss.insertSheet(name);
+  if (sh.getLastRow() === 0) {
+    sh.appendRow(headers);
+    sh.setFrozenRows(1);
+    sh.getRange(1, 1, 1, headers.length).setFontWeight('bold').setBackground(color);
+  }
+  return sh;
+}
+
+function gachaKey_(g, c, n) { return g + '-' + c + '-' + n; }
+
+/** 「c01:2,c05:1」⇔ { c01: 2, c05: 1 } */
+function parseOwned_(s) {
+  const o = {};
+  String(s || '').split(',').forEach(function (x) {
+    const kv = x.split(':');
+    const n = Number(kv[1]);
+    if (kv[0] && n > 0) o[kv[0]] = n;
+  });
+  return o;
+}
+
+function ownedText_(o) {
+  return Object.keys(o).map(function (k) { return k + ':' + o[k]; }).join(',');
+}
+
+function loadPlayer_(sh, key) {
+  const n = sh.getLastRow() - 1;
+  if (n > 0) {
+    const vals = sh.getRange(2, 1, n, GACHA_HEADERS.length).getValues();
+    for (let i = 0; i < vals.length; i++) {
+      if (String(vals[i][0]) === key) {
+        const v = vals[i];
+        return {
+          row: i + 2, key: key, grade: v[1], cls: v[2], num: v[3], name: String(v[4]),
+          pulls: Number(v[5]) || 0, owned: parseOwned_(v[6]), day: cellDate_(v[7]),
+          lessons: String(v[8] || '').split(',').filter(String),
+        };
+      }
+    }
+  }
+  return null;
+}
+
+function savePlayer_(sh, p) {
+  const v = [p.key, p.grade, p.cls, p.num, p.name, p.pulls, ownedText_(p.owned), p.day, p.lessons.join(','), new Date()];
+  if (p.row) sh.getRange(p.row, 1, 1, v.length).setValues([v]);
+  else { sh.appendRow(v); p.row = sh.getLastRow(); }
+}
+
+/** キャラがいるレア度だけの出やすさ（例 { N: 60, R: 28, SR: 10, SSR: 2 }） */
+function gachaRates_() {
+  const out = {};
+  Object.keys(CONFIG.RATES).forEach(function (r) {
+    const w = Number(CONFIG.RATES[r]) || 0;
+    if (w > 0 && GACHA_LIST.some(function (c) { return c.rarity === r; })) out[r] = w;
+  });
+  return out;
+}
+
+/** レア度を出やすさの割合で決め、そのレア度のキャラから1体を選ぶ */
+function drawChar_() {
+  const rates = gachaRates_();
+  const keys = Object.keys(rates);
+  if (!keys.length) return null;
+  let total = 0;
+  keys.forEach(function (k) { total += rates[k]; });
+  let x = Math.random() * total;
+  let rarity = keys[keys.length - 1];
+  for (let i = 0; i < keys.length; i++) {
+    x -= rates[keys[i]];
+    if (x < 0) { rarity = keys[i]; break; }
+  }
+  const pool = GACHA_LIST.filter(function (c) { return c.rarity === rarity; });
+  return pool[Math.floor(Math.random() * pool.length)];
+}
+
+/** この授業でガチャを引いてよいか（同じ授業は1回、1日の上限あり）。引けるなら記録する */
+function countLesson_(p, lesson) {
+  const day = lesson.split('#')[0];
+  if (p.day !== day) { p.day = day; p.lessons = []; }
+  if (p.lessons.indexOf(lesson) >= 0) return 'same';
+  if (p.lessons.length >= CONFIG.GACHA_MAX_PER_DAY) return 'limit';
+  p.lessons.push(lesson);
+  return 'ok';
+}
+
+/** 生徒の画面に返す情報（今のキャラ一覧にいるものだけ） */
+function gachaView_(p) {
+  const owned = {};
+  GACHA_LIST.forEach(function (c) { if (p.owned[c.id]) owned[c.id] = p.owned[c.id]; });
+  const used = p.day === today_() ? p.lessons.length : 0;
+  return { owned: owned, pulls: p.pulls, left: Math.max(0, CONFIG.GACHA_MAX_PER_DAY - used) };
+}
+
+/** 送信のたびに呼ぶ。引ける授業なら、ここでガチャの結果を決めて記録する（画面では引く演出だけ） */
+function pullGacha_(g, c, n, name, lesson) {
+  const sh = gachaSheet_();
+  const key = gachaKey_(g, c, n);
+  const p = loadPlayer_(sh, key) || { key: key, grade: g, cls: c, num: n, pulls: 0, owned: {}, day: '', lessons: [] };
+  p.name = name;
+  const counted = countLesson_(p, lesson);
+  let result = null;
+  if (counted === 'ok') {
+    const ch = drawChar_();
+    if (ch) {
+      const isNew = !p.owned[ch.id];
+      p.owned[ch.id] = (p.owned[ch.id] || 0) + 1;
+      p.pulls++;
+      result = { id: ch.id, isNew: isNew, count: p.owned[ch.id] };
+      const parts = lesson.split('#');
+      gachaLogSheet_().appendRow([new Date(), parts[0], parts[1] === '' ? '' : Number(parts[1]), g, c, n, name,
+        ch.id, ch.name, ch.rarity, isNew ? '○' : '']);
+    }
+  }
+  savePlayer_(sh, p);
+  const view = gachaView_(p);
+  view.counted = counted;
+  view.result = result;
+  return view;
+}
+
+/** フォームを開いたときに、自分の図鑑を表示する */
+function getCollection(g, c, n) {
+  if (!CONFIG.GACHA) return null;
+  g = toInt_(g); c = toInt_(c); n = toInt_(n);
+  if (!CONFIG.CLASSES[g] || !(c >= 1 && c <= CONFIG.CLASSES[g]) || !(n >= 1 && n <= CONFIG.MAX_NUMBER)) return null;
+  const p = loadPlayer_(gachaSheet_(), gachaKey_(g, c, n));
+  return p ? gachaView_(p) : null;
+}
+
+// ===================== スプレッドシートのメニュー =====================
+function onOpen() {
+  SpreadsheetApp.getUi()
+    .createMenu('ふりかえり')
+    .addItem('先生用ページを開く', 'openTeacherMenu')
+    .addItem('先生用パスコードを設定する', 'setPasscodeMenu')
+    .addToUi();
+}
+
+/** 公開中のウェブアプリの URL から、正しい先生用・生徒用のリンクを表示する（URLの打ちまちがい防止） */
+function openTeacherMenu() {
+  const ui = SpreadsheetApp.getUi();
+  let url = '';
+  try { url = ScriptApp.getService().getUrl() || ''; } catch (e) { url = ''; }
+  if (!url) {
+    ui.alert('まだウェブアプリとして公開（デプロイ）されていません。\nApps Script の「デプロイ」→「新しいデプロイ」→「ウェブアプリ」で公開してください。');
+    return;
+  }
+  const esc = function (t) { return t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;'); };
+  const t = url + '?page=teacher';
+  const html = HtmlService.createHtmlOutput(
+    '<div style="font-family:sans-serif;line-height:1.7">' +
+    '<p><a href="' + esc(t) + '" target="_blank" style="font-size:1.2em;font-weight:bold">▶ 先生用ページを開く</a></p>' +
+    '<p style="font-size:.85em">先生用（ブックマーク用）：<br><input style="width:100%" readonly value="' + esc(t) + '" onclick="this.select()"></p>' +
+    '<p style="font-size:.8em;color:#555">※ この URL（最後が /dev）は持ち主の先生だけが開けるテスト用で、いつも最後に保存したコードで動きます。<br>' +
+    '生徒に配るのは「デプロイを管理」の「ウェブアプリ」に表示される URL（最後が /exec）です。</p>' +
+    '</div>').setWidth(560).setHeight(300);
+  ui.showModalDialog(html, '先生用ページ');
+}
+
+function setPasscodeMenu() {
+  const ui = SpreadsheetApp.getUi();
+  const res = ui.prompt('先生用パスコードの設定',
+    '先生用ページを開くときのパスコードを決めて入力してください（4文字以上）。\n生徒には教えないでください。',
+    ui.ButtonSet.OK_CANCEL);
+  if (res.getSelectedButton() !== ui.Button.OK) return;
+  const v = res.getResponseText().trim();
+  if (v.length < 4) {
+    ui.alert('4文字以上で入力してください。もう一度メニューから設定してください。');
+    return;
+  }
+  PropertiesService.getScriptProperties().setProperty(PASS_KEY, v);
+  sheet_();
+  ui.alert('パスコードを設定しました。\n「回答」シートも作成しました。\n\n次は Apps Script の画面で「デプロイ」をしてください。');
+}
+
+function checkPass_(pass) {
+  const want = PropertiesService.getScriptProperties().getProperty(PASS_KEY);
+  if (!want) {
+    throw new Error('先生用パスコードがまだ設定されていません。スプレッドシートのメニュー「ふりかえり」→「先生用パスコードを設定する」で設定してください。');
+  }
+  if (String(pass || '') !== want) {
+    throw new Error('パスコードが違います。');
+  }
+}
+
+// ===================== 合言葉 =====================
+// 設定はスクリプトプロパティに保存し、先生用ページから変更する（コードの書きかえ・再デプロイ不要）
+//   mode: 'daily'（毎日自動でかわる4けたの数字）/ 'fixed'（先生が決めた言葉）/ 'off'（使わない）
+const WORD_KEY = 'WORD_SETTINGS';
+
+function wordSettings_() {
+  const props = PropertiesService.getScriptProperties();
+  let s = null;
+  try { s = JSON.parse(props.getProperty(WORD_KEY) || 'null'); } catch (e) { s = null; }
+  if (!s || !s.secret) {
+    s = { mode: (s && s.mode) || 'daily', fixed: (s && s.fixed) || '', secret: Utilities.getUuid() };
+    props.setProperty(WORD_KEY, JSON.stringify(s));
+  }
+  return s;
+}
+
+/** 全角→半角、大文字→小文字、前後の空白を除いて比べる */
+function normWord_(w) {
+  return String(w == null ? '' : w).normalize('NFKC').replace(/\s+/g, '').toLowerCase();
+}
+
+/** その日の合言葉（4けた）。日付と秘密の値から計算するので、日付が変わると自動で変わる */
+function dailyWord_(secret, day) {
+  const sig = Utilities.computeHmacSha256Signature(day, secret);
+  let n = 0;
+  for (let i = 0; i < 4; i++) n = n * 256 + (sig[i] & 255);
+  return ('000' + (n % 10000)).slice(-4);
+}
+
+function currentWord_(s) {
+  if (s.mode === 'fixed') return s.fixed;
+  if (s.mode === 'daily') return dailyWord_(s.secret, today_());
+  return '';
+}
+
+function checkWord_(w) {
+  const s = wordSettings_();
+  if (s.mode === 'off') return true;
+  const want = normWord_(currentWord_(s));
+  return want !== '' && normWord_(w) === want;
+}
+
+/** 先生用ページ：合言葉の設定と、今日の合言葉を返す */
+function getWordSettings(pass) {
+  checkPass_(pass);
+  const s = wordSettings_();
+  return { mode: s.mode, fixed: s.fixed, current: currentWord_(s), date: today_() };
+}
+
+/** 先生用ページ：合言葉の設定を変更する */
+function setWordSettings(pass, v) {
+  checkPass_(pass);
+  v = v || {};
+  if (['daily', 'fixed', 'off'].indexOf(v.mode) < 0) throw new Error('設定が正しくありません。');
+  const fixed = String(v.fixed || '').trim().slice(0, 20);
+  if (v.mode === 'fixed' && !normWord_(fixed)) throw new Error('合言葉を入力してください。');
+  const s = wordSettings_();
+  s.mode = v.mode;
+  if (v.mode === 'fixed') s.fixed = fixed;
+  if (v.renew) s.secret = Utilities.getUuid(); // 毎日の合言葉の並びを作り直す（漏れたとき用）
+  PropertiesService.getScriptProperties().setProperty(WORD_KEY, JSON.stringify(s));
+  return getWordSettings(pass);
+}
+
+/** 先生用ページ：パスコードの確認 */
+function teacherLogin(pass) {
+  checkPass_(pass);
+  return true;
+}
+
+function cellDate_(v) {
+  if (v instanceof Date) return Utilities.formatDate(v, TZ, 'yyyy-MM-dd');
+  return String(v || '');
+}
+
+function cellStamp_(v) {
+  if (v instanceof Date) return Utilities.formatDate(v, TZ, 'yyyy-MM-dd HH:mm');
+  return String(v || '');
+}
+
+function unquote_(v) {
+  v = String(v == null ? '' : v);
+  return v.charAt(0) === "'" ? v.slice(1) : v;
+}
+
+/**
+ * 先生用ページ：回答データを返す
+ * filter = { grade, cls, from, to }（すべて省略可。grade/cls を指定すると、そのクラスだけ返す）
+ * 返り値は配列の配列（列は HEADERS の順。送信日時と授業日は文字列化済み）
+ */
+function getResponses(pass, filter) {
+  checkPass_(pass);
+  filter = filter || {};
+  const sh = sheet_();
+  const n = sh.getLastRow() - 1;
+  if (n <= 0) return [];
+  const values = sh.getRange(2, 1, n, HEADERS.length).getValues();
+  const g = filter.grade ? Number(filter.grade) : 0;
+  const c = filter.cls ? Number(filter.cls) : 0;
+  const out = [];
+  for (let i = 0; i < values.length; i++) {
+    const v = values[i];
+    if (v[0] === '' && v[3] === '') continue; // 空行
+    if (g && Number(v[3]) !== g) continue;
+    if (c && Number(v[4]) !== c) continue;
+    const d = cellDate_(v[1]);
+    if (filter.from && d < filter.from) continue;
+    if (filter.to && d > filter.to) continue;
+    out.push([
+      cellStamp_(v[0]), d, v[2] === '' ? '' : Number(v[2]), Number(v[3]), Number(v[4]), Number(v[5]),
+      unquote_(v[6]), String(v[7]), unquote_(v[8]), String(v[9]), unquote_(v[10]), unquote_(v[11]), String(v[12] || ''),
+      i + 2, // 最後の要素：シートの行番号（削除に使う）
+    ]);
+  }
+  return out;
+}
+
+/**
+ * 先生用ページ：回答を削除する
+ * items = [{ row, stamp, grade, cls, num }]（row はシートの行番号。他は取りちがえ防止の確認用）
+ * 消した行は「削除済み」シートに移すので、まちがえても元に戻せる
+ */
+function deleteResponses(pass, items) {
+  checkPass_(pass);
+  items = (items || []).slice().sort(function (a, b) { return b.row - a.row; }); // 下の行から消す
+  if (!items.length) return { deleted: 0 };
+  const lock = LockService.getScriptLock();
+  lock.waitLock(20000);
+  try {
+    const sh = sheet_();
+    const last = sh.getLastRow();
+    const rows = [];
+    items.forEach(function (it) {
+      const r = Number(it.row);
+      if (!(r >= 2 && r <= last)) throw new Error('データが変わっています。「表示する」を押して読み込み直してください。');
+      const v = sh.getRange(r, 1, 1, HEADERS.length).getValues()[0];
+      if (cellStamp_(v[0]) !== String(it.stamp) || Number(v[3]) !== Number(it.grade) ||
+          Number(v[4]) !== Number(it.cls) || Number(v[5]) !== Number(it.num)) {
+        throw new Error('データが変わっています。「表示する」を押して読み込み直してください。');
+      }
+      rows.push({ r: r, v: v });
+    });
+    const trash = trashSheet_();
+    const now = new Date();
+    rows.forEach(function (x) {
+      trash.appendRow(x.v.concat([now]));
+      sh.deleteRow(x.r);
+    });
+    return { deleted: rows.length };
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+function trashSheet_() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let sh = ss.getSheetByName(TRASH_NAME);
+  if (!sh) sh = ss.insertSheet(TRASH_NAME);
+  if (sh.getLastRow() === 0) {
+    sh.appendRow(HEADERS.concat(['削除した日時']));
+    sh.setFrozenRows(1);
+    sh.getRange(1, 1, 1, HEADERS.length + 1).setFontWeight('bold').setBackground('#f3e8e8');
+  }
+  return sh;
+}
