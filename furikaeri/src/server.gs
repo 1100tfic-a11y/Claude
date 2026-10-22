@@ -302,8 +302,30 @@ function getPet(g, c, n) {
 function onOpen() {
   SpreadsheetApp.getUi()
     .createMenu('ふりかえり')
+    .addItem('先生用ページを開く', 'openTeacherMenu')
     .addItem('先生用パスコードを設定する', 'setPasscodeMenu')
     .addToUi();
+}
+
+/** 公開中のウェブアプリの URL から、正しい先生用・生徒用のリンクを表示する（URLの打ちまちがい防止） */
+function openTeacherMenu() {
+  const ui = SpreadsheetApp.getUi();
+  let url = '';
+  try { url = ScriptApp.getService().getUrl() || ''; } catch (e) { url = ''; }
+  if (!url) {
+    ui.alert('まだウェブアプリとして公開（デプロイ）されていません。\nApps Script の「デプロイ」→「新しいデプロイ」→「ウェブアプリ」で公開してください。');
+    return;
+  }
+  url = url.replace(/\/dev$/, '/exec');
+  const esc = function (t) { return t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;'); };
+  const t = url + '?page=teacher';
+  const html = HtmlService.createHtmlOutput(
+    '<div style="font-family:sans-serif;line-height:1.7">' +
+    '<p><a href="' + esc(t) + '" target="_blank" style="font-size:1.2em;font-weight:bold">▶ 先生用ページを開く</a></p>' +
+    '<p style="font-size:.85em">先生用（ブックマーク用）：<br><input style="width:100%" readonly value="' + esc(t) + '" onclick="this.select()"></p>' +
+    '<p style="font-size:.85em">生徒用（配布用）：<br><input style="width:100%" readonly value="' + esc(url) + '" onclick="this.select()"></p>' +
+    '</div>').setWidth(520).setHeight(260);
+  ui.showModalDialog(html, '先生用ページ');
 }
 
 function setPasscodeMenu() {
