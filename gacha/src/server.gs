@@ -39,7 +39,7 @@ const GACHA_HEADERS = ['キー', '学年', '組', '番号', '氏名', '引いた
 const GACHA_LOG_HEADERS = ['引いた日時', '授業日', '時限', '学年', '組', '番号', '氏名', 'キャラID', 'キャラ名', 'レア度', 'はじめて'];
 
 // コードの版（checkSetup で、公開中のコードが最新か確かめるため）
-const CODE_VERSION = 'gacha-2026-10-22a';
+const CODE_VERSION = 'gacha-2026-10-22b';
 
 const HEADERS = [
   '送信日時', '授業日', '時限', '学年', '組', '番号', '氏名',
@@ -115,7 +115,6 @@ function publicSettings_() {
     rates: gachaRates_(),
     gachaMaxPerDay: CONFIG.GACHA_MAX_PER_DAY,
     version: CODE_VERSION,
-    teacherUrl: webAppUrl_() ? webAppUrl_() + '?page=teacher' : '',
     needWord: wordSettings_().mode !== 'off',
   };
 }

@@ -20,7 +20,7 @@ textarea{width:100%;height:75vh;font-family:Consolas,"Courier New",monospace;fon
 <body>
 <main>
 <h1>gacha.gs の中身（コピー用）</h1>
-<p>Apps Script の「コード.gs」に貼りつける内容です（1971行）。下のボタンで全部コピーできます。</p>
+<p>Apps Script の「コード.gs」に貼りつける内容です（1965行）。下のボタンで全部コピーできます。</p>
 <div class="bar"><button type="button" id="cp">すべてコピー</button><span id="st"></span></div>
 <textarea id="code" readonly spellcheck="false">// ============================================================================
 //  授業ふりかえりアンケート ガチャ版（このファイル1つだけで動きます）
@@ -77,7 +77,7 @@ const GACHA_HEADERS = ['キー', '学年', '組', '番号', '氏名', '引いた
 const GACHA_LOG_HEADERS = ['引いた日時', '授業日', '時限', '学年', '組', '番号', '氏名', 'キャラID', 'キャラ名', 'レア度', 'はじめて'];
 
 // コードの版（checkSetup で、公開中のコードが最新か確かめるため）
-const CODE_VERSION = 'gacha-2026-10-22a';
+const CODE_VERSION = 'gacha-2026-10-22b';
 
 const HEADERS = [
   '送信日時', '授業日', '時限', '学年', '組', '番号', '氏名',
@@ -153,7 +153,6 @@ function publicSettings_() {
     rates: gachaRates_(),
     gachaMaxPerDay: CONFIG.GACHA_MAX_PER_DAY,
     version: CODE_VERSION,
-    teacherUrl: webAppUrl_() ? webAppUrl_() + '?page=teacher' : '',
     needWord: wordSettings_().mode !== 'off',
   };
 }
@@ -810,8 +809,7 @@ details.sent summary{cursor:pointer;font-weight:700;color:var(--ink2)}
     &lt;details class="sent" id="sentBox"&gt;&lt;summary&gt;送信した内容を見る&lt;/summary&gt;&lt;dl id="summary"&gt;&lt;/dl&gt;&lt;/details&gt;
     &lt;button type="button" class="btn sub" id="again" style="margin-top:1rem"&gt;まちがえたので、もう一度送る&lt;/button&gt;
   &lt;/section&gt;
-  &lt;p id="teacherLink" class="hint hidden" style="text-align:center;margin-top:2rem"&gt;&lt;a target="_top"&gt;先生用ページ&lt;/a&gt;&lt;/p&gt;
-  &lt;p id="verNote" class="hint" style="text-align:center;opacity:.6"&gt;&lt;/p&gt;
+  &lt;p id="verNote" class="hint" style="text-align:center;opacity:.6;margin-top:2rem"&gt;&lt;/p&gt;
 &lt;/main&gt;
 
 &lt;script&gt;
@@ -956,10 +954,6 @@ function setupForm(){
   if (DEMO) $('demoNote').classList.remove('hidden');
   if (SETTINGS.needWord) $('secW').classList.remove('hidden');
   if (SETTINGS.version) $('verNote').textContent = 'ver ' + SETTINGS.version;
-  if (SETTINGS.teacherUrl) {
-    $('teacherLink').querySelector('a').href = SETTINGS.teacherUrl;
-    $('teacherLink').classList.remove('hidden');
-  }
 
   var g = $('grade');
   g.innerHTML = '&lt;option value=""&gt;選ぶ&lt;/option&gt;';

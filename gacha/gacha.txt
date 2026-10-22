@@ -53,7 +53,7 @@ const GACHA_HEADERS = ['キー', '学年', '組', '番号', '氏名', '引いた
 const GACHA_LOG_HEADERS = ['引いた日時', '授業日', '時限', '学年', '組', '番号', '氏名', 'キャラID', 'キャラ名', 'レア度', 'はじめて'];
 
 // コードの版（checkSetup で、公開中のコードが最新か確かめるため）
-const CODE_VERSION = 'gacha-2026-10-22a';
+const CODE_VERSION = 'gacha-2026-10-22b';
 
 const HEADERS = [
   '送信日時', '授業日', '時限', '学年', '組', '番号', '氏名',
@@ -129,7 +129,6 @@ function publicSettings_() {
     rates: gachaRates_(),
     gachaMaxPerDay: CONFIG.GACHA_MAX_PER_DAY,
     version: CODE_VERSION,
-    teacherUrl: webAppUrl_() ? webAppUrl_() + '?page=teacher' : '',
     needWord: wordSettings_().mode !== 'off',
   };
 }
@@ -786,8 +785,7 @@ details.sent summary{cursor:pointer;font-weight:700;color:var(--ink2)}
     <details class="sent" id="sentBox"><summary>送信した内容を見る</summary><dl id="summary"></dl></details>
     <button type="button" class="btn sub" id="again" style="margin-top:1rem">まちがえたので、もう一度送る</button>
   </section>
-  <p id="teacherLink" class="hint hidden" style="text-align:center;margin-top:2rem"><a target="_top">先生用ページ</a></p>
-  <p id="verNote" class="hint" style="text-align:center;opacity:.6"></p>
+  <p id="verNote" class="hint" style="text-align:center;opacity:.6;margin-top:2rem"></p>
 </main>
 
 <script>
@@ -932,10 +930,6 @@ function setupForm(){
   if (DEMO) $('demoNote').classList.remove('hidden');
   if (SETTINGS.needWord) $('secW').classList.remove('hidden');
   if (SETTINGS.version) $('verNote').textContent = 'ver ' + SETTINGS.version;
-  if (SETTINGS.teacherUrl) {
-    $('teacherLink').querySelector('a').href = SETTINGS.teacherUrl;
-    $('teacherLink').classList.remove('hidden');
-  }
 
   var g = $('grade');
   g.innerHTML = '<option value="">選ぶ</option>';
