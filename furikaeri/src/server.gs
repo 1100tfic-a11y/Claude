@@ -41,7 +41,7 @@ const PET_IDS = ['inu', 'neko', 'usagi', 'panda', 'hamu', 'dragon', 'samurai', '
 const PET_HEADERS = ['キー', '学年', '組', '番号', '氏名', '育成中のキャラ', '育成ポイント', '最後に育てた日', 'その日に数えた授業', '育て上げたキャラ', '更新日時'];
 
 // コードの版（checkSetup で、公開中のコードが最新か確かめるため）
-const CODE_VERSION = '2026-10-22d';
+const CODE_VERSION = '2026-10-22e';
 
 const HEADERS = [
   '送信日時', '授業日', '時限', '学年', '組', '番号', '氏名',
@@ -409,23 +409,52 @@ function setPasscodeMenu() {
     return;
   }
   PropertiesService.getScriptProperties().setProperty(PASS_KEY, v);
+  PropertiesService.getScriptProperties().deleteProperty(PASS_FAIL_KEY); // ロックも解除
   sheet_();
   ui.alert('パスコードを設定しました。\n「回答」シートも作成しました。\n\n次は Apps Script の画面で「デプロイ」をしてください。');
 }
 
+// 先生用パスコードを PASS_MAX_FAIL 回まちがえると、PASS_LOCK_MIN 分間ロックする（正しくても入れない）
+// ロックは、スプレッドシートのメニューでパスコードを設定し直すと解除される
+const PASS_FAIL_KEY = 'TEACHER_PASS_FAIL';
+const PASS_MAX_FAIL = 5;
+const PASS_LOCK_MIN = 30;
+const LOCK_MSG = 'これ以上は入力できません。';
+
+function passFail_() {
+  try { return JSON.parse(PropertiesService.getScriptProperties().getProperty(PASS_FAIL_KEY) || 'null') || { n: 0, until: 0 }; }
+  catch (e) { return { n: 0, until: 0 }; }
+}
+
 function checkPass_(pass) {
-  const want = PropertiesService.getScriptProperties().getProperty(PASS_KEY);
+  const props = PropertiesService.getScriptProperties();
+  const want = props.getProperty(PASS_KEY);
   if (!want) {
     throw new Error('先生用パスコードがまだ設定されていません。スプレッドシートのメニュー「ふりかえり」→「先生用パスコードを設定する」で設定してください。');
   }
-  if (String(pass || '') !== want) {
-    throw new Error('パスコードが違います。');
+  const f = passFail_();
+  const now = Date.now();
+  if (f.until > now) {
+    const min = Math.ceil((f.until - now) / 60000);
+    throw new Error(LOCK_MSG + 'パスコードを' + PASS_MAX_FAIL + '回まちがえたため、あと' + min + '分間ロックしています。' +
+      'すぐに解除するには、スプレッドシートのメニュー「ふりかえり」→「先生用パスコードを設定する」で設定し直してください。');
   }
+  if (String(pass || '') !== want) {
+    const n = (f.until && f.until <= now ? 0 : f.n) + 1;
+    if (n >= PASS_MAX_FAIL) {
+      props.setProperty(PASS_FAIL_KEY, JSON.stringify({ n: n, until: now + PASS_LOCK_MIN * 60000 }));
+      throw new Error(LOCK_MSG + 'パスコードを' + PASS_MAX_FAIL + '回まちがえたため、' + PASS_LOCK_MIN + '分間ロックしました。' +
+        'すぐに解除するには、スプレッドシートのメニュー「ふりかえり」→「先生用パスコードを設定する」で設定し直してください。');
+    }
+    props.setProperty(PASS_FAIL_KEY, JSON.stringify({ n: n, until: 0 }));
+    throw new Error('パスコードが違います。（あと' + (PASS_MAX_FAIL - n) + '回まちがえると、' + PASS_LOCK_MIN + '分間入力できなくなります）');
+  }
+  if (f.n || f.until) props.deleteProperty(PASS_FAIL_KEY);
 }
 
 // ===================== 合言葉 =====================
 // 設定はスクリプトプロパティに保存し、先生用ページから変更する（コードの書きかえ・再デプロイ不要）
-//   mode: 'daily'（毎日自動でかわる4けたの数字）/ 'fixed'（先生が決めた言葉）/ 'off'（使わない）
+//   mode: 'daily'（毎日自動でかわる6けたの数字）/ 'fixed'（先生が決めた言葉）/ 'off'（使わない）
 const WORD_KEY = 'WORD_SETTINGS';
 
 function wordSettings_() {
@@ -444,12 +473,12 @@ function normWord_(w) {
   return String(w == null ? '' : w).normalize('NFKC').replace(/\s+/g, '').toLowerCase();
 }
 
-/** その日の合言葉（4けた）。日付と秘密の値から計算するので、日付が変わると自動で変わる */
+/** その日の合言葉（6けた）。日付と秘密の値から計算するので、日付が変わると自動で変わる */
 function dailyWord_(secret, day) {
   const sig = Utilities.computeHmacSha256Signature(day, secret);
   let n = 0;
   for (let i = 0; i < 4; i++) n = n * 256 + (sig[i] & 255);
-  return ('000' + (n % 10000)).slice(-4);
+  return ('00000' + (n % 1000000)).slice(-6);
 }
 
 function currentWord_(s) {

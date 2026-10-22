@@ -55,7 +55,7 @@ const PET_IDS = ['inu', 'neko', 'usagi', 'panda', 'hamu', 'dragon', 'samurai', '
 const PET_HEADERS = ['キー', '学年', '組', '番号', '氏名', '育成中のキャラ', '育成ポイント', '最後に育てた日', 'その日に数えた授業', '育て上げたキャラ', '更新日時'];
 
 // コードの版（checkSetup で、公開中のコードが最新か確かめるため）
-const CODE_VERSION = '2026-10-22d';
+const CODE_VERSION = '2026-10-22e';
 
 const HEADERS = [
   '送信日時', '授業日', '時限', '学年', '組', '番号', '氏名',
@@ -423,23 +423,52 @@ function setPasscodeMenu() {
     return;
   }
   PropertiesService.getScriptProperties().setProperty(PASS_KEY, v);
+  PropertiesService.getScriptProperties().deleteProperty(PASS_FAIL_KEY); // ロックも解除
   sheet_();
   ui.alert('パスコードを設定しました。\n「回答」シートも作成しました。\n\n次は Apps Script の画面で「デプロイ」をしてください。');
 }
 
+// 先生用パスコードを PASS_MAX_FAIL 回まちがえると、PASS_LOCK_MIN 分間ロックする（正しくても入れない）
+// ロックは、スプレッドシートのメニューでパスコードを設定し直すと解除される
+const PASS_FAIL_KEY = 'TEACHER_PASS_FAIL';
+const PASS_MAX_FAIL = 5;
+const PASS_LOCK_MIN = 30;
+const LOCK_MSG = 'これ以上は入力できません。';
+
+function passFail_() {
+  try { return JSON.parse(PropertiesService.getScriptProperties().getProperty(PASS_FAIL_KEY) || 'null') || { n: 0, until: 0 }; }
+  catch (e) { return { n: 0, until: 0 }; }
+}
+
 function checkPass_(pass) {
-  const want = PropertiesService.getScriptProperties().getProperty(PASS_KEY);
+  const props = PropertiesService.getScriptProperties();
+  const want = props.getProperty(PASS_KEY);
   if (!want) {
     throw new Error('先生用パスコードがまだ設定されていません。スプレッドシートのメニュー「ふりかえり」→「先生用パスコードを設定する」で設定してください。');
   }
-  if (String(pass || '') !== want) {
-    throw new Error('パスコードが違います。');
+  const f = passFail_();
+  const now = Date.now();
+  if (f.until > now) {
+    const min = Math.ceil((f.until - now) / 60000);
+    throw new Error(LOCK_MSG + 'パスコードを' + PASS_MAX_FAIL + '回まちがえたため、あと' + min + '分間ロックしています。' +
+      'すぐに解除するには、スプレッドシートのメニュー「ふりかえり」→「先生用パスコードを設定する」で設定し直してください。');
   }
+  if (String(pass || '') !== want) {
+    const n = (f.until && f.until <= now ? 0 : f.n) + 1;
+    if (n >= PASS_MAX_FAIL) {
+      props.setProperty(PASS_FAIL_KEY, JSON.stringify({ n: n, until: now + PASS_LOCK_MIN * 60000 }));
+      throw new Error(LOCK_MSG + 'パスコードを' + PASS_MAX_FAIL + '回まちがえたため、' + PASS_LOCK_MIN + '分間ロックしました。' +
+        'すぐに解除するには、スプレッドシートのメニュー「ふりかえり」→「先生用パスコードを設定する」で設定し直してください。');
+    }
+    props.setProperty(PASS_FAIL_KEY, JSON.stringify({ n: n, until: 0 }));
+    throw new Error('パスコードが違います。（あと' + (PASS_MAX_FAIL - n) + '回まちがえると、' + PASS_LOCK_MIN + '分間入力できなくなります）');
+  }
+  if (f.n || f.until) props.deleteProperty(PASS_FAIL_KEY);
 }
 
 // ===================== 合言葉 =====================
 // 設定はスクリプトプロパティに保存し、先生用ページから変更する（コードの書きかえ・再デプロイ不要）
-//   mode: 'daily'（毎日自動でかわる4けたの数字）/ 'fixed'（先生が決めた言葉）/ 'off'（使わない）
+//   mode: 'daily'（毎日自動でかわる6けたの数字）/ 'fixed'（先生が決めた言葉）/ 'off'（使わない）
 const WORD_KEY = 'WORD_SETTINGS';
 
 function wordSettings_() {
@@ -458,12 +487,12 @@ function normWord_(w) {
   return String(w == null ? '' : w).normalize('NFKC').replace(/\s+/g, '').toLowerCase();
 }
 
-/** その日の合言葉（4けた）。日付と秘密の値から計算するので、日付が変わると自動で変わる */
+/** その日の合言葉（6けた）。日付と秘密の値から計算するので、日付が変わると自動で変わる */
 function dailyWord_(secret, day) {
   const sig = Utilities.computeHmacSha256Signature(day, secret);
   let n = 0;
   for (let i = 0; i < 4; i++) n = n * 256 + (sig[i] & 255);
-  return ('000' + (n % 10000)).slice(-4);
+  return ('00000' + (n % 1000000)).slice(-6);
 }
 
 function currentWord_(s) {
@@ -730,10 +759,11 @@ details.sent summary{cursor:pointer;font-weight:700;color:var(--ink2)}
     <section class="panel" id="secU">
       <h2>① 本時の授業の理解度 <span class="req">必須</span></h2>
       <div class="choices" role="radiogroup" aria-label="理解度">
-        <input type="radio" name="understand" id="u-A" value="A"><label for="u-A"><b>A</b>よく理解できた</label>
-        <input type="radio" name="understand" id="u-B" value="B"><label for="u-B"><b>B</b>だいたい理解できた</label>
-        <input type="radio" name="understand" id="u-C" value="C"><label for="u-C"><b>C</b>あまり理解できなかった</label>
+        <input type="radio" name="understand" id="u-A" value="A"><label for="u-A"><b>A</b>友達に説明できる</label>
+        <input type="radio" name="understand" id="u-B" value="B"><label for="u-B"><b>B</b>わかったが<br>説明するのは難しい</label>
+        <input type="radio" name="understand" id="u-C" value="C"><label for="u-C"><b>C</b>正直、理解できていない</label>
       </div>
+      <p class="hint" style="margin:-.3rem 0 .6rem">選ぶ目安：<b>A</b> 今日の内容を友達に説明できる　<b>B</b> 自分ではわかったが、人に説明するのは難しい　<b>C</b> 正直、まだ理解できていない</p>
       <label class="f" for="uReason">そう思う理由 <span class="req">必須</span><span class="count" id="uCount"></span></label>
       <textarea id="uReason" maxlength="1000" placeholder="例）〇〇のしくみは説明できるが、△△がまだよくわからないから"></textarea>
     </section>
@@ -1743,7 +1773,7 @@ function demoNorm(w){ return String(w || '').normalize('NFKC').replace(/\\s+/g, 
 function demoDaily(day){
   var h = 2166136261;
   for (var i = 0; i < day.length; i++) { h ^= day.charCodeAt(i); h = Math.imul(h, 16777619) >>> 0; }
-  return ('000' + (h % 10000)).slice(-4);
+  return ('00000' + (h % 1000000)).slice(-6);
 }
 function demoWord(){
   var w = store('furikaeri_demo_word') || { mode:'daily', fixed:'' };
@@ -2102,7 +2132,7 @@ tr.picked td{background:#fff1f1}
         <div class="wordnow"><span class="muted" id="wordDate">今日の合言葉</span><b id="wordNow">…</b>
           <button class="btn sub" id="wordShow" style="margin:.2rem 0 .3rem">大きく表示</button></div>
         <div class="wordset">
-          <label><input type="radio" name="wmode" value="daily">毎日自動でかわる（4けたの数字・おすすめ）</label>
+          <label><input type="radio" name="wmode" value="daily">毎日自動でかわる（6けたの数字・おすすめ）</label>
           <label><input type="radio" name="wmode" value="fixed">自分で決める：<input type="text" id="wordFixed" maxlength="20" style="width:10rem" placeholder="例）はんだ"></label>
           <label><input type="radio" name="wmode" value="off">使わない</label>
           <div class="ctrl" style="margin-top:.3rem">
@@ -2222,6 +2252,7 @@ function call(fn, args, ok, ng){
   r[fn].apply(r, args);
 }
 
+var demoFail = 0;
 var demoApi = {
   getWordSettings: function(p){
     demoApi.teacherLogin(p);
@@ -2245,7 +2276,16 @@ var demoApi = {
     localStorage.setItem('furikaeri_demo_deleted', JSON.stringify(gone));
     return { deleted: items.length };
   },
-  teacherLogin: function(p){ if (p !== 'demo') throw new Error('パスコードが違います。（体験モードは demo）'); return true; },
+  teacherLogin: function(p){
+    // 本番と同じく、5回まちがえるとロック（体験モードはこのページを開き直すと解除）
+    if (demoFail >= 5) throw new Error('これ以上は入力できません。パスコードを5回まちがえたため、ロックしています。');
+    if (p !== 'demo') {
+      demoFail++;
+      if (demoFail >= 5) throw new Error('これ以上は入力できません。パスコードを5回まちがえたため、ロックしました。');
+      throw new Error('パスコードが違います。（あと' + (5 - demoFail) + '回まちがえると、入力できなくなります。体験モードは demo）');
+    }
+    demoFail = 0; return true;
+  },
   getResponses: function(p, f){
     demoApi.teacherLogin(p);
     var rows = demoSample();
@@ -2270,7 +2310,7 @@ function todayStr(){
 function demoDaily(day){
   var h = 2166136261;
   for (var i = 0; i < day.length; i++) { h ^= day.charCodeAt(i); h = Math.imul(h, 16777619) >>> 0; }
-  return ('000' + (h % 10000)).slice(-4);
+  return ('00000' + (h % 1000000)).slice(-6);
 }
 function demoSample(){
   var seed = 7;
@@ -2324,7 +2364,13 @@ function login(p){
     initApp();
   }, function(e){
     try { sessionStorage.removeItem('furikaeri_pass'); } catch(x) {}
-    $('loginMsg').textContent = (e && e.message) || String(e);
+    var msg = (e && e.message) || String(e);
+    $('loginMsg').textContent = msg;
+    // 5回まちがえてロックされたら、入力欄とボタンを使えなくする
+    var locked = msg.indexOf('これ以上は入力できません') >= 0;
+    $('pass').disabled = locked;
+    $('loginForm').querySelector('button').disabled = locked;
+    if (!locked) { $('pass').value = ''; $('pass').focus(); }
   });
 }
 
@@ -2402,7 +2448,7 @@ function showWord(w){
   $('wordShow').classList.toggle('hidden', w.mode === 'off');
   $('wordFullDate').textContent = (w.mode === 'daily' ? label : '合言葉') + '（ふりかえりの送信に使います）';
   $('wordFullText').textContent = text;
-  $('wordFullText').classList.toggle('long', String(text).length > 5);
+  $('wordFullText').classList.toggle('long', String(text).length > 6);
 }
 function saveWord(renew){
   var m = document.querySelector('input[name=wmode]:checked');

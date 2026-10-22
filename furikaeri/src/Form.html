@@ -123,10 +123,11 @@ details.sent summary{cursor:pointer;font-weight:700;color:var(--ink2)}
     <section class="panel" id="secU">
       <h2>① 本時の授業の理解度 <span class="req">必須</span></h2>
       <div class="choices" role="radiogroup" aria-label="理解度">
-        <input type="radio" name="understand" id="u-A" value="A"><label for="u-A"><b>A</b>よく理解できた</label>
-        <input type="radio" name="understand" id="u-B" value="B"><label for="u-B"><b>B</b>だいたい理解できた</label>
-        <input type="radio" name="understand" id="u-C" value="C"><label for="u-C"><b>C</b>あまり理解できなかった</label>
+        <input type="radio" name="understand" id="u-A" value="A"><label for="u-A"><b>A</b>友達に説明できる</label>
+        <input type="radio" name="understand" id="u-B" value="B"><label for="u-B"><b>B</b>わかったが<br>説明するのは難しい</label>
+        <input type="radio" name="understand" id="u-C" value="C"><label for="u-C"><b>C</b>正直、理解できていない</label>
       </div>
+      <p class="hint" style="margin:-.3rem 0 .6rem">選ぶ目安：<b>A</b> 今日の内容を友達に説明できる　<b>B</b> 自分ではわかったが、人に説明するのは難しい　<b>C</b> 正直、まだ理解できていない</p>
       <label class="f" for="uReason">そう思う理由 <span class="req">必須</span><span class="count" id="uCount"></span></label>
       <textarea id="uReason" maxlength="1000" placeholder="例）〇〇のしくみは説明できるが、△△がまだよくわからないから"></textarea>
     </section>
@@ -358,7 +359,7 @@ function demoNorm(w){ return String(w || '').normalize('NFKC').replace(/\s+/g, '
 function demoDaily(day){
   var h = 2166136261;
   for (var i = 0; i < day.length; i++) { h ^= day.charCodeAt(i); h = Math.imul(h, 16777619) >>> 0; }
-  return ('000' + (h % 10000)).slice(-4);
+  return ('00000' + (h % 1000000)).slice(-6);
 }
 function demoWord(){
   var w = store('furikaeri_demo_word') || { mode:'daily', fixed:'' };
