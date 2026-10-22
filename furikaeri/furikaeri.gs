@@ -9,6 +9,9 @@
 //    先生が中身を書きかえる必要はありません。
 // ============================================================================
 
+// 点検用：エディタで何も選ばずに「▶実行」を押すと、この関数が動きます（結果は下の「実行ログ」に出ます）
+function checkSetupFirst() { return checkSetup(); }
+
 /**
  * 授業ふりかえりアンケート（Google Apps Script Webアプリ）
  *
@@ -52,7 +55,7 @@ const PET_IDS = ['inu', 'neko', 'usagi', 'panda', 'hamu', 'dragon', 'samurai', '
 const PET_HEADERS = ['キー', '学年', '組', '番号', '氏名', '育成中のキャラ', '育成ポイント', '最後に育てた日', 'その日に数えた授業', '育て上げたキャラ', '更新日時'];
 
 // コードの版（checkSetup で、公開中のコードが最新か確かめるため）
-const CODE_VERSION = '2026-10-22a';
+const CODE_VERSION = '2026-10-22b';
 
 const HEADERS = [
   '送信日時', '授業日', '時限', '学年', '組', '番号', '氏名',
@@ -105,6 +108,7 @@ function checkSetup() {
   });
   const text = log.join('\n');
   console.log(text);
+  Logger.log(text);
   return text;
 }
 
