@@ -48,12 +48,25 @@ const LEVELS = ['A', 'B', 'C'];
 const MAX_TEXT = 1000;
 
 function doGet(e) {
-  const page = e && e.parameter && e.parameter.page === 'teacher' ? 'Teacher' : 'Form';
-  const t = HtmlService.createTemplate(page === 'Teacher' ? TEACHER_HTML : FORM_HTML);
-  t.settings = JSON.stringify(publicSettings_());
-  return t.evaluate()
-    .setTitle(page === 'Teacher' ? 'ふりかえり 集計（先生用）' : CONFIG.SUBJECT + ' 授業ふりかえり')
-    .addMetaTag('viewport', 'width=device-width, initial-scale=1');
+  const page = e && e.parameter && String(e.parameter.page || '').trim().toLowerCase() === 'teacher' ? 'Teacher' : 'Form';
+  try {
+    // テンプレート機能（<? ?>）は使わず、設定を直接はめこむ（大きなページでも確実に表示するため）
+    // JSON を '…' の中に入れるので、\ と ' と < をエスケープしておく
+    const json = JSON.stringify(publicSettings_())
+      .replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/</g, '\\u003c');
+    const html = (page === 'Teacher' ? TEACHER_HTML : FORM_HTML).split('<?!= settings ?>').join(json);
+    return HtmlService.createHtmlOutput(html)
+      .setTitle(page === 'Teacher' ? 'ふりかえり 集計（先生用）' : CONFIG.SUBJECT + ' 授業ふりかえり')
+      .addMetaTag('viewport', 'width=device-width, initial-scale=1');
+  } catch (err) {
+    // エラーの内容を画面に出す（「ファイルを開くことができません」だけでは原因がわからないため）
+    const msg = String(err && err.stack || err).replace(/&/g, '&amp;').replace(/</g, '&lt;');
+    return HtmlService.createHtmlOutput(
+      '<div style="font-family:sans-serif;padding:1rem"><h2>ページを表示できませんでした</h2>' +
+      '<p>この画面の内容を、設置した先生（または管理者）に伝えてください。</p>' +
+      '<pre style="white-space:pre-wrap;background:#f4f4f4;padding:.8rem">' + page + '\n' + msg + '</pre></div>')
+      .setTitle('エラー');
+  }
 }
 
 function publicSettings_() {
