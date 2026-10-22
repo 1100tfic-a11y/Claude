@@ -55,7 +55,7 @@ const PET_IDS = ['inu', 'neko', 'usagi', 'panda', 'hamu', 'dragon', 'samurai', '
 const PET_HEADERS = ['キー', '学年', '組', '番号', '氏名', '育成中のキャラ', '育成ポイント', '最後に育てた日', 'その日に数えた授業', '育て上げたキャラ', '更新日時'];
 
 // コードの版（checkSetup で、公開中のコードが最新か確かめるため）
-const CODE_VERSION = '2026-10-22c';
+const CODE_VERSION = '2026-10-22d';
 
 const HEADERS = [
   '送信日時', '授業日', '時限', '学年', '組', '番号', '氏名',
@@ -240,29 +240,45 @@ function petSheet_() {
   return sh;
 }
 
-function petKey_(g, c, n) { return g + '-' + c + '-' + n; }
+// 見出し（キー）は「1年3組12番」の形にする。
+// 「1-3-12」の形だとスプレッドシートが日付（2012/1/3）に変換してしまい、行を探せなくなるため
+function petKey_(g, c, n) { return Number(g) + '年' + Number(c) + '組' + Number(n) + '番'; }
 
+/** キー（新しい形「1年3組12番」・古い形「1-3-12」のどちらでも）から学年・組・番号を取り出す */
+function parseKey_(key) {
+  const m = /^(\d+)\D+(\d+)\D+(\d+)/.exec(String(key));
+  return m ? { g: Number(m[1]), c: Number(m[2]), n: Number(m[3]) } : null;
+}
+
+/**
+ * 生徒の行を「学年・組・番号」の列で探す（見出しの列は日付に化けている可能性があるので使わない）
+ * 不具合で同じ生徒の行が複数できている場合は、キャラを育てている行・ポイントが多い行・新しい行の順で選ぶ
+ */
 function loadPet_(sh, key) {
+  const k = parseKey_(key);
   const n = sh.getLastRow() - 1;
-  if (n > 0) {
-    const vals = sh.getRange(2, 1, n, PET_HEADERS.length).getValues();
-    for (let i = 0; i < vals.length; i++) {
-      if (String(vals[i][0]) === key) {
-        const v = vals[i];
-        let current = String(v[5] || '');
-        let points = Number(v[6]) || 0;
-        // 昔のキャラ（今は無いもの）を育てていた場合は、タマゴ選びからやり直し
-        if (current && PET_IDS.indexOf(current) < 0) { current = ''; points = 0; }
-        return {
-          row: i + 2, key: key, grade: v[1], cls: v[2], num: v[3], name: String(v[4]),
-          current: current, points: points, day: cellDate_(v[7]),
-          lessons: String(v[8] || '').split(',').filter(String),
-          done: String(v[9] || '').split(',').filter(function (x) { return PET_IDS.indexOf(x) >= 0; }),
-        };
-      }
-    }
+  if (!k || n <= 0) return null;
+  const vals = sh.getRange(2, 1, n, PET_HEADERS.length).getValues();
+  let best = -1, bestScore = -1;
+  for (let i = 0; i < vals.length; i++) {
+    const v = vals[i];
+    if (Number(v[1]) !== k.g || Number(v[2]) !== k.c || Number(v[3]) !== k.n) continue;
+    const cur = PET_IDS.indexOf(String(v[5] || '')) >= 0;
+    const score = (cur ? 1e6 : 0) + (Number(v[6]) || 0) * 1000 + String(v[9] || '').length * 10 + 1;
+    if (score >= bestScore) { best = i; bestScore = score; }
   }
-  return null;
+  if (best < 0) return null;
+  const v = vals[best];
+  let current = String(v[5] || '');
+  let points = Number(v[6]) || 0;
+  // 昔のキャラ（今は無いもの）を育てていた場合は、タマゴ選びからやり直し
+  if (current && PET_IDS.indexOf(current) < 0) { current = ''; points = 0; }
+  return {
+    row: best + 2, key: petKey_(k.g, k.c, k.n), grade: k.g, cls: k.c, num: k.n, name: String(v[4]),
+    current: current, points: points, day: cellDate_(v[7]),
+    lessons: String(v[8] || '').split(',').filter(String),
+    done: String(v[9] || '').split(',').filter(function (x) { return PET_IDS.indexOf(x) >= 0; }),
+  };
 }
 
 function savePet_(sh, p) {
