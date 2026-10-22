@@ -32,9 +32,9 @@ var PETS = (function(){
     { id:'ninja',   type:'cool', pattern:'shuriken', egg:['#2a6fd0','#dcebff'], ink:'#120f1c', aura:'#b46bff',
       names:['しゅりけんのタマゴ','しゅりたま','かげまる','風魔の影忍・シノマル','影天ノ風魔神・シオン'] },
     { id:'robo',    type:'cool', pattern:'gears',    egg:['#1f8fb8','#d8f1f8'], ink:'#1b1f24', aura:'#5ff2ff',
-      names:['ギアのタマゴ','ギアビット','ギアブランド','ギアブランド・覚醒','クロノギア・オルディス'] },
+      names:['ギアのタマゴ','ギアのタマゴ','ギアビット','ギアブランド','クロノギア・オルディス'] },
     { id:'knight',  type:'cool', pattern:'shields',  egg:['#4a86c8','#dfeaf6'], ink:'#232836', aura:'#fff3a8',
-      names:['たてのタマゴ','ブラッドシールドゴーレム','要塞盾神ゴーレム','要塞盾神ゴーレム・覚醒','深淵の盾帝・ガルディオン'] }
+      names:['たてのタマゴ','たてのタマゴ','ブラッドシールドゴーレム','要塞盾神ゴーレム','深淵の盾帝・ガルディオン'] }
   ];
   var BY = {};
   LIST.forEach(function(p){ BY[p.id] = p; });
