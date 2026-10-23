@@ -37,10 +37,9 @@ const CONFIG = {
   SHEET_NAME: '回答',
   // キャラ育成：false にすると育成の機能を止めます
   PETS: true,
-  // 何回提出すると1段階進化するか
-  GROW_PER_STAGE: 3,
-  // タマゴを選んだ後、何回提出すると孵化するか
-  HATCH_AFTER: 1,
+  // 次の段階へ進むのに必要な提出の回数（タマゴを選んだ回は数えない）
+  //   [タマゴ→成長期, 成長期→成熟期, 成熟期→完全体, 完全体→究極体, 究極体→超究極体]
+  STAGE_COST: [1, 2, 3, 4, 3],
   // 1日に育成ポイントがもらえる回数の上限（2時間続きの授業でも2回まで）
   GROW_MAX_PER_DAY: 2,
 };
@@ -61,7 +60,7 @@ const SUPER_NEED_A = 10;
 const PET_HEADERS = ['キー', '学年', '組', '番号', '氏名', '育成中のキャラ', '育成ポイント', '最後に育てた日', 'その日に数えた授業', '育て上げたキャラ', '更新日時', '育て始めた日時'];
 
 // コードの版（checkSetup で、公開中のコードが最新か確かめるため）
-const CODE_VERSION = '2026-10-23i';
+const CODE_VERSION = '2026-10-23j';
 
 const HEADERS = [
   '送信日時', '授業日', '時限', '学年', '組', '番号', '氏名',
@@ -134,8 +133,7 @@ function publicSettings_() {
     maxPeriod: CONFIG.MAX_PERIOD,
     subject: CONFIG.SUBJECT,
     pets: CONFIG.PETS,
-    growPerStage: CONFIG.GROW_PER_STAGE,
-    hatchAfter: CONFIG.HATCH_AFTER,
+    stageCost: CONFIG.STAGE_COST,
     version: CODE_VERSION,
     needWord: wordSettings_().mode !== 'off',
   };
@@ -301,12 +299,12 @@ function savePet_(sh, p) {
   else { sh.appendRow(v); p.row = sh.getLastRow(); }
 }
 
-// 育成ポイント → 段階。タマゴを選んだ回で1ポイント、そこから HATCH_AFTER 回で孵化、
-// その後は GROW_PER_STAGE 回ごとに進化する
+// 育成ポイント → 段階。タマゴを選んだ回で1ポイント、そこから STAGE_COST の回数ずつで次の段階へ
 function petStage_(points, max) {
-  const hatch = 1 + CONFIG.HATCH_AFTER;
-  if (points < hatch) return 0;
-  return Math.min(max || ULT_STAGE, 1 + Math.floor((points - hatch) / CONFIG.GROW_PER_STAGE));
+  max = max || ULT_STAGE;
+  let need = 1, st = 0;
+  while (st < max && points >= need + CONFIG.STAGE_COST[st]) { need += CONFIG.STAGE_COST[st]; st++; }
+  return st;
 }
 
 /** その生徒が、since（ミリ秒）以降に理解度Aをつけた授業の数（同じ授業に何度送っても1回） */
@@ -1658,7 +1656,7 @@ var SETTINGS = (function(){
     // Apps Script の外で開いたとき（体験モード）
     var w = null;
     try { w = JSON.parse(localStorage.getItem('furikaeri_demo_word') || 'null'); } catch(x) {}
-    return { classes:{1:6,2:6,3:7}, maxNumber:35, maxPeriod:6, subject:'技術', needWord: !w || w.mode !== 'off', pets:true, growPerStage:3, hatchAfter:1 };
+    return { classes:{1:6,2:6,3:7}, maxNumber:35, maxPeriod:6, subject:'技術', needWord: !w || w.mode !== 'off', pets:true, stageCost:[1, 2, 3, 4, 3] };
   }
 })();
 var DEMO = typeof google === 'undefined' || !google.script;
@@ -1863,10 +1861,13 @@ function esc(s){
 }
 
 // 育成ポイント → 段階（Apps Script 側の petStage_ と同じ計算）
-function hatchAfter(){ return SETTINGS.hatchAfter == null ? SETTINGS.growPerStage - 1 : SETTINGS.hatchAfter; }
+function cost(st){ return (SETTINGS.stageCost || [1, 2, 3, 4, 3])[st]; }
+function stageStart(st){ var n = 1; for (var i = 0; i < st; i++) n += cost(i); return n; } // その段階になったときのポイント
 function petStage(points, max){
-  var h = 1 + hatchAfter();
-  return points < h ? 0 : Math.min(max || PETS.ULT, 1 + Math.floor((points - h) / SETTINGS.growPerStage));
+  max = max || PETS.ULT;
+  var st = 0;
+  while (st < max && points >= stageStart(st + 1)) st++;
+  return st;
 }
 function maxOf(v){ return v.max || PETS.ULT; }
 function doneId(x){ return String(x).replace('*', ''); }
@@ -1882,9 +1883,7 @@ function superHint(v){
 function progressHtml(v){
   if (v.stage >= PETS.SUPER) return '<div class="dots">🌈 超究極体まで育て上げた！</div>';
   if (v.stage >= maxOf(v)) return '<div class="dots">🎉 究極体まで育て上げた！</div>' + superHint(v);
-  var h = 1 + hatchAfter(), n, have;
-  if (v.stage === 0) { n = hatchAfter(); have = v.points - 1; }
-  else { n = SETTINGS.growPerStage; have = v.points - (h + (v.stage - 1) * n); }
+  var n = cost(v.stage), have = v.points - stageStart(v.stage);
   var dots = '';
   for (var i = 0; i < n; i++) dots += '<i class="' + (i < have ? 'on' : '') + '"></i>';
   return '<div class="dots">' + dots + '<span>あと<b>' + (n - have) + '回</b>で' + (v.stage === 0 ? 'うまれる！' : v.stage === PETS.ULT ? '超究極体に進化！' : '進化！') + '</span></div>' + superHint(v);
@@ -1909,7 +1908,7 @@ function loadTopPet(){
     box.classList.remove('hidden');
     if (!v || !v.current) {
       box.innerHTML = '<div class="pic" style="filter:grayscale(1);opacity:.35">' + PETS.svg('inu', 0, 80) + '</div>' +
-        '<div class="info"><p class="petname">キャラを育てよう！</p><div class="muted">ふりかえりを送信すると、タマゴを1つ選べます。次の' + hatchAfter() + '回の送信で孵化し、その後は' + SETTINGS.growPerStage + '回送信するごとに進化します。</div>' + (v ? zukanHtml(v) : '') + '</div>';
+        '<div class="info"><p class="petname">キャラを育てよう！</p><div class="muted">ふりかえりを送信すると、タマゴを1つ選べます。次の' + cost(0) + '回の送信で孵化し、その後も送信するたびに育って進化します。</div>' + (v ? zukanHtml(v) : '') + '</div>';
       return;
     }
     box.innerHTML = '<div class="pic">' + PETS.svg(v.current, v.stage, 120) + '</div><div class="info">' +

@@ -23,10 +23,9 @@ const CONFIG = {
   SHEET_NAME: '回答',
   // キャラ育成：false にすると育成の機能を止めます
   PETS: true,
-  // 何回提出すると1段階進化するか
-  GROW_PER_STAGE: 3,
-  // タマゴを選んだ後、何回提出すると孵化するか
-  HATCH_AFTER: 1,
+  // 次の段階へ進むのに必要な提出の回数（タマゴを選んだ回は数えない）
+  //   [タマゴ→成長期, 成長期→成熟期, 成熟期→完全体, 完全体→究極体, 究極体→超究極体]
+  STAGE_COST: [1, 2, 3, 4, 3],
   // 1日に育成ポイントがもらえる回数の上限（2時間続きの授業でも2回まで）
   GROW_MAX_PER_DAY: 2,
 };
@@ -47,7 +46,7 @@ const SUPER_NEED_A = 10;
 const PET_HEADERS = ['キー', '学年', '組', '番号', '氏名', '育成中のキャラ', '育成ポイント', '最後に育てた日', 'その日に数えた授業', '育て上げたキャラ', '更新日時', '育て始めた日時'];
 
 // コードの版（checkSetup で、公開中のコードが最新か確かめるため）
-const CODE_VERSION = '2026-10-23i';
+const CODE_VERSION = '2026-10-23j';
 
 const HEADERS = [
   '送信日時', '授業日', '時限', '学年', '組', '番号', '氏名',
@@ -120,8 +119,7 @@ function publicSettings_() {
     maxPeriod: CONFIG.MAX_PERIOD,
     subject: CONFIG.SUBJECT,
     pets: CONFIG.PETS,
-    growPerStage: CONFIG.GROW_PER_STAGE,
-    hatchAfter: CONFIG.HATCH_AFTER,
+    stageCost: CONFIG.STAGE_COST,
     version: CODE_VERSION,
     needWord: wordSettings_().mode !== 'off',
   };
@@ -287,12 +285,12 @@ function savePet_(sh, p) {
   else { sh.appendRow(v); p.row = sh.getLastRow(); }
 }
 
-// 育成ポイント → 段階。タマゴを選んだ回で1ポイント、そこから HATCH_AFTER 回で孵化、
-// その後は GROW_PER_STAGE 回ごとに進化する
+// 育成ポイント → 段階。タマゴを選んだ回で1ポイント、そこから STAGE_COST の回数ずつで次の段階へ
 function petStage_(points, max) {
-  const hatch = 1 + CONFIG.HATCH_AFTER;
-  if (points < hatch) return 0;
-  return Math.min(max || ULT_STAGE, 1 + Math.floor((points - hatch) / CONFIG.GROW_PER_STAGE));
+  max = max || ULT_STAGE;
+  let need = 1, st = 0;
+  while (st < max && points >= need + CONFIG.STAGE_COST[st]) { need += CONFIG.STAGE_COST[st]; st++; }
+  return st;
 }
 
 /** その生徒が、since（ミリ秒）以降に理解度Aをつけた授業の数（同じ授業に何度送っても1回） */
