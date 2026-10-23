@@ -392,10 +392,10 @@ function maxOf(v){ return v.max || PETS.ULT; }
 function doneId(x){ return String(x).replace('*', ''); }
 
 // 超究極体のヒント（りゅう・かたなのタマゴが究極体のときだけ）
+// （条件や回数は見せず、ルートが現れたときだけ知らせる）
 function superHint(v){
-  if (!v.super || v.stage < PETS.ULT || v.stage >= PETS.SUPER) return '';
-  if (v.super.a >= v.super.need) return '<div class="superhint open">🌈 新たな進化ルートが現れた！ このまま育てると<b>超究極体</b>に…！</div>';
-  return '<div class="superhint">❓ 理解度に <b>A</b> を' + v.super.need + '回つけると、新たな進化ルートが…？（いま <b>' + v.super.a + '</b> 回）</div>';
+  if (!v.super || !v.super.open || v.stage < PETS.ULT || v.stage >= PETS.SUPER) return '';
+  return '<div class="superhint open">🌈 新たな進化ルートが現れた！ このまま育てると<b>超究極体</b>に…！</div>';
 }
 
 // 進化までの ●●○
@@ -545,20 +545,20 @@ var demoPet = (function(){
   var KEY = 'furikaeri_demo_pets';
   function all(){ return store(KEY) || {}; }
   var SUPER_IDS = ['dragon', 'samurai'], NEED_A = 10;
-  // 体験モードでは、この端末から送った回答で理解度Aの回数を数える
-  function countA(key){
+  // 体験モードでは、この端末から送った回答のうち、今のキャラを育て始めてから（since 番目以降）の理解度Aを数える
+  function countA(key, since){
     var seen = {}, n = 0;
-    (store('furikaeri_demo_rows') || []).forEach(function(r){
-      if (r[3] + '-' + r[4] + '-' + r[5] !== key || r[7] !== 'A') return;
+    (store('furikaeri_demo_rows') || []).forEach(function(r, i){
+      if (i < (since || 0) || r[3] + '-' + r[4] + '-' + r[5] !== key || r[7] !== 'A') return;
       var k = r[1] + '#' + r[2]; if (!seen[k]) { seen[k] = true; n++; }
     });
     return n + (store('furikaeri_demo_extraA') || 0);
   }
   function maxFor(p, a){ return SUPER_IDS.indexOf(p.current) >= 0 && a >= NEED_A ? PETS.SUPER : PETS.ULT; }
   function view(p, key){
-    var a = countA(key), max = maxFor(p, a), st = p.current ? petStage(p.points, max) : 0;
+    var a = p.current ? countA(key, p.started) : 0, max = maxFor(p, a), st = p.current ? petStage(p.points, max) : 0;
     return { current:p.current, points:p.points, stage:st, done:p.done.slice(), max:max, needEgg: !p.current || st === max,
-      super: SUPER_IDS.indexOf(p.current) >= 0 ? { need:NEED_A, a:a } : null };
+      super: max === PETS.SUPER ? { open:true } : null };
   }
   function count(p, lesson){
     var day = lesson.split('#')[0];
@@ -571,13 +571,13 @@ var demoPet = (function(){
     grow: function(r, lesson){
       var db = all(), key = r.grade + '-' + r.cls + '-' + r.num;
       var p = db[key] || { current:'', points:0, day:'', lessons:[], done:[] };
-      var max = maxFor(p, countA(key));
+      var max = maxFor(p, p.current ? countA(key, p.started) : 0);
       var before = p.current ? petStage(p.points, max) : -1, counted = 'none';
       if (p.current && before < max) { counted = count(p, lesson); if (counted === 'ok') p.points++; }
       db[key] = p; store(KEY, db);
       var v = view(p, key);
       v.counted = counted; v.from = before; v.evolved = before >= 0 && v.stage > before;
-      if (v.needEgg) v.token = key + '|' + lesson;
+      if (v.needEgg) v.token = key + '|' + lesson + '|' + ((store('furikaeri_demo_rows') || []).length - 1);
       return v;
     },
     chooseEgg: function(token, id){
@@ -585,7 +585,7 @@ var demoPet = (function(){
       var old = p && view(p, t[0]);
       if (!p || !old.needEgg) throw new Error('もうタマゴを選んでいます。');
       if (p.current) p.done.push(p.current + (old.stage === PETS.SUPER ? '*' : ''));
-      p.current = id; p.points = 0;
+      p.current = id; p.points = 0; p.started = Number(t[2]) || 0;
       var c = count(p, t[1]); if (c === 'ok') p.points = 1;
       store(KEY, db);
       var v = view(p, t[0]); v.counted = c; return v;

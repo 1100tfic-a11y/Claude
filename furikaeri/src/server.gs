@@ -44,10 +44,10 @@ const SUPER_STAGE = 5;
 // 超究極体があるキャラと、その進化ルートが現れる条件（理解度Aをつけた授業の回数）
 const SUPER_IDS = ['dragon', 'samurai'];
 const SUPER_NEED_A = 10;
-const PET_HEADERS = ['キー', '学年', '組', '番号', '氏名', '育成中のキャラ', '育成ポイント', '最後に育てた日', 'その日に数えた授業', '育て上げたキャラ', '更新日時'];
+const PET_HEADERS = ['キー', '学年', '組', '番号', '氏名', '育成中のキャラ', '育成ポイント', '最後に育てた日', 'その日に数えた授業', '育て上げたキャラ', '更新日時', '育て始めた日時'];
 
 // コードの版（checkSetup で、公開中のコードが最新か確かめるため）
-const CODE_VERSION = '2026-10-23d';
+const CODE_VERSION = '2026-10-23e';
 
 const HEADERS = [
   '送信日時', '授業日', '時限', '学年', '組', '番号', '氏名',
@@ -210,7 +210,7 @@ function submitReflection(r) {
   let pet = null;
   try {
     sheet_().appendRow(row);
-    if (CONFIG.PETS) pet = growPet_(row[3], row[4], row[5], row[6], row[1] + '#' + row[2]);
+    if (CONFIG.PETS) pet = growPet_(row[3], row[4], row[5], row[6], row[1] + '#' + row[2], row[0].getTime());
   } finally {
     lock.releaseLock();
   }
@@ -227,6 +227,12 @@ function petSheet_() {
     sh.appendRow(PET_HEADERS);
     sh.setFrozenRows(1);
     sh.getRange(1, 1, 1, PET_HEADERS.length).setFontWeight('bold').setBackground('#fdeef7');
+  } else {
+    // 古いシートに「育て始めた日時」の見出しが無ければ足す
+    try {
+      const h = sh.getRange(1, PET_HEADERS.length);
+      if (!h.getValue()) h.setValue(PET_HEADERS[PET_HEADERS.length - 1]).setFontWeight('bold').setBackground('#fdeef7');
+    } catch (e) { /* 見出しが無くても動く */ }
   }
   return sh;
 }
@@ -269,11 +275,14 @@ function loadPet_(sh, key) {
     current: current, points: points, day: cellDate_(v[7]),
     lessons: String(v[8] || '').split(',').filter(String),
     done: String(v[9] || '').split(',').filter(function (x) { return PET_IDS.indexOf(x.replace('*', '')) >= 0; }),
+    // 育て始めた日時（記録が無い古い行は、今から数える）
+    started: (v[11] instanceof Date ? v[11].getTime() : Number(new Date(v[11] || 0))) || (current ? Date.now() : 0),
   };
 }
 
 function savePet_(sh, p) {
-  const v = [p.key, p.grade, p.cls, p.num, p.name, p.current, p.points, p.day, p.lessons.join(','), p.done.join(','), new Date()];
+  const v = [p.key, p.grade, p.cls, p.num, p.name, p.current, p.points, p.day, p.lessons.join(','), p.done.join(','), new Date(),
+    p.started ? new Date(p.started) : ''];
   if (p.row) sh.getRange(p.row, 1, 1, v.length).setValues([v]);
   else { sh.appendRow(v); p.row = sh.getLastRow(); }
 }
@@ -286,8 +295,8 @@ function petStage_(points, max) {
   return Math.min(max || ULT_STAGE, 1 + Math.floor((points - hatch) / CONFIG.GROW_PER_STAGE));
 }
 
-/** その生徒が理解度Aをつけた授業の数（同じ授業に何度送っても1回） */
-function countA_(g, c, n) {
+/** その生徒が、since（ミリ秒）以降に理解度Aをつけた授業の数（同じ授業に何度送っても1回） */
+function countA_(g, c, n, since) {
   const sh = sheet_();
   const rows = sh.getLastRow() - 1;
   if (rows <= 0) return 0;
@@ -297,6 +306,8 @@ function countA_(g, c, n) {
   for (let i = 0; i < vals.length; i++) {
     const v = vals[i];
     if (Number(v[3]) !== Number(g) || Number(v[4]) !== Number(c) || Number(v[5]) !== Number(n) || String(v[7]) !== 'A') continue;
+    const at = v[0] instanceof Date ? v[0].getTime() : Number(new Date(v[0]));
+    if (since && !(at >= since)) continue; // 今のキャラを育て始める前の回答は数えない
     const k = cellDate_(v[1]) + '#' + v[2];
     if (!seen[k]) { seen[k] = true; count++; }
   }
@@ -315,8 +326,8 @@ function petView_(p, aCount) {
   return {
     current: p.current, points: p.points, stage: stage, done: p.done, max: max,
     needEgg: !p.current || stage === max,
-    // 超究極体があるキャラのときだけ、条件と今の回数を知らせる
-    super: SUPER_IDS.indexOf(p.current) >= 0 ? { need: SUPER_NEED_A, a: aCount } : null,
+    // 超究極体のルートが現れたときだけ知らせる（条件や回数は生徒に見せない）
+    super: max === SUPER_STAGE ? { open: true } : null,
   };
 }
 
@@ -331,12 +342,13 @@ function countLesson_(p, lesson) {
 }
 
 /** 送信のたびに呼ぶ。育成中のキャラがいればポイントを1増やす */
-function growPet_(g, c, n, name, lesson) {
+function growPet_(g, c, n, name, lesson, at) {
   const sh = petSheet_();
   const key = petKey_(g, c, n);
   const p = loadPet_(sh, key) || { key: key, grade: g, cls: c, num: n, current: '', points: 0, day: '', lessons: [], done: [] };
   p.name = name;
-  const aCount = countA_(g, c, n);
+  if (p.current && !p.started) p.started = at;
+  const aCount = p.current ? countA_(g, c, n, p.started) : 0;
   const max = petMax_(p, aCount);
   const before = p.current ? petStage_(p.points, max) : -1;
   let counted = 'none';
@@ -352,7 +364,7 @@ function growPet_(g, c, n, name, lesson) {
   if (view.needEgg) {
     // タマゴを選ぶための合札（30分有効）。この送信の分を、選んだタマゴのポイントにする
     view.token = Utilities.getUuid();
-    CacheService.getScriptCache().put('egg_' + view.token, JSON.stringify({ key: key, lesson: lesson }), 1800);
+    CacheService.getScriptCache().put('egg_' + view.token, JSON.stringify({ key: key, lesson: lesson, at: at }), 1800);
   }
   return view;
 }
@@ -371,7 +383,7 @@ function chooseEgg(token, id) {
     const sh = petSheet_();
     const p = loadPet_(sh, t.key);
     if (!p) throw new Error('記録が見つかりません。');
-    const aCount = countA_(p.grade, p.cls, p.num);
+    const aCount = countA_(p.grade, p.cls, p.num, p.started);
     const v = petView_(p, aCount);
     if (!v.needEgg) throw new Error('もうタマゴを選んでいます。');
     // 育て上げたキャラは図鑑へ（超究極体まで育てたら「id*」で記録）
@@ -381,11 +393,12 @@ function chooseEgg(token, id) {
     if (!all && doneIds.indexOf(id) >= 0) throw new Error('そのキャラはもう育て上げました。ほかのタマゴを選んでください。');
     p.current = id;
     p.points = 0;
+    p.started = t.at || Date.now(); // タマゴを選んだ送信から、Aの回数を数え始める
     const counted = countLesson_(p, t.lesson);
     if (counted === 'ok') p.points = 1;
     savePet_(sh, p);
     cache.remove('egg_' + token);
-    const view = petView_(p, aCount);
+    const view = petView_(p, countA_(p.grade, p.cls, p.num, p.started));
     view.counted = counted;
     return view;
   } finally {
@@ -399,7 +412,7 @@ function getPet(g, c, n) {
   g = toInt_(g); c = toInt_(c); n = toInt_(n);
   if (!CONFIG.CLASSES[g] || !(c >= 1 && c <= CONFIG.CLASSES[g]) || !(n >= 1 && n <= CONFIG.MAX_NUMBER)) return null;
   const p = loadPet_(petSheet_(), petKey_(g, c, n));
-  return p ? petView_(p, countA_(g, c, n)) : null;
+  return p ? petView_(p, p.current ? countA_(g, c, n, p.started) : 0) : null;
 }
 
 // ===================== スプレッドシートのメニュー =====================
