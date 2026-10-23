@@ -28,7 +28,20 @@ CHARS = [
   ('10', 'knight',  'icon', [0, 1, 2, 3]),
 ]
 
-def card(im, k):
+# 決まった位置だと顔が枠から出てしまうカードは、個別に切り抜く位置を決める（左, 上, 右, 下）
+# 5つ目の数は、右側に足す余白（元の絵が顔のすぐ右で切れているときに、ぼかした背景で広げる）
+BOX = {('dragon', 2): (812, 236, 1086, 618, 60)}   # スカイドラゴン・リュウ（顔が右上の端にある）
+
+def card(im, k, cid=None):
+  if (cid, k) in BOX:
+    x0, y0, x1, y1, pad = BOX[(cid, k)]
+    c = im.crop((x0, y0, x1, y1))
+    W, H = c.width + pad, c.height
+    edge = c.crop((c.width - pad, 0, c.width, H))  # 右はしを左右反転して、ぼかしてつなぐ
+    bg = Image.new('RGB', (W, H))
+    bg.paste(c, (0, 0))
+    bg.paste(ImageEnhance.Brightness(ImageOps.mirror(edge).filter(ImageFilter.GaussianBlur(6))).enhance(0.95), (c.width, 0))
+    return bg
   x0, x1 = CARDS[k]
   w = x1 - x0; h = round(w / RATIO)
   y0 = max(215, 500 - h // 2); y1 = min(805, y0 + h)
@@ -57,7 +70,7 @@ for num, cid, egg, stages in CHARS:
     if isinstance(s, str) and s.startswith('flip:'):
       imgs.append(ImageOps.mirror(card(im, int(s[5:]))))
     else:
-      imgs.append(card(im, s))
+      imgs.append(card(im, s, cid))
   out[cid] = [uri(i) for i in imgs]
 
 # ---- 超究極体（理解度Aを10回以上つけた生徒だけが進める）：art/super_*.png の全体
