@@ -9,8 +9,9 @@
  * ========================================================================= */
 var PETS = (function(){
   // 段階（0 タマゴ 〜 4 究極体）。孵化すると成長期から始まる
-  var STAGES = ['タマゴ', '成長期', '成熟期', '完全体', '究極体'];
-  var ULT = STAGES.length - 1;
+  // 5 超究極体は、りゅう・かたなのタマゴだけ（理解度Aを10回以上つけた生徒だけが進める）
+  var STAGES = ['タマゴ', '成長期', '成熟期', '完全体', '究極体', '超究極体'];
+  var ULT = 4, SUPER = 5;
 
   // type: cute（かわいい系）/ cool（かっこいい系）　egg: 図形で描くときのタマゴの色 [こい色, うすい色]　aura: 究極体の光の色
   var LIST = [
@@ -26,9 +27,9 @@ var PETS = (function(){
       names:['ひまわりのタマゴ','ひまりん','サンリオ','陽華獣・ソレイユ','光陽ノ花竜神・ヘリオス'] },
 
     { id:'dragon',  type:'cool', pattern:'scales',   egg:['#3d7bf2','#d9e8ff'], ink:'#3d0f06', aura:'#ff7a29',
-      names:['りゅうのタマゴ','チビドラ','リュウレイ','スカイドラゴン・リュウ','天空竜王・ルクスドラコ'] },
+      names:['りゅうのタマゴ','チビドラ','リュウレイ','スカイドラゴン・リュウ','天空竜王・ルクスドラコ','超越天空神竜・ルクスアルカディア'] },
     { id:'samurai', type:'cool', pattern:'zigzag',   egg:['#2f5fbf','#dbe6fb'], ink:'#1d1b2e', aura:'#f06595',
-      names:['かたなのタマゴ','わかまる','けんたろう','サムライ剣士','天下無双の将軍'] },
+      names:['かたなのタマゴ','わかまる','けんたろう','サムライ剣士','天下無双の将軍','ムソウショウグン'] },
     { id:'ninja',   type:'cool', pattern:'shuriken', egg:['#2a6fd0','#dcebff'], ink:'#120f1c', aura:'#b46bff',
       names:['しゅりけんのタマゴ','しゅりたま','かげまる','風魔の影忍・シノマル','影天ノ風魔神・シオン'] },
     { id:'robo',    type:'cool', pattern:'gears',    egg:['#1f8fb8','#d8f1f8'], ink:'#1b1f24', aura:'#5ff2ff',
@@ -661,14 +662,14 @@ var PETS = (function(){
     var imgs = typeof PET_IMAGES !== 'undefined' && PET_IMAGES[ch.id];
     if (!imgs || !imgs[st]) return '';
     var h = size || 160, w = Math.round(h * 0.75);
-    return '<span class="pet-svg pet-pic' + (st === ULT ? ' pet-ult' : '') + '" style="width:' + w + 'px;height:' + h + 'px" role="img" aria-label="' + ch.names[st] + '">' +
+    return '<span class="pet-svg pet-pic' + (st === ULT ? ' pet-ult' : st === SUPER ? ' pet-super' : '') + '" style="width:' + w + 'px;height:' + h + 'px" role="img" aria-label="' + ch.names[st] + '">' +
       '<img src="' + imgs[st] + '" alt="" class="' + (st === 0 ? 'pet-wobble' : 'pet-bounce') + '" draggable="false"></span>';
   }
 
   function svg(id, st, size){
     var ch = BY[id];
     if (!ch) return '';
-    st = Math.max(0, Math.min(ULT, Number(st) || 0));
+    st = Math.max(0, Math.min(ch.names.length - 1, Number(st) || 0));
     var pic = picture(ch, st, size);
     if (pic) return pic;
     // 絵の画像が無いときは、図形で描いた絵（6段階で描いてあるので、成長期以降は1つ先の絵）を使う
@@ -679,14 +680,19 @@ var PETS = (function(){
   return {
     STAGES: STAGES,
     ULT: ULT,
+    SUPER: SUPER,
     list: LIST,
     get: function(id){ return BY[id]; },
-    name: function(id, st){ var p = BY[id]; return p ? p.names[Math.max(0, Math.min(ULT, st))] : ''; },
+    name: function(id, st){ var p = BY[id]; return p ? p.names[Math.max(0, Math.min(p.names.length - 1, st))] : ''; },
     svg: svg,
     // アニメーション用のCSS（ページに1回だけ入れる）
     css: '.pet-pic{display:inline-block;position:relative;overflow:hidden;border-radius:14px;vertical-align:middle;box-shadow:0 3px 10px rgba(30,30,60,.25);background:#eee}' +
       '.pet-pic img{width:100%;height:100%;object-fit:cover;display:block;animation:none}' +
       '.pet-pic.pet-ult{box-shadow:0 0 0 3px #ffd23f,0 0 16px 4px rgba(255,200,40,.7)}' +
+      '.pet-pic.pet-super{animation:petSuper 2.4s linear infinite}' +
+      '@keyframes petSuper{0%,100%{box-shadow:0 0 0 3px #fff,0 0 0 6px #ff5ec4,0 0 22px 8px rgba(255,94,196,.7)}' +
+      '33%{box-shadow:0 0 0 3px #fff,0 0 0 6px #ffd23f,0 0 22px 8px rgba(255,210,63,.7)}' +
+      '66%{box-shadow:0 0 0 3px #fff,0 0 0 6px #4dabf7,0 0 22px 8px rgba(77,171,247,.7)}}' +
       '.pet-svg{overflow:visible}.pet-wobble{transform-origin:100px 184px;animation:petWob 2.4s ease-in-out infinite}' +
       '.pet-bounce{transform-origin:100px 186px;animation:petBob 2s ease-in-out infinite}' +
       '@keyframes petWob{0%,100%{transform:rotate(0)}20%{transform:rotate(-6deg)}40%{transform:rotate(5deg)}60%{transform:rotate(-2deg)}}' +

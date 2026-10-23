@@ -91,6 +91,8 @@ select:focus,input:focus,textarea:focus{outline:3px solid #bcd5f7;border-color:v
 .btn.pet{background:linear-gradient(90deg,#ff6f9c,#c77dff,#3d7bf2);margin-top:.8rem}
 details.sent{text-align:left;margin-top:1rem;border:1px solid var(--line);border-radius:10px;padding:.4rem .8rem;background:#fbfcfe}
 details.sent summary{cursor:pointer;font-weight:700;color:var(--ink2)}
+.superhint{margin:.4rem 0;padding:.4rem .7rem;border-radius:10px;font-size:.85rem;background:#f3f0ff;color:#5b3fbf;border:1px dashed #b9a6ff}
+.superhint.open{background:linear-gradient(90deg,#fff3c4,#ffe0f0,#dff0ff);color:#7a3d00;border:2px solid #ffcc33;font-weight:700}
 .hidden{display:none !important}
 </style>
 </head>
@@ -382,26 +384,37 @@ function esc(s){
 
 // 育成ポイント → 段階（Apps Script 側の petStage_ と同じ計算）
 function hatchAfter(){ return SETTINGS.hatchAfter == null ? SETTINGS.growPerStage - 1 : SETTINGS.hatchAfter; }
-function petStage(points){
+function petStage(points, max){
   var h = 1 + hatchAfter();
-  return points < h ? 0 : Math.min(PETS.ULT, 1 + Math.floor((points - h) / SETTINGS.growPerStage));
+  return points < h ? 0 : Math.min(max || PETS.ULT, 1 + Math.floor((points - h) / SETTINGS.growPerStage));
+}
+function maxOf(v){ return v.max || PETS.ULT; }
+function doneId(x){ return String(x).replace('*', ''); }
+
+// 超究極体のヒント（りゅう・かたなのタマゴが究極体のときだけ）
+function superHint(v){
+  if (!v.super || v.stage < PETS.ULT || v.stage >= PETS.SUPER) return '';
+  if (v.super.a >= v.super.need) return '<div class="superhint open">🌈 新たな進化ルートが現れた！ このまま育てると<b>超究極体</b>に…！</div>';
+  return '<div class="superhint">❓ 理解度に <b>A</b> を' + v.super.need + '回つけると、新たな進化ルートが…？（いま <b>' + v.super.a + '</b> 回）</div>';
 }
 
 // 進化までの ●●○
 function progressHtml(v){
-  if (v.stage >= PETS.ULT) return '<div class="dots">🎉 究極体まで育て上げた！</div>';
+  if (v.stage >= PETS.SUPER) return '<div class="dots">🌈 超究極体まで育て上げた！</div>';
+  if (v.stage >= maxOf(v)) return '<div class="dots">🎉 究極体まで育て上げた！</div>' + superHint(v);
   var h = 1 + hatchAfter(), n, have;
   if (v.stage === 0) { n = hatchAfter(); have = v.points - 1; }
   else { n = SETTINGS.growPerStage; have = v.points - (h + (v.stage - 1) * n); }
   var dots = '';
   for (var i = 0; i < n; i++) dots += '<i class="' + (i < have ? 'on' : '') + '"></i>';
-  return '<div class="dots">' + dots + '<span>あと<b>' + (n - have) + '回</b>で' + (v.stage === 0 ? 'うまれる！' : '進化！') + '</span></div>';
+  return '<div class="dots">' + dots + '<span>あと<b>' + (n - have) + '回</b>で' + (v.stage === 0 ? 'うまれる！' : v.stage === PETS.ULT ? '超究極体に進化！' : '進化！') + '</span></div>' + superHint(v);
 }
 
 function zukanHtml(v){
   if (!v.done || !v.done.length) return '';
-  return '<div class="zukan">図鑑：' + v.done.map(function(id){
-    return '<span title="' + esc(PETS.name(id, PETS.ULT)) + '">' + PETS.svg(id, PETS.ULT, 40) + '</span>';
+  return '<div class="zukan">図鑑：' + v.done.map(function(x){
+    var id = doneId(x), st = x.indexOf('*') >= 0 ? PETS.SUPER : PETS.ULT;
+    return '<span title="' + esc(PETS.name(id, st)) + '">' + PETS.svg(id, st, 40) + '</span>';
   }).join('') + '</div>';
 }
 
@@ -421,7 +434,7 @@ function loadTopPet(){
     }
     box.innerHTML = '<div class="pic">' + PETS.svg(v.current, v.stage, 120) + '</div><div class="info">' +
       '<p class="petname">' + esc(PETS.name(v.current, v.stage)) + '<span class="petstage">' + PETS.STAGES[v.stage] + '</span></p>' +
-      progressHtml(v) + (v.stage >= PETS.ULT ? '<div class="muted">次にふりかえりを送信すると、新しいタマゴを選べます。</div>' : '') + zukanHtml(v) + '</div>';
+      progressHtml(v) + (v.stage >= maxOf(v) ? '<div class="muted">次にふりかえりを送信すると、新しいタマゴを選べます。</div>' : '') + zukanHtml(v) + '</div>';
   }, function(){ box.classList.add('hidden'); });
 }
 
@@ -437,14 +450,18 @@ function showPetAfterSend(v){
   $('sentBox').open = false;
   if (v.needEgg) {
     var head = '';
-    if (v.current && v.stage >= PETS.ULT) {
-      head = '<div class="petstage-area" id="evoArea">' + PETS.svg(v.current, v.evolved ? v.from : PETS.ULT, 150) + '</div>' +
-        '<p class="petmsg" id="evoMsg"></p>';
+    if (v.current && v.stage >= maxOf(v)) {
+      head = '<div class="petstage-area" id="evoArea">' + PETS.svg(v.current, v.evolved ? v.from : v.stage, 150) + '</div>' +
+        '<p class="petmsg" id="evoMsg"></p>' + (v.evolved ? '' : superHint(v));
     }
     box.innerHTML = head + eggChooserHtml(v);
     bindEggChooser(v);
-    if (v.current && v.evolved) runEvolution(v.current, v.from, PETS.ULT, function(){ $('evoMsg').textContent = '究極体まで育て上げた！ 新しいタマゴを選べるよ（次回でもOK）'; });
-    else if (v.current) $('evoMsg').textContent = '究極体まで育て上げた！ 新しいタマゴを選ぼう';
+    var fin = PETS.STAGES[v.stage] + 'まで育て上げた！';
+    if (v.current && v.evolved) runEvolution(v.current, v.from, v.stage, function(){
+      $('evoMsg').innerHTML = esc((v.stage === PETS.SUPER ? '「' + PETS.name(v.current, v.stage) + '」に超進化！ ' : '') + fin + ' 新しいタマゴを選べるよ（次回でもOK）');
+      $('evoArea').insertAdjacentHTML('afterend', superHint(v));
+    });
+    else if (v.current) $('evoMsg').textContent = fin + ' 新しいタマゴを選ぼう';
     return;
   }
   var cool = (PETS.get(v.current) || {}).type === 'cool' ? ' cool' : '';
@@ -481,7 +498,7 @@ function runEvolution(id, from, to, done){
 }
 
 function eggChooserHtml(v){
-  var done = v.done || [], cur = v.current && v.stage >= PETS.ULT ? done.concat([v.current]) : done;
+  var done = (v.done || []).map(doneId), cur = v.current && v.stage >= maxOf(v) ? done.concat([v.current]) : done;
   var all = PETS.list.every(function(p){ return cur.indexOf(p.id) >= 0; });
   var group = function(type, title){
     return '<h3 class="' + type + '">' + title + '</h3><div class="egg-grid">' + PETS.list.filter(function(p){ return p.type === type; }).map(function(p){
@@ -527,9 +544,21 @@ function bindEggChooser(v){
 var demoPet = (function(){
   var KEY = 'furikaeri_demo_pets';
   function all(){ return store(KEY) || {}; }
-  function view(p){
-    var st = p.current ? petStage(p.points) : 0;
-    return { current:p.current, points:p.points, stage:st, done:p.done.slice(), needEgg: !p.current || st === PETS.ULT };
+  var SUPER_IDS = ['dragon', 'samurai'], NEED_A = 10;
+  // 体験モードでは、この端末から送った回答で理解度Aの回数を数える
+  function countA(key){
+    var seen = {}, n = 0;
+    (store('furikaeri_demo_rows') || []).forEach(function(r){
+      if (r[3] + '-' + r[4] + '-' + r[5] !== key || r[7] !== 'A') return;
+      var k = r[1] + '#' + r[2]; if (!seen[k]) { seen[k] = true; n++; }
+    });
+    return n + (store('furikaeri_demo_extraA') || 0);
+  }
+  function maxFor(p, a){ return SUPER_IDS.indexOf(p.current) >= 0 && a >= NEED_A ? PETS.SUPER : PETS.ULT; }
+  function view(p, key){
+    var a = countA(key), max = maxFor(p, a), st = p.current ? petStage(p.points, max) : 0;
+    return { current:p.current, points:p.points, stage:st, done:p.done.slice(), max:max, needEgg: !p.current || st === max,
+      super: SUPER_IDS.indexOf(p.current) >= 0 ? { need:NEED_A, a:a } : null };
   }
   function count(p, lesson){
     var day = lesson.split('#')[0];
@@ -542,24 +571,26 @@ var demoPet = (function(){
     grow: function(r, lesson){
       var db = all(), key = r.grade + '-' + r.cls + '-' + r.num;
       var p = db[key] || { current:'', points:0, day:'', lessons:[], done:[] };
-      var before = p.current ? petStage(p.points) : -1, counted = 'none';
-      if (p.current && before < PETS.ULT) { counted = count(p, lesson); if (counted === 'ok') p.points++; }
+      var max = maxFor(p, countA(key));
+      var before = p.current ? petStage(p.points, max) : -1, counted = 'none';
+      if (p.current && before < max) { counted = count(p, lesson); if (counted === 'ok') p.points++; }
       db[key] = p; store(KEY, db);
-      var v = view(p);
+      var v = view(p, key);
       v.counted = counted; v.from = before; v.evolved = before >= 0 && v.stage > before;
       if (v.needEgg) v.token = key + '|' + lesson;
       return v;
     },
     chooseEgg: function(token, id){
       var t = token.split('|'), db = all(), p = db[t[0]];
-      if (!p || !view(p).needEgg) throw new Error('もうタマゴを選んでいます。');
-      if (p.current) p.done.push(p.current);
+      var old = p && view(p, t[0]);
+      if (!p || !old.needEgg) throw new Error('もうタマゴを選んでいます。');
+      if (p.current) p.done.push(p.current + (old.stage === PETS.SUPER ? '*' : ''));
       p.current = id; p.points = 0;
       var c = count(p, t[1]); if (c === 'ok') p.points = 1;
       store(KEY, db);
-      var v = view(p); v.counted = c; return v;
+      var v = view(p, t[0]); v.counted = c; return v;
     },
-    getPet: function(g, c, n){ var p = all()[g + '-' + c + '-' + n]; return p ? view(p) : null; }
+    getPet: function(g, c, n){ var k = g + '-' + c + '-' + n, p = all()[k]; return p ? view(p, k) : null; }
   };
 })();
 

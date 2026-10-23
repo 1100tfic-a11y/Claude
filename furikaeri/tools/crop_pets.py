@@ -60,8 +60,14 @@ for num, cid, egg, stages in CHARS:
       imgs.append(card(im, s))
   out[cid] = [uri(i) for i in imgs]
 
+# ---- 超究極体（理解度Aを10回以上つけた生徒だけが進める）：art/super_*.png のカードの絵の部分だけ
+SUPER = {'dragon': (200, 190, 980, 1230), 'samurai': (340, 114, 1020, 1020)}
+for cid, box in SUPER.items():
+  im = Image.open(os.path.join(HERE, '..', 'art', 'super_' + cid + '.png')).convert('RGB')
+  out[cid].append(uri(im.crop(box)))
+
 js = ('// tools/crop_pets.py で自動作成（art/01〜10.png から切り抜いた絵）。手で書きかえないでください。\n'
-      '// PET_IMAGES[キャラ] = [タマゴ, 成長期, 成熟期, 完全体, 究極体]\n'
+      '// PET_IMAGES[キャラ] = [タマゴ, 成長期, 成熟期, 完全体, 究極体(, 超究極体)]\n'
       'var PET_IMAGES = ' + json.dumps(out, indent=0) + ';\n')
 open(os.path.join(HERE, '..', 'src', 'pet-images.js'), 'w').write(js)
 print('src/pet-images.js', len(js) // 1024, 'KB')

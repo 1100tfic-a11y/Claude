@@ -38,12 +38,16 @@ const TRASH_NAME = '削除済み';
 const PET_SHEET = 'キャラ';
 // src/pets.js の list と同じ並び（id）
 const PET_IDS = ['inu', 'neko', 'usagi', 'panda', 'hamu', 'dragon', 'samurai', 'ninja', 'robo', 'knight'];
-// 段階：0 タマゴ / 1 成長期 / 2 成熟期 / 3 完全体 / 4 究極体
+// 段階：0 タマゴ / 1 成長期 / 2 成熟期 / 3 完全体 / 4 究極体 / 5 超究極体（一部のキャラだけ）
 const ULT_STAGE = 4;
+const SUPER_STAGE = 5;
+// 超究極体があるキャラと、その進化ルートが現れる条件（理解度Aをつけた授業の回数）
+const SUPER_IDS = ['dragon', 'samurai'];
+const SUPER_NEED_A = 10;
 const PET_HEADERS = ['キー', '学年', '組', '番号', '氏名', '育成中のキャラ', '育成ポイント', '最後に育てた日', 'その日に数えた授業', '育て上げたキャラ', '更新日時'];
 
 // コードの版（checkSetup で、公開中のコードが最新か確かめるため）
-const CODE_VERSION = '2026-10-23c';
+const CODE_VERSION = '2026-10-23d';
 
 const HEADERS = [
   '送信日時', '授業日', '時限', '学年', '組', '番号', '氏名',
@@ -264,7 +268,7 @@ function loadPet_(sh, key) {
     row: best + 2, key: petKey_(k.g, k.c, k.n), grade: k.g, cls: k.c, num: k.n, name: String(v[4]),
     current: current, points: points, day: cellDate_(v[7]),
     lessons: String(v[8] || '').split(',').filter(String),
-    done: String(v[9] || '').split(',').filter(function (x) { return PET_IDS.indexOf(x) >= 0; }),
+    done: String(v[9] || '').split(',').filter(function (x) { return PET_IDS.indexOf(x.replace('*', '')) >= 0; }),
   };
 }
 
@@ -276,18 +280,43 @@ function savePet_(sh, p) {
 
 // 育成ポイント → 段階。タマゴを選んだ回で1ポイント、そこから HATCH_AFTER 回で孵化、
 // その後は GROW_PER_STAGE 回ごとに進化する
-function petStage_(points) {
+function petStage_(points, max) {
   const hatch = 1 + CONFIG.HATCH_AFTER;
   if (points < hatch) return 0;
-  return Math.min(ULT_STAGE, 1 + Math.floor((points - hatch) / CONFIG.GROW_PER_STAGE));
+  return Math.min(max || ULT_STAGE, 1 + Math.floor((points - hatch) / CONFIG.GROW_PER_STAGE));
+}
+
+/** その生徒が理解度Aをつけた授業の数（同じ授業に何度送っても1回） */
+function countA_(g, c, n) {
+  const sh = sheet_();
+  const rows = sh.getLastRow() - 1;
+  if (rows <= 0) return 0;
+  const vals = sh.getRange(2, 1, rows, 8).getValues();
+  const seen = {};
+  let count = 0;
+  for (let i = 0; i < vals.length; i++) {
+    const v = vals[i];
+    if (Number(v[3]) !== Number(g) || Number(v[4]) !== Number(c) || Number(v[5]) !== Number(n) || String(v[7]) !== 'A') continue;
+    const k = cellDate_(v[1]) + '#' + v[2];
+    if (!seen[k]) { seen[k] = true; count++; }
+  }
+  return count;
+}
+
+/** 育てているキャラが行ける最後の段階（超究極体のルートが現れていれば 5） */
+function petMax_(p, aCount) {
+  return SUPER_IDS.indexOf(p.current) >= 0 && aCount >= SUPER_NEED_A ? SUPER_STAGE : ULT_STAGE;
 }
 
 /** 生徒の画面に返す情報 */
-function petView_(p) {
-  const stage = p.current ? petStage_(p.points) : 0;
+function petView_(p, aCount) {
+  const max = petMax_(p, aCount);
+  const stage = p.current ? petStage_(p.points, max) : 0;
   return {
-    current: p.current, points: p.points, stage: stage, done: p.done,
-    needEgg: !p.current || stage === ULT_STAGE,
+    current: p.current, points: p.points, stage: stage, done: p.done, max: max,
+    needEgg: !p.current || stage === max,
+    // 超究極体があるキャラのときだけ、条件と今の回数を知らせる
+    super: SUPER_IDS.indexOf(p.current) >= 0 ? { need: SUPER_NEED_A, a: aCount } : null,
   };
 }
 
@@ -307,14 +336,16 @@ function growPet_(g, c, n, name, lesson) {
   const key = petKey_(g, c, n);
   const p = loadPet_(sh, key) || { key: key, grade: g, cls: c, num: n, current: '', points: 0, day: '', lessons: [], done: [] };
   p.name = name;
-  const before = p.current ? petStage_(p.points) : -1;
+  const aCount = countA_(g, c, n);
+  const max = petMax_(p, aCount);
+  const before = p.current ? petStage_(p.points, max) : -1;
   let counted = 'none';
-  if (p.current && before < ULT_STAGE) {
+  if (p.current && before < max) {
     counted = countLesson_(p, lesson);
     if (counted === 'ok') p.points++;
   }
   savePet_(sh, p);
-  const view = petView_(p);
+  const view = petView_(p, aCount);
   view.counted = counted;
   view.from = before;
   view.evolved = before >= 0 && view.stage > before;
@@ -340,18 +371,21 @@ function chooseEgg(token, id) {
     const sh = petSheet_();
     const p = loadPet_(sh, t.key);
     if (!p) throw new Error('記録が見つかりません。');
-    const v = petView_(p);
+    const aCount = countA_(p.grade, p.cls, p.num);
+    const v = petView_(p, aCount);
     if (!v.needEgg) throw new Error('もうタマゴを選んでいます。');
-    if (p.current) p.done.push(p.current); // 究極体まで育てたキャラは図鑑へ
-    const all = PET_IDS.every(function (x) { return p.done.indexOf(x) >= 0; });
-    if (!all && p.done.indexOf(id) >= 0) throw new Error('そのキャラはもう育て上げました。ほかのタマゴを選んでください。');
+    // 育て上げたキャラは図鑑へ（超究極体まで育てたら「id*」で記録）
+    if (p.current) p.done.push(p.current + (v.stage === SUPER_STAGE ? '*' : ''));
+    const doneIds = p.done.map(function (x) { return x.replace('*', ''); });
+    const all = PET_IDS.every(function (x) { return doneIds.indexOf(x) >= 0; });
+    if (!all && doneIds.indexOf(id) >= 0) throw new Error('そのキャラはもう育て上げました。ほかのタマゴを選んでください。');
     p.current = id;
     p.points = 0;
     const counted = countLesson_(p, t.lesson);
     if (counted === 'ok') p.points = 1;
     savePet_(sh, p);
     cache.remove('egg_' + token);
-    const view = petView_(p);
+    const view = petView_(p, aCount);
     view.counted = counted;
     return view;
   } finally {
@@ -365,7 +399,7 @@ function getPet(g, c, n) {
   g = toInt_(g); c = toInt_(c); n = toInt_(n);
   if (!CONFIG.CLASSES[g] || !(c >= 1 && c <= CONFIG.CLASSES[g]) || !(n >= 1 && n <= CONFIG.MAX_NUMBER)) return null;
   const p = loadPet_(petSheet_(), petKey_(g, c, n));
-  return p ? petView_(p) : null;
+  return p ? petView_(p, countA_(g, c, n)) : null;
 }
 
 // ===================== スプレッドシートのメニュー =====================
