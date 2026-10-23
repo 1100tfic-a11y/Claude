@@ -42,12 +42,12 @@ const PET_IDS = ['inu', 'neko', 'usagi', 'panda', 'hamu', 'dragon', 'samurai', '
 const ULT_STAGE = 4;
 const SUPER_STAGE = 5;
 // 超究極体があるキャラと、その進化ルートが現れる条件（理解度Aをつけた授業の回数）
-const SUPER_IDS = ['dragon', 'samurai'];
+const SUPER_IDS = ['dragon', 'samurai', 'inu', 'neko', 'usagi', 'panda', 'hamu', 'ninja', 'robo', 'knight'];
 const SUPER_NEED_A = 10;
 const PET_HEADERS = ['キー', '学年', '組', '番号', '氏名', '育成中のキャラ', '育成ポイント', '最後に育てた日', 'その日に数えた授業', '育て上げたキャラ', '更新日時', '育て始めた日時'];
 
 // コードの版（checkSetup で、公開中のコードが最新か確かめるため）
-const CODE_VERSION = '2026-10-23h';
+const CODE_VERSION = '2026-10-23i';
 
 const HEADERS = [
   '送信日時', '授業日', '時限', '学年', '組', '番号', '氏名',

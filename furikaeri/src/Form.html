@@ -391,7 +391,7 @@ function petStage(points, max){
 function maxOf(v){ return v.max || PETS.ULT; }
 function doneId(x){ return String(x).replace('*', ''); }
 
-// 超究極体のヒント（りゅう・かたなのタマゴが究極体のときだけ）
+// 超究極体のヒント（究極体のときだけ）
 // （条件や回数は見せず、ルートが現れたときだけ知らせる）
 function superHint(v){
   if (!v.super || !v.super.open || v.stage < PETS.ULT || v.stage >= PETS.SUPER) return '';
@@ -544,7 +544,7 @@ function bindEggChooser(v){
 var demoPet = (function(){
   var KEY = 'furikaeri_demo_pets';
   function all(){ return store(KEY) || {}; }
-  var SUPER_IDS = ['dragon', 'samurai'], NEED_A = 10;
+  var SUPER_IDS = ['dragon', 'samurai', 'inu', 'neko', 'usagi', 'panda', 'hamu', 'ninja', 'robo', 'knight'], NEED_A = 10;
   // 体験モードでは、この端末から送った回答のうち、今のキャラを育て始めてから（since 番目以降）の理解度Aを数える
   function countA(key, since){
     var seen = {}, n = 0;

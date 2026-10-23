@@ -84,6 +84,14 @@ for cid in ['dragon', 'samurai']:
   x0 = (im.width - w) // 2; y0 = (im.height - h) // 2
   out[cid].append(uri(im.crop((x0, y0, x0 + w, y0 + h))))
 
+# ---- みんなで共通の超究極体：art/super_shared.png（左＝ユメリア、右＝ゼノガルド。下の名前の帯はよける）
+# 同じ絵を何度も入れないよう、PET_IMAGES['_yumeria'] などに1回だけ入れて、キャラ側は '@_yumeria' で指す
+sh = Image.open(os.path.join(HERE, '..', 'art', 'super_shared.png')).convert('RGB')
+out['_yumeria'] = [uri(sh.crop((70, 8, 690, 835)))]
+out['_xenogard'] = [uri(sh.crop((845, 8, 1465, 835)))]
+for cid in ['inu', 'neko', 'usagi', 'panda', 'hamu']: out[cid].append('@_yumeria')
+for cid in ['ninja', 'robo', 'knight']: out[cid].append('@_xenogard')
+
 js = ('// tools/crop_pets.py で自動作成（art/01〜10.png から切り抜いた絵）。手で書きかえないでください。\n'
       '// PET_IMAGES[キャラ] = [タマゴ, 成長期, 成熟期, 完全体, 究極体(, 超究極体)]\n'
       'var PET_IMAGES = ' + json.dumps(out, indent=0) + ';\n')

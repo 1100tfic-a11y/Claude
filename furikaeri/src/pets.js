@@ -9,33 +9,33 @@
  * ========================================================================= */
 var PETS = (function(){
   // 段階（0 タマゴ 〜 4 究極体）。孵化すると成長期から始まる
-  // 5 超究極体は、りゅう・かたなのタマゴだけ（理解度Aを10回以上つけた生徒だけが進める）
+  // 5 超究極体：全キャラ（理解度Aを10回以上つけた生徒だけが進める）。かわいい系はユメリア、ギア・たて・しゅりけんはゼノガルドが共通
   var STAGES = ['タマゴ', '成長期', '成熟期', '完全体', '究極体', '超究極体'];
   var ULT = 4, SUPER = 5;
 
   // type: cute（かわいい系）/ cool（かっこいい系）　egg: 図形で描くときのタマゴの色 [こい色, うすい色]　aura: 究極体の光の色
   var LIST = [
     { id:'inu',     type:'cute', pattern:'paws',     egg:['#ff8fb1','#ffe3ec'], ink:'#4a2a10', aura:'#ffb347',
-      names:['にくきゅうのタマゴ','ハナコ','サクラリア','桜天ノ光導獣・ハルフローラ','桜天ノ煌導獣・ルミアスト'] },
+      names:['にくきゅうのタマゴ','ハナコ','サクラリア','桜天ノ光導獣・ハルフローラ','桜天ノ煌導獣・ルミアスト','天翔ノ創星獣・ユメリア'] },
     { id:'neko',    type:'cute', pattern:'stars',    egg:['#ee8fd0','#fde8f6'], ink:'#16141f', aura:'#b388ff',
-      names:['ほしのタマゴ','くろにゃん','ヤミリル','夜天ノ月影猫・ルナミア','終夜ノ宙猫神・ノクタリス'] },
+      names:['ほしのタマゴ','くろにゃん','ヤミリル','夜天ノ月影猫・ルナミア','終夜ノ宙猫神・ノクタリス','天翔ノ創星獣・ユメリア'] },
     { id:'usagi',   type:'cute', pattern:'hearts',   egg:['#ff9eb5','#fff0f3'], ink:'#5a3442', aura:'#ffd6f0',
-      names:['ハートのタマゴ','ちびうさ','ミミアル','花愛ノ聖兎・フルリーナ','永遠ノ花冠神・フロレシア'] },
+      names:['ハートのタマゴ','ちびうさ','ミミアル','花愛ノ聖兎・フルリーナ','永遠ノ花冠神・フロレシア','天翔ノ創星獣・ユメリア'] },
     { id:'panda',   type:'cute', pattern:'dots',     egg:['#f78fb3','#ffe6f0'], ink:'#1c1c1c', aura:'#9be15d',
-      names:['みずたまのタマゴ','こうぱん','ミズマル','流水ノ拳獣・アクアリオ','海天ノ覇獣・アクアルナス'] },
+      names:['みずたまのタマゴ','こうぱん','ミズマル','流水ノ拳獣・アクアリオ','海天ノ覇獣・アクアルナス','天翔ノ創星獣・ユメリア'] },
     { id:'hamu',    type:'cute', pattern:'flowers',  egg:['#f6a6d0','#fdeef7'], ink:'#5c3a1a', aura:'#ffd23f',
-      names:['ひまわりのタマゴ','ひまりん','サンリオ','陽華獣・ソレイユ','光陽ノ花竜神・ヘリオス'] },
+      names:['ひまわりのタマゴ','ひまりん','サンリオ','陽華獣・ソレイユ','光陽ノ花竜神・ヘリオス','天翔ノ創星獣・ユメリア'] },
 
     { id:'dragon',  type:'cool', pattern:'scales',   egg:['#3d7bf2','#d9e8ff'], ink:'#3d0f06', aura:'#ff7a29',
       names:['りゅうのタマゴ','チビドラ','リュウレイ','スカイドラゴン・リュウ','天空竜王・ルクスドラコ','超越天空神竜・ルクスアルカディア'] },
     { id:'samurai', type:'cool', pattern:'zigzag',   egg:['#2f5fbf','#dbe6fb'], ink:'#1d1b2e', aura:'#f06595',
       names:['かたなのタマゴ','わかまる','けんたろう','サムライ剣士','天下無双の将軍','ムソウショウグン'] },
     { id:'ninja',   type:'cool', pattern:'shuriken', egg:['#2a6fd0','#dcebff'], ink:'#120f1c', aura:'#b46bff',
-      names:['しゅりけんのタマゴ','しゅりたま','かげまる','風魔の影忍・シノマル','影天ノ風魔神・シオン'] },
+      names:['しゅりけんのタマゴ','しゅりたま','かげまる','風魔の影忍・シノマル','影天ノ風魔神・シオン','終刻ノ覇龍神・ゼノガルド'] },
     { id:'robo',    type:'cool', pattern:'gears',    egg:['#1f8fb8','#d8f1f8'], ink:'#1b1f24', aura:'#5ff2ff',
-      names:['ギアのタマゴ','ギアベイビー','ギアビット','ギアブランド','クロノギア・オルディス'] },
+      names:['ギアのタマゴ','ギアベイビー','ギアビット','ギアブランド','クロノギア・オルディス','終刻ノ覇龍神・ゼノガルド'] },
     { id:'knight',  type:'cool', pattern:'shields',  egg:['#4a86c8','#dfeaf6'], ink:'#232836', aura:'#fff3a8',
-      names:['たてのタマゴ','たてベイビー','ブラッドシールドゴーレム','要塞盾神ゴーレム','深淵の盾帝・ガルディオン'] }
+      names:['たてのタマゴ','たてベイビー','ブラッドシールドゴーレム','要塞盾神ゴーレム','深淵の盾帝・ガルディオン','終刻ノ覇龍神・ゼノガルド'] }
   ];
   var BY = {};
   LIST.forEach(function(p){ BY[p.id] = p; });
@@ -661,9 +661,11 @@ var PETS = (function(){
   function picture(ch, st, size){
     var imgs = typeof PET_IMAGES !== 'undefined' && PET_IMAGES[ch.id];
     if (!imgs || !imgs[st]) return '';
+    var src = imgs[st].charAt(0) === '@' ? (PET_IMAGES[imgs[st].slice(1)] || [])[0] : imgs[st]; // 共通の絵を指しているとき
+    if (!src) return '';
     var h = size || 160, w = Math.round(h * 0.75);
     return '<span class="pet-svg pet-pic' + (st === ULT ? ' pet-ult' : st === SUPER ? ' pet-super' : '') + '" style="width:' + w + 'px;height:' + h + 'px" role="img" aria-label="' + ch.names[st] + '">' +
-      '<img src="' + imgs[st] + '" alt="" class="' + (st === 0 ? 'pet-wobble' : 'pet-bounce') + '" draggable="false"></span>';
+      '<img src="' + src + '" alt="" class="' + (st === 0 ? 'pet-wobble' : 'pet-bounce') + '" draggable="false"></span>';
   }
 
   function svg(id, st, size){
