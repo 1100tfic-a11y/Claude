@@ -30,12 +30,13 @@ CHARS = [
 
 # 決まった位置だと顔が枠から出てしまうカードは、個別に切り抜く位置を決める（左, 上, 右, 下）
 # 5つ目の数は、右側に足す余白（元の絵が顔のすぐ右で切れているときに、ぼかした背景で広げる）
-BOX = {('dragon', 2): (812, 236, 1086, 618, 60)}   # スカイドラゴン・リュウ（顔が右上の端にある）
+BOX = {('dragon', 2): (796, 226, 1106, 639, 0)}   # スカイドラゴン・リュウ（顔が右上にあるので、カードの右はしまで使う）
 
 def card(im, k, cid=None):
   if (cid, k) in BOX:
     x0, y0, x1, y1, pad = BOX[(cid, k)]
     c = im.crop((x0, y0, x1, y1))
+    if not pad: return c
     W, H = c.width + pad, c.height
     edge = c.crop((c.width - pad, 0, c.width, H))  # 右はしを左右反転して、ぼかしてつなぐ
     bg = Image.new('RGB', (W, H))
